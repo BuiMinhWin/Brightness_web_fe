@@ -1,5 +1,4 @@
-import React from 'react';
-import RootLayout from './layouts/RootLayout';
+import React from "react";
 
 const App: React.FC = () => {
   return <RootLayout />;
