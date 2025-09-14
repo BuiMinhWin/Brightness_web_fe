@@ -1,8 +1,8 @@
 import React from "react";
-import RootLayout from "./layouts/RootLayout";
+import LandingPage from "./components/LandingPage";
 
 const App: React.FC = () => {
-  return <RootLayout />;
+  return <LandingPage />;
 };
 
 export default App;
