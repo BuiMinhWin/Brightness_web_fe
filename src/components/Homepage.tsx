@@ -131,7 +131,7 @@ const Homepage: React.FC = () => {
             <h4 className="article-author">Name</h4>
             <div className="article-rating">★★★★★</div>
             <p className="article-content">Lorem ipsum dolor sit amet consecte tur adipiscing elit semper dalaracc lacus vel facilisis volutpat est velitolm.</p>
-            <a href="#" className="article-link">Read more ></a>
+            <a href="#" className="article-link">Read more →</a>
           </div>
           
           <div className="article-card">
@@ -139,7 +139,7 @@ const Homepage: React.FC = () => {
             <h4 className="article-author">Name</h4>
             <div className="article-rating">★★★★★</div>
             <p className="article-content">Lorem ipsum dolor sit amet consecte tur adipiscing elit semper dalaracc lacus vel facilisis volutpat est velitolm.</p>
-            <a href="#" className="article-link">Read more ></a>
+            <a href="#" className="article-link">Read more →</a>
           </div>
           
           <div className="article-card">
@@ -147,7 +147,7 @@ const Homepage: React.FC = () => {
             <h4 className="article-author">Name</h4>
             <div className="article-rating">★★★★★</div>
             <p className="article-content">Lorem ipsum dolor sit amet consecte tur adipiscing elit semper dalaracc lacus vel facilisis volutpat est velitolm.</p>
-            <a href="#" className="article-link">Read more ></a>
+            <a href="#" className="article-link">Read more →</a>
           </div>
         </div>
         
