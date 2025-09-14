@@ -1,8 +1,8 @@
 import React from "react";
-import LandingPage from "./components/LandingPage";
+import Router from "./components/Router";
 
 const App: React.FC = () => {
-  return <LandingPage />;
+  return <Router />;
 };
 
 export default App;
