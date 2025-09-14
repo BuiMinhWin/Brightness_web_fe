@@ -1,9 +1,10 @@
 import React, { useState } from "react";
-import LandingPage from "./LandingPage";
-import Homepage from "./Homepage";
+import LandingPage from "../pages/LandingPage";
+import Homepage from "../pages/Homepage";
+import FitnessProfile from "../pages/FitnessProfile";
 
 const Router: React.FC = () => {
-  const [currentPage, setCurrentPage] = useState<'landing' | 'homepage'>('landing');
+  const [currentPage, setCurrentPage] = useState<'landing' | 'homepage' | 'fitness'>('landing');
 
   const renderPage = () => {
     switch (currentPage) {
@@ -11,6 +12,8 @@ const Router: React.FC = () => {
         return <LandingPage />;
       case 'homepage':
         return <Homepage />;
+      case 'fitness':
+        return <FitnessProfile />;
       default:
         return <LandingPage />;
     }
@@ -54,6 +57,20 @@ const Router: React.FC = () => {
           }}
         >
           Homepage
+        </button>
+        <button 
+          onClick={() => setCurrentPage('fitness')}
+          style={{ 
+            marginLeft: '10px',
+            padding: '8px 16px', 
+            background: currentPage === 'fitness' ? '#066555' : 'white',
+            color: currentPage === 'fitness' ? 'white' : 'black',
+            border: 'none',
+            borderRadius: '4px',
+            cursor: 'pointer'
+          }}
+        >
+          Fitness
         </button>
       </div>
       
