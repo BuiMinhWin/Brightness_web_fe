@@ -1,0 +1,11 @@
+.app-footer {
+  /* Gradient like requested */
+  background: linear-gradient(90deg, #E2F043 0%, #05644C 86%);
+  color: #ffffff;
+}
+
+.app-footer .footer-brand { color: #ffffff; }
+.app-footer .footer-contact-title { color: #ffffff; }
+.app-footer .footer-contact-text { color: #ffffff; }
+.app-footer .contact-icon { border-color: #ffffff; }
+
