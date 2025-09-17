@@ -1,19 +1,40 @@
-﻿import React from "react";
+﻿// src/pages/LandingPage/LandingPage.tsx
+import React, { useMemo, useRef } from "react";
 import "./LandingPage.css";
+import { motion } from "framer-motion";
 import AppHeader from "../../components/layout/AppHeader";
 import AppFooter from "../../components/layout/AppFooter";
+import Reveal from "../../components/utils/Reveal";
+import { useFullpageScroll } from "../../components/utils/useFullpageScroll";
 
 const LandingPage: React.FC = () => {
+  // Section refs for fullpage snapping
+  const heroRef = useRef<HTMLElement | null>(null);
+  const aboutRef = useRef<HTMLElement | null>(null);
+  const servicesRef = useRef<HTMLElement | null>(null);
+  const gamificationRef = useRef<HTMLElement | null>(null);
+
+  // Snap order (down): hero -> about -> service -> gamification
+  const sections = useMemo(() => [heroRef, aboutRef, servicesRef, gamificationRef], []);
+  // Map each section to a route for deep-linking and back/forward support
+  const routes = useMemo(() => ["/", "/about-content", "/services", "/gamification"], []);
+  const { handlers } = useFullpageScroll(sections as any, routes);
+
   return (
-    <div className="landing-page">
-      {/* Header */}
+    <div className="landing-page" {...handlers}>
       <AppHeader />
 
-      {/* Hero Section */}
-      <section className="hero-section">
+      {/* Hero - Không cần Reveal vì luôn hiển thị */}
+      <section id="hero" className="hero-section" ref={heroRef as any}>
         <div className="hero-content">
-          <h1 className="hero-title">How are you today?</h1>
-
+          <motion.h1
+            className="hero-title"
+            initial={{ opacity: 0, y: 24 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, ease: "easeOut" }}
+          >
+            How are you today?
+          </motion.h1>
           <div className="emoji-group">
             <div className="emoji-face">
               <svg width="113" height="113" viewBox="0 0 113 113" fill="none">
@@ -72,7 +93,6 @@ const LandingPage: React.FC = () => {
             </div>
           </div>
         </div>
-
         <img
           className="fox-illustration"
           src="https://api.builder.io/api/v1/image/assets/TEMP/9e48ea33ceadf9e90f946b17a07cc7729d8c8c34?width=1156"
@@ -90,30 +110,23 @@ const LandingPage: React.FC = () => {
         />
       </section>
 
-      {/* About Section */}
-      <section className="about-section">
-        <div className="about-content">
-          <img
-            className="about-logo"
-            src="https://api.builder.io/api/v1/image/assets/TEMP/f158ef054b9c7f3b6944323487763cfceef7df1f?width=1240"
-            alt="BRIGHTNEST Logo Large"
-          />
+      {/* About - Chỉ hiện khi scroll tới */}
+      <section id="about-content" className="about-section" ref={aboutRef as any}>
+        <div className="about-overlay" />
+        <Reveal sectionId="about" variant="fade-up" className="about-content">
           <h2 className="about-title">We are BRIGHTNEST</h2>
           <p className="about-description">
-            A group of young dreamers turning clicks into care — designing a digital home where
+            A group of young dreamers turning clicks into care—designing a digital home where
             Vietnamese youth uplift each other through health and honest sharing.
           </p>
           <p className="vietnamese-tagline">Thắp sáng Hành trình Sức khỏe</p>
-        </div>
+        </Reveal>
       </section>
 
-      {/* Middle combined gradient wrapper */}
-      <div className="landing-combined">
-        {/* Services Section */}
-        <section className="services-section">
+      {/* Services - Chỉ hiện khi scroll tới */}
+      <section id="service" className="services-section" ref={servicesRef as any}>
+        <Reveal sectionId="services" variant="fade-up">
           <h2 className="services-title">Our services</h2>
-
-          {/* Blog Service */}
           <div className="service-item">
             <div className="service-content">
               <h3 className="service-title">Blog (Article Library)</h3>
@@ -131,19 +144,14 @@ const LandingPage: React.FC = () => {
               />
             </div>
           </div>
+        </Reveal>
+      </section>
 
-          {/* Gamification Service */}
-          <div className="service-item reverse">
-            <div className="service-content">
-              <h3 className="service-title">Gamification</h3>
-              <p className="service-description">
-                It brings motivation to daily health habits through engaging features like task
-                checklists, progress tracking, and competitive leaderboards - turning personal
-                growth into a fun, goal-driven experience.
-              </p>
-            </div>
+      {/* Gamification - Chỉ hiện khi scroll tới */}
+      <section id="gamification" className="gamification-section" ref={gamificationRef as any}>
+        <Reveal sectionId="gamification" variant="slide-right">
+          <div className="gamification-row">
             <div className="gamification-icons">
-              {/* Top-left: Racing top */}
               <div className="gami-card tl">
                 <svg width="96" height="96" viewBox="0 0 96 96" fill="none" aria-hidden>
                   <g transform="translate(12,0)">
@@ -179,7 +187,6 @@ const LandingPage: React.FC = () => {
                 <div className="gami-label">Racing top</div>
               </div>
 
-              {/* Top-right: Tracking */}
               <div className="gami-card tr">
                 <svg width="120" height="96" viewBox="0 0 120 96" fill="none" aria-hidden>
                   <circle cx="24" cy="60" r="10" fill="#FF7B17" />
@@ -201,7 +208,6 @@ const LandingPage: React.FC = () => {
                 <div className="gami-label">Tracking</div>
               </div>
 
-              {/* Bottom-left: Daily task */}
               <div className="gami-card bl">
                 <svg width="96" height="96" viewBox="0 0 68 80" fill="none" aria-hidden>
                   <path d="M34 62H56.695" stroke="#FF7B17" strokeWidth="4" strokeLinecap="round" />
@@ -242,14 +248,22 @@ const LandingPage: React.FC = () => {
                 </svg>
                 <div className="gami-label">Daily task</div>
               </div>
-
-              {/* Bottom-right: empty card to complete layout */}
+            </div>
+            <div className="service-content">
+              <h3 className="service-title">Gamification</h3>
+              <p className="service-description">
+                It brings motivation to daily health habits through engaging features like task
+                checklists, progress tracking, and competitive leaderboards - turning personal
+                growth into a fun, goal-driven experience.
+              </p>
             </div>
           </div>
-        </section>
+        </Reveal>
+      </section>
 
-        {/* AI Chatbox Section */}
-        <div className="chatbox-content">
+      {/* AI Chatbox + CTA - Chỉ hiện khi scroll tới */}
+      <section className="chatbox-content">
+        <Reveal sectionId="chatbox" variant="scale">
           <div className="chatbox-header">
             <h3 className="chatbox-title">AI Chatbox</h3>
             <p className="chatbox-description">
@@ -264,17 +278,14 @@ const LandingPage: React.FC = () => {
               <div className="chat-bubble user2">What exercises are good for beginners?</div>
             </div>
           </div>
-        </div>
+          <div className="cta-inline">
+            <h2 className="cta-title">Start small, shine big—together with us.</h2>
+            <button className="cta-button">TRY NOW</button>
+          </div>
+        </Reveal>
+      </section>
 
-        {/* CTA Section */}
-        <section className="cta-section">
-          <h2 className="cta-title">Start small, shine big—together with us.</h2>
-          <button className="cta-button">TRY NOW</button>
-        </section>
-      </div>
-
-      {/* Footer */}
-      <AppFooter />
+      {/* <AppFooter /> */}
     </div>
   );
 };

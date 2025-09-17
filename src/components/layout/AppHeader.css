@@ -1,30 +1,45 @@
-/* Gradient header wrapper. We reuse existing landing header classnames
-   so other pages can adopt this too. */
 .app-header {
-  background: linear-gradient(90deg, #e2f043 0%, #05644c 86%);
+  background: transparent;
   color: #0b3d33;
+  position: fixed; /* overlay on top of page */
+  top: 0;
+  left: 0;
+  right: 0;
+  width: 100%;
+  z-index: 1000;
+  background: linear-gradient(270deg, #e2f043 0%, #05644c 90%);
 }
 
-/* Keep spacing smaller on pages that don’t define header padding */
 .app-header.header {
-  padding: 20px 40px;
+  padding: 10px 20px; /* half of previous */
 }
 
-/* Buttons style (aligned with landing adjustments) */
+/* Reduce header content scale by ~50% */
+.app-header .logo-image {
+  width: 42px;
+  height: 42px;
+}
+.app-header .brand-text {
+  font-size: 13px;
+}
+.app-header .auth-buttons {
+  gap: 18px;
+}
+
 .app-header .login-btn {
   color: #0b3d33;
   font-family: "DM Sans", sans-serif;
-  font-size: 16px;
+  font-size: 14px;
   font-weight: 700;
 }
 
 .app-header .signup-btn {
-  padding: 8px 18px;
+  padding: 6px 12px;
   border-radius: 999px;
   background: linear-gradient(90deg, #066555 0%, #dce642 100%);
   color: #ffffff;
   font-family: "DM Sans", sans-serif;
-  font-size: 14px;
+  font-size: 12px;
   font-weight: 800;
   border: none;
   cursor: pointer;

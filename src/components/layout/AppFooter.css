@@ -1,7 +1,45 @@
 .app-footer {
-  /* Gradient like requested */
+  /* Overlay footer fixed to bottom */
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  width: 100%;
+  z-index: 1000;
   background: linear-gradient(90deg, #e2f043 0%, #05644c 86%);
   color: #ffffff;
+}
+
+/* Compact overlay sizing */
+.app-footer.footer {
+  /* same element has both classes */
+  padding: 10px 0 !important; /* override large landing footer padding */
+}
+
+.app-footer .footer-content {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 16px;
+  gap: 16px;
+  align-items: center;
+}
+
+.app-footer .footer-logo-image {
+  width: 44px;
+  height: 44px;
+}
+
+.app-footer .footer-brand {
+  font-size: 18px;
+}
+
+.app-footer .footer-contact-title {
+  font-size: 14px;
+  margin: 0;
+}
+
+.app-footer .footer-contact-text {
+  font-size: 12px;
 }
 
 .app-footer .footer-brand {

@@ -16,7 +16,7 @@ const AppHeader: React.FC = () => {
         </div>
       </div>
       <div className="auth-buttons">
-        <button className="login-btn">Log in</button>
+        <button className="login-btn">Log In</button>
         <button className="signup-btn">Sign Up</button>
       </div>
     </header>
@@ -24,4 +24,3 @@ const AppHeader: React.FC = () => {
 };
 
 export default AppHeader;
-
