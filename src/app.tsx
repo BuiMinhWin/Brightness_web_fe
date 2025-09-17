@@ -1,7 +1,8 @@
 import React from "react";
+import Router from "./routes/Router";
 
 const App: React.FC = () => {
-  return <RootLayout />;
+  return <Router />;
 };
 
 export default App;

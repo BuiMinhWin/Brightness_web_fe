@@ -1,0 +1,318 @@
+/* Container */
+.signin-page {
+  display: flex;
+  min-height: 100vh;
+  max-height: 100vh;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+/* Left: Form */
+.signin-content {
+  flex: 1;                    /* Thay đổi: sử dụng flex: 1 thay vì giá trị cố định */
+  min-width: 0;               /* Thêm: cho phép shrink */
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 20px 40px;         /* Giảm padding để tiết kiệm không gian */
+  background: linear-gradient(to bottom, #c4fccc, #c5edfc, #bdfcbb);
+  position: relative;
+  box-sizing: border-box;
+}
+
+/* Form Container */
+.signin-form-container {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+/* Top Nav */
+.signin-top-nav {
+  position: absolute;
+  top: 20px;                  /* Giảm từ 24px xuống 20px */
+  right: 20px;                /* Giảm từ 32px xuống 20px */
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  z-index: 10;
+}
+
+.signin-nav-text {
+  font-size: 14px;
+  color: #333;
+}
+
+.signin-signup-btn {
+  background: #015c48;
+  color: #fff;
+  border: none;
+  padding: 8px 16px;          /* Giảm padding để nhỏ gọn hơn */
+  border-radius: 20px;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 14px;
+  transition: background 0.2s;
+}
+
+.signin-signup-btn:hover {
+  background: #014133;
+}
+
+/* Card - Tối ưu kích thước */
+.signin-form-card {
+  width: 100%;
+  height: 97%;
+  max-width: 500px;           /* Giảm từ 800px xuống 500px */
+  background: #fff;
+  border-radius: 12px;
+  padding: 40px 30px;         /* Giảm padding để vừa màn hình */
+  box-shadow: 0 8px 24px rgba(0,0,0,0.08);
+  margin: 0 auto;
+}
+
+.signin-title {
+  font-size: 30px;            /* Giảm từ 28px xuống 24px */
+  font-weight: 600;
+  margin-bottom: 15px;        /* Giảm margin */
+  margin-top: -20px;
+}
+
+/* Inputs */
+.signin-field {
+  margin-bottom: 16px;        /* Giảm từ 20px xuống 16px */
+}
+
+.signin-label {
+  display: block;
+  font-size: 14px;
+  margin-bottom: 6px;
+  font-weight: 500;
+  color: #333;
+}
+
+.signin-input {
+  width: 100%;
+  padding: 12px;              /* Giảm từ 14px xuống 12px */
+  border-radius: 8px;
+  border: 1px solid #ddd;
+  font-size: 14px;
+  box-sizing: border-box;
+}
+
+.signin-input:focus {
+  border-color: #027156;
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(2,113,86,0.1);
+}
+
+/* Password */
+.signin-password-container {
+  position: relative;
+}
+
+.signin-password-toggle {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 12px;
+  color: #555;
+}
+
+.signin-forgot {
+  text-align: right;
+  margin-top: 6px;
+}
+
+.signin-forgot-link {
+  font-size: 13px;
+  color: #f97316;
+  text-decoration: none;
+}
+
+.signin-forgot-link:hover {
+  text-decoration: underline;
+}
+
+/* Buttons */
+.signin-btn {
+  width: 100%;
+  padding: 12px;              /* Giảm từ 14px xuống 12px */
+  font-size: 15px;
+  font-weight: 600;
+  border: none;
+  border-radius: 8px;
+  background: #999;
+  color: white;
+  cursor: pointer;
+  margin-top: 0px;
+}
+
+.signin-btn:hover {
+  background: #777;
+}
+
+/* Divider */
+.signin-divider {
+  margin: 15px 0;             /* Giảm từ 24px xuống 20px */
+  text-align: center;
+  color: #999;
+  font-size: 14px;
+  position: relative;
+}
+
+.signin-divider::before,
+.signin-divider::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  width: 40%;
+  height: 1px;
+  background: #e0e0e0;
+}
+
+.signin-divider::before {
+  left: 0;
+}
+
+.signin-divider::after {
+  right: 0;
+}
+
+/* Social buttons */
+.signin-social {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;                  /* Giảm từ 12px xuống 10px */
+}
+
+.signin-social-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 12px;              /* Giảm từ 14px xuống 12px */
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  background: #fff;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.signin-social-btn:hover {
+  background: #f5f5f5;
+}
+
+/* Right: Yoga Image */
+.signin-bg-image {
+  flex: 0 0 320px;           
+  min-width: 280px;           
+  background-image: url("../assets/images/yoga.png");
+  background-size: cover;     
+  background-repeat: no-repeat;
+  background-position: center;
+  background-color: #f8f9fa;
+}
+
+
+
+/* Responsive Design - Tối ưu hơn */
+@media (max-width: 1200px) {
+  .signin-bg-image {
+    flex: 0 0 280px;          /* Giảm kích thước ảnh */
+    min-width: 250px;
+  }
+  
+  .signin-form-card {
+    max-width: 450px;
+    padding: 35px 25px;
+  }
+}
+
+@media (max-width: 1024px) {
+  .signin-content {
+    padding: 20px 30px;
+  }
+  
+  .signin-bg-image {
+    flex: 0 0 250px;
+    min-width: 220px;
+  }
+  
+  .signin-form-card {
+    max-width: 400px;
+    padding: 30px 20px;
+  }
+}
+
+@media (max-width: 768px) {
+  .signin-page {
+    flex-direction: column;
+  }
+  
+  .signin-content {
+    flex: none;
+    width: 100%;
+    padding: 20px;
+    order: 1;
+  }
+  
+  .signin-bg-image {
+    flex: none;
+    width: 100%;
+    min-height: 220px;   /* đủ để ảnh hiện rõ */
+    order: 2;
+  }
+
+  .signin-bg-image img {
+    max-height: 220px;   /* không quá cao trên mobile */
+  }
+
+  
+  .signin-form-container {
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    margin-top: 40px;         /* Giảm từ 60px xuống 40px */
+  }
+  
+  .signin-form-card {
+    width: 100%;
+    max-width: 400px;
+    background: #fff;
+    border-radius: 12px;
+    padding: 30px 20px;       /* Giảm padding cho mobile */
+    box-shadow: 0 8px 24px rgba(0,0,0,0.08);
+  }
+  
+  .signin-top-nav {
+    position: relative;
+    top: auto;
+    right: auto;
+    justify-content: center;
+    margin-bottom: 20px;
+  }
+}
+
+@media (max-width: 480px) {
+  .signin-form-card {
+    padding: 25px 15px;
+    margin: 0 10px;
+  }
+  
+  .signin-title {
+    font-size: 22px;
+  }
+  
+  .signin-content {
+    padding: 15px;
+  }
+}
