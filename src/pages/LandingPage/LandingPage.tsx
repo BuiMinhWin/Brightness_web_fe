@@ -1,7 +1,7 @@
 ﻿import React from "react";
 import "./LandingPage.css";
-import AppHeader from "../components/layout/AppHeader";
-import AppFooter from "../components/layout/AppFooter";
+import AppHeader from "../../components/layout/AppHeader";
+import AppFooter from "../../components/layout/AppFooter";
 
 const LandingPage: React.FC = () => {
   return (
@@ -25,18 +25,8 @@ const LandingPage: React.FC = () => {
                   stroke="black"
                   strokeWidth="2"
                 />
-                <path
-                  d="M37 41H37.05"
-                  stroke="black"
-                  strokeWidth="8"
-                  strokeLinecap="round"
-                />
-                <path
-                  d="M77 41H77.05"
-                  stroke="black"
-                  strokeWidth="8"
-                  strokeLinecap="round"
-                />
+                <path d="M37 41H37.05" stroke="black" strokeWidth="8" strokeLinecap="round" />
+                <path d="M77 41H77.05" stroke="black" strokeWidth="8" strokeLinecap="round" />
                 <path
                   d="M37 68C37 68 44.437 77.917 56.833 77.917C69.229 77.917 76.666 68 76.666 68"
                   stroke="black"
@@ -55,24 +45,9 @@ const LandingPage: React.FC = () => {
                   stroke="black"
                   strokeWidth="2"
                 />
-                <path
-                  d="M37 41H37.05"
-                  stroke="black"
-                  strokeWidth="8"
-                  strokeLinecap="round"
-                />
-                <path
-                  d="M77 41H77.05"
-                  stroke="black"
-                  strokeWidth="8"
-                  strokeLinecap="round"
-                />
-                <path
-                  d="M37 68H76.67"
-                  stroke="black"
-                  strokeWidth="8"
-                  strokeLinecap="round"
-                />
+                <path d="M37 41H37.05" stroke="black" strokeWidth="8" strokeLinecap="round" />
+                <path d="M77 41H77.05" stroke="black" strokeWidth="8" strokeLinecap="round" />
+                <path d="M37 68H76.67" stroke="black" strokeWidth="8" strokeLinecap="round" />
               </svg>
             </div>
             <div className="emoji-face">
@@ -85,18 +60,8 @@ const LandingPage: React.FC = () => {
                   stroke="black"
                   strokeWidth="2"
                 />
-                <path
-                  d="M37 41H37.05"
-                  stroke="black"
-                  strokeWidth="8"
-                  strokeLinecap="round"
-                />
-                <path
-                  d="M77 41H77.05"
-                  stroke="black"
-                  strokeWidth="8"
-                  strokeLinecap="round"
-                />
+                <path d="M37 41H37.05" stroke="black" strokeWidth="8" strokeLinecap="round" />
+                <path d="M77 41H77.05" stroke="black" strokeWidth="8" strokeLinecap="round" />
                 <path
                   d="M76.67 72.917C76.67 72.917 69.23 63 56.83 63C44.44 63 37 72.917 37 72.917"
                   stroke="black"
@@ -135,9 +100,8 @@ const LandingPage: React.FC = () => {
           />
           <h2 className="about-title">We are BRIGHTNEST</h2>
           <p className="about-description">
-            A group of young dreamers turning clicks into care — designing a
-            digital home where Vietnamese youth uplift each other through health
-            and honest sharing.
+            A group of young dreamers turning clicks into care — designing a digital home where
+            Vietnamese youth uplift each other through health and honest sharing.
           </p>
           <p className="vietnamese-tagline">Thắp sáng Hành trình Sức khỏe</p>
         </div>
@@ -154,10 +118,9 @@ const LandingPage: React.FC = () => {
             <div className="service-content">
               <h3 className="service-title">Blog (Article Library)</h3>
               <p className="service-description">
-                Where everyone can explore, rate, and interact with
-                health-related articles. With admin-managed quality control and
-                content tagging, the platform fosters trustworthy information
-                and community-driven discussions.
+                Where everyone can explore, rate, and interact with health-related articles. With
+                admin-managed quality control and content tagging, the platform fosters trustworthy
+                information and community-driven discussions.
               </p>
             </div>
             <div>
@@ -174,22 +137,15 @@ const LandingPage: React.FC = () => {
             <div className="service-content">
               <h3 className="service-title">Gamification</h3>
               <p className="service-description">
-                It brings motivation to daily health habits through engaging
-                features like task checklists, progress tracking, and
-                competitive leaderboards - turning personal growth into a fun,
-                goal-driven experience.
+                It brings motivation to daily health habits through engaging features like task
+                checklists, progress tracking, and competitive leaderboards - turning personal
+                growth into a fun, goal-driven experience.
               </p>
             </div>
             <div className="gamification-icons">
               {/* Top-left: Racing top */}
               <div className="gami-card tl">
-                <svg
-                  width="96"
-                  height="96"
-                  viewBox="0 0 96 96"
-                  fill="none"
-                  aria-hidden
-                >
+                <svg width="96" height="96" viewBox="0 0 96 96" fill="none" aria-hidden>
                   <g transform="translate(12,0)">
                     <rect
                       x="26"
@@ -225,13 +181,7 @@ const LandingPage: React.FC = () => {
 
               {/* Top-right: Tracking */}
               <div className="gami-card tr">
-                <svg
-                  width="120"
-                  height="96"
-                  viewBox="0 0 120 96"
-                  fill="none"
-                  aria-hidden
-                >
+                <svg width="120" height="96" viewBox="0 0 120 96" fill="none" aria-hidden>
                   <circle cx="24" cy="60" r="10" fill="#FF7B17" />
                   <path
                     d="M36 60 C 60 50, 70 50, 90 60"
@@ -253,31 +203,15 @@ const LandingPage: React.FC = () => {
 
               {/* Bottom-left: Daily task */}
               <div className="gami-card bl">
-                <svg
-                  width="96"
-                  height="96"
-                  viewBox="0 0 68 80"
-                  fill="none"
-                  aria-hidden
-                >
-                  <path
-                    d="M34 62H56.695"
-                    stroke="#FF7B17"
-                    strokeWidth="4"
-                    strokeLinecap="round"
-                  />
+                <svg width="96" height="96" viewBox="0 0 68 80" fill="none" aria-hidden>
+                  <path d="M34 62H56.695" stroke="#FF7B17" strokeWidth="4" strokeLinecap="round" />
                   <path
                     d="M34 39.5898H56.695"
                     stroke="#FF7B17"
                     strokeWidth="4"
                     strokeLinecap="round"
                   />
-                  <path
-                    d="M34 16H56.695"
-                    stroke="#FF7B17"
-                    strokeWidth="4"
-                    strokeLinecap="round"
-                  />
+                  <path d="M34 16H56.695" stroke="#FF7B17" strokeWidth="4" strokeLinecap="round" />
                   <rect
                     x="2"
                     y="2"
@@ -326,21 +260,15 @@ const LandingPage: React.FC = () => {
             <div className="chat-dot left" />
             <div className="chat-dot right" />
             <div className="chat-bubbles">
-              <div className="chat-bubble user1">
-                Do you have any questions today?
-              </div>
-              <div className="chat-bubble user2">
-                What exercises are good for beginners?
-              </div>
+              <div className="chat-bubble user1">Do you have any questions today?</div>
+              <div className="chat-bubble user2">What exercises are good for beginners?</div>
             </div>
           </div>
         </div>
 
         {/* CTA Section */}
         <section className="cta-section">
-          <h2 className="cta-title">
-            Start small, shine big—together with us.
-          </h2>
+          <h2 className="cta-title">Start small, shine big—together with us.</h2>
           <button className="cta-button">TRY NOW</button>
         </section>
       </div>

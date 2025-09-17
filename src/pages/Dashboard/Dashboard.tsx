@@ -10,14 +10,32 @@ const LineChart = () => (
       </linearGradient>
     </defs>
     <g stroke="rgba(255,255,255,.5)" strokeDasharray="2 6">
-      {[0,1,2,3,4].map(i => (
-        <line key={i} x1="0" x2="640" y1={40+i*40} y2={40+i*40} />
+      {[0, 1, 2, 3, 4].map((i) => (
+        <line key={i} x1="0" x2="640" y1={40 + i * 40} y2={40 + i * 40} />
       ))}
     </g>
-    <path d="M20 190 C 100 100, 140 130, 200 120 S 260 160, 320 120 400 110, 460 160 520 80, 620 80" fill="none" stroke="#eaf7f2" strokeWidth="6" strokeLinecap="round"/>
-    <path d="M20 190 C 100 120, 140 140, 200 130 S 260 170, 320 130 400 120, 460 170 520 90, 620 90" fill="url(#g)" stroke="none"/>
-    {[80,200,300,380,500,620].map((x,i)=> (
-      <circle key={i} cx={x} cy={[150,130,170,130,150,90][i]} r="6" fill="#0b7e63" stroke="#eaf7f2" strokeWidth="3"/>
+    <path
+      d="M20 190 C 100 100, 140 130, 200 120 S 260 160, 320 120 400 110, 460 160 520 80, 620 80"
+      fill="none"
+      stroke="#eaf7f2"
+      strokeWidth="6"
+      strokeLinecap="round"
+    />
+    <path
+      d="M20 190 C 100 120, 140 140, 200 130 S 260 170, 320 130 400 120, 460 170 520 90, 620 90"
+      fill="url(#g)"
+      stroke="none"
+    />
+    {[80, 200, 300, 380, 500, 620].map((x, i) => (
+      <circle
+        key={i}
+        cx={x}
+        cy={[150, 130, 170, 130, 150, 90][i]}
+        r="6"
+        fill="#0b7e63"
+        stroke="#eaf7f2"
+        strokeWidth="3"
+      />
     ))}
   </svg>
 );
@@ -40,7 +58,9 @@ const Dashboard: React.FC = () => {
           <div className="db-brand-name">BRIGHTNEST</div>
         </div>
         <nav className="db-nav">
-          <a href="#" className="active">Home</a>
+          <a href="#" className="active">
+            Home
+          </a>
           <a href="#">Blogs</a>
           <a href="#">Gamification</a>
           <a href="#">First aid</a>
@@ -74,9 +94,11 @@ const Dashboard: React.FC = () => {
                 <div>Daily Walking</div>
                 <div className="db-chip">Weekly ▾</div>
               </div>
-              <div className="db-chart"><LineChart /></div>
+              <div className="db-chart">
+                <LineChart />
+              </div>
               <div className="db-week">
-                {['Mon','Tue','Wed','Thu','Fri','Sat','Sun'].map(d => (
+                {["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map((d) => (
                   <span key={d}>{d}</span>
                 ))}
               </div>
@@ -84,23 +106,47 @@ const Dashboard: React.FC = () => {
 
             <div className="db-cards">
               <div className="db-card">
-                <div className="db-card-head"><div className="db-card-ico">🏃</div><div><div>Cyberling Hero</div><small>10 km / week</small></div></div>
+                <div className="db-card-head">
+                  <div className="db-card-ico">🏃</div>
+                  <div>
+                    <div>Cyberling Hero</div>
+                    <small>10 km / week</small>
+                  </div>
+                </div>
                 <div className="db-progress">
-                  <div className="db-progress-bar"><div className="db-progress-fill" style={{width:'55%'}}/></div>
+                  <div className="db-progress-bar">
+                    <div className="db-progress-fill" style={{ width: "55%" }} />
+                  </div>
                 </div>
                 <div className="db-target">Target: 10km</div>
               </div>
               <div className="db-card">
-                <div className="db-card-head"><div className="db-card-ico">🏃‍♀️</div><div><div>Daily Running</div><small>5 km / week</small></div></div>
+                <div className="db-card-head">
+                  <div className="db-card-ico">🏃‍♀️</div>
+                  <div>
+                    <div>Daily Running</div>
+                    <small>5 km / week</small>
+                  </div>
+                </div>
                 <div className="db-progress">
-                  <div className="db-progress-bar"><div className="db-progress-fill" style={{width:'75%'}}/></div>
+                  <div className="db-progress-bar">
+                    <div className="db-progress-fill" style={{ width: "75%" }} />
+                  </div>
                 </div>
                 <div className="db-target">Target: 5km/ week</div>
               </div>
               <div className="db-card">
-                <div className="db-card-head"><div className="db-card-ico">👣</div><div><div>Daily Steps</div><small>10000 steps / week</small></div></div>
+                <div className="db-card-head">
+                  <div className="db-card-ico">👣</div>
+                  <div>
+                    <div>Daily Steps</div>
+                    <small>10000 steps / week</small>
+                  </div>
+                </div>
                 <div className="db-progress">
-                  <div className="db-progress-bar"><div className="db-progress-fill" style={{width:'66%'}}/></div>
+                  <div className="db-progress-bar">
+                    <div className="db-progress-fill" style={{ width: "66%" }} />
+                  </div>
                 </div>
                 <div className="db-target">Target: 10000/week</div>
               </div>
@@ -138,7 +184,9 @@ const Dashboard: React.FC = () => {
           </div>
           <div className="db-gauge">
             <div className="db-gauge-title">Weight loss Goal</div>
-            <div><strong>Loss:</strong> 5kg / Month</div>
+            <div>
+              <strong>Loss:</strong> 5kg / Month
+            </div>
             <Gauge />
           </div>
         </aside>
@@ -148,4 +196,3 @@ const Dashboard: React.FC = () => {
 };
 
 export default Dashboard;
-

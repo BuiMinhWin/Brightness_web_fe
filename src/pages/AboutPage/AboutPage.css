@@ -1,0 +1,273 @@
+/* Page background */
+.about-page {
+  background: linear-gradient(180deg, #8bd3b8 0%, #bfe8d6 50%, #f2f8d0 100%);
+  color: #022c3c;
+}
+
+/* Header */
+.about-header {
+  position: relative;
+  padding: 18px 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.about-brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.about-logo {
+  width: 40px;
+  height: 40px;
+  background: radial-gradient(circle at 50% 50%, #e2f043 20%, #05644c 75%);
+  border-radius: 50%;
+  box-shadow: inset 0 0 0 3px #095747;
+}
+.about-brand-text {
+  font-family: "Lexend Tera", sans-serif;
+  letter-spacing: -1px;
+  color: #fff;
+  font-weight: 700;
+}
+.about-nav {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+}
+.about-nav-item {
+  color: #fff;
+  text-decoration: none;
+  font-weight: 600;
+}
+.about-nav-item.active {
+  color: #fed700;
+}
+.about-actions {
+  display: flex;
+  gap: 10px;
+}
+.about-icon {
+  width: 18px;
+  height: 18px;
+  border: 2px solid #fff;
+  border-radius: 50%;
+  opacity: 0.9;
+}
+
+/* Hero section */
+.about-hero {
+  position: relative;
+  display: grid;
+  grid-template-columns: 1.1fr 1fr;
+  align-items: center;
+  gap: 16px;
+  padding: 40px 24px 60px;
+}
+.about-hero:before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, #0e7f66, #9be0c7 70%);
+  z-index: -1;
+}
+.about-hero-text {
+  color: #fff;
+  max-width: 640px;
+}
+.about-hero-title {
+  font-family: "Pacifico", cursive;
+  font-size: 44px;
+  margin: 0 0 10px;
+}
+.about-hero-sub {
+  font-size: 16px;
+  opacity: 0.95;
+}
+.about-hero-visual {
+  display: flex;
+  justify-content: center;
+}
+.about-hero-circle {
+  width: 420px;
+  height: 420px;
+  background: url("https://images.unsplash.com/photo-1558611848-73f7eb4001a1?q=80&w=1200&auto=format&fit=crop")
+    center/cover no-repeat;
+  border-radius: 50%;
+  box-shadow: -24px 18px 0 0 rgba(6, 100, 85, 0.35);
+}
+
+/* Quote section */
+.about-quote {
+  display: grid;
+  grid-template-columns: 1fr 1.4fr;
+  align-items: center;
+  gap: 24px;
+  padding: 50px 24px;
+}
+.about-quote-visual {
+  position: relative;
+  height: 260px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.about-quote-circle {
+  width: 240px;
+  height: 240px;
+  border-radius: 50%;
+  background: url("https://images.unsplash.com/photo-1583454110551-21f2fa2a5d79?q=80&w=1080&auto=format&fit=crop")
+    center/cover no-repeat;
+  box-shadow: 0 10px 0 0 #f08941;
+}
+.about-quote-blob {
+  position: absolute;
+  width: 160px;
+  height: 100px;
+  background: #f08941;
+  border-bottom-right-radius: 60px;
+  border-top-left-radius: 60px;
+  left: 0;
+  bottom: -18px;
+  transform: rotate(10deg);
+}
+.about-quote-title {
+  color: #0a6a56;
+  font-weight: 800;
+  font-size: 20px;
+}
+.about-quote-desc {
+  color: #022c3c;
+  line-height: 1.6;
+}
+
+/* Standout */
+.about-standout {
+  background: linear-gradient(180deg, #dce642 0%, #ffaf72 100%);
+  padding: 48px 24px;
+  text-align: center;
+}
+.about-standout-head {
+  position: relative;
+  display: inline-block;
+}
+.about-standout-title {
+  color: #fff;
+  font-weight: 900;
+  letter-spacing: 0.06em;
+}
+.about-standout-kicker {
+  color: #005a4d;
+  font-weight: 900;
+  font-size: 40px;
+  transform: rotate(-8deg);
+  text-shadow: 0 6px 0 rgba(0, 0, 0, 0.15);
+}
+.about-cards {
+  margin-top: 26px;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 18px;
+  max-width: 980px;
+  margin-left: auto;
+  margin-right: auto;
+}
+.about-card {
+  background: #fff;
+  border-radius: 24px;
+  padding: 26px;
+  display: grid;
+  place-items: center;
+  gap: 10px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+}
+.about-card-title {
+  color: #ff7b17;
+  font-weight: 800;
+  letter-spacing: 0.03em;
+}
+
+/* Closing band */
+.about-band {
+  display: grid;
+  grid-template-columns: 1.2fr 1fr;
+  gap: 24px;
+  align-items: center;
+  padding: 48px 24px;
+  background: linear-gradient(90deg, #8bd3b8, #bfe8d6);
+}
+.about-band-title {
+  color: #ff7b17;
+  font-weight: 900;
+  font-size: 22px;
+  margin: 0 0 10px;
+}
+.about-band-desc {
+  color: #022c3c;
+  line-height: 1.8;
+}
+.about-band-visual {
+  height: 320px;
+  border-radius: 18px;
+  background: url("https://images.unsplash.com/photo-1541532713592-79a0317b6b77?q=80&w=1200&auto=format&fit=crop")
+    center/cover no-repeat;
+}
+
+/* Footer */
+.about-footer {
+  background: #05644c;
+  color: #fff;
+  padding: 26px 0;
+}
+.about-footer-inner {
+  max-width: 980px;
+  margin: 0 auto;
+  padding: 0 24px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  align-items: center;
+}
+.about-footer-brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.about-brand-text.light {
+  color: #fff;
+}
+.about-footer-contacts {
+  display: grid;
+  grid-auto-flow: column;
+  gap: 20px;
+  justify-content: end;
+}
+.about-contact-title {
+  font-weight: 800;
+  margin-bottom: 6px;
+}
+.about-contact-item {
+  opacity: 0.9;
+}
+
+@media (max-width: 900px) {
+  .about-hero {
+    grid-template-columns: 1fr;
+    text-align: center;
+  }
+  .about-quote {
+    grid-template-columns: 1fr;
+  }
+  .about-cards {
+    grid-template-columns: 1fr;
+  }
+  .about-band {
+    grid-template-columns: 1fr;
+  }
+  .about-footer-inner {
+    grid-template-columns: 1fr;
+    gap: 18px;
+  }
+  .about-footer-contacts {
+    justify-content: start;
+  }
+}

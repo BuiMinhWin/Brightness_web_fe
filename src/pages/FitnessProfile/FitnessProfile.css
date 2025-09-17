@@ -1,7 +1,7 @@
 /* Page background */
 .fitness-profile-page {
   min-height: 100vh;
-  background: linear-gradient(180deg, #027156 0%, #8EE0C3 36%, #C7F1E3 100%);
+  background: linear-gradient(180deg, #027156 0%, #8ee0c3 36%, #c7f1e3 100%);
 }
 
 .fp-container {
@@ -17,11 +17,11 @@
   color: #ffffff;
 }
 .fp-title {
-  font-family: 'Pacifico', cursive;
+  font-family: "Pacifico", cursive;
   font-size: 44px;
   line-height: 1.1;
   margin: 0 0 12px 0;
-  text-shadow: 0 2px 0 rgba(0,0,0,0.06);
+  text-shadow: 0 2px 0 rgba(0, 0, 0, 0.06);
 }
 .fp-subtitle {
   font-size: 16px;
@@ -34,12 +34,12 @@
 .fp-card {
   background: #ffffff;
   border-radius: 16px;
-  box-shadow: 0 6px 24px rgba(0,0,0,0.08);
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.08);
   overflow: hidden;
   margin-top: 20px;
 }
 .fp-card-header {
-  background: linear-gradient(90deg, #027156 0%, #3CB28E 55%, #6AD1B0 100%);
+  background: linear-gradient(90deg, #027156 0%, #3cb28e 55%, #6ad1b0 100%);
   color: #ffffff;
   padding: 14px 18px;
   font-weight: 700;
@@ -47,7 +47,9 @@
   align-items: center;
   gap: 10px;
 }
-.fp-card-body { padding: 18px; }
+.fp-card-body {
+  padding: 18px;
+}
 
 /* Form grid */
 .fp-grid {
@@ -55,25 +57,39 @@
   grid-template-columns: 1fr 1fr;
   gap: 14px;
 }
-.fp-row { display: grid; gap: 14px; }
+.fp-row {
+  display: grid;
+  gap: 14px;
+}
 
 @media (max-width: 768px) {
-  .fp-grid { grid-template-columns: 1fr; }
+  .fp-grid {
+    grid-template-columns: 1fr;
+  }
 }
 
 /* Inputs */
-.fp-label { font-size: 13px; font-weight: 700; color: #0b3d33; margin-bottom: 6px; display: block; }
+.fp-label {
+  font-size: 13px;
+  font-weight: 700;
+  color: #0b3d33;
+  margin-bottom: 6px;
+  display: block;
+}
 .fp-input,
 .fp-select,
 .fp-textarea {
   width: 100%;
   background: #ffffff;
-  border: 1px solid #D7E6E2;
+  border: 1px solid #d7e6e2;
   border-radius: 10px;
   padding: 10px 12px;
   font-size: 14px;
 }
-.fp-textarea { min-height: 96px; resize: vertical; }
+.fp-textarea {
+  min-height: 96px;
+  resize: vertical;
+}
 
 /* Segmented control */
 .fp-segment {
@@ -82,7 +98,7 @@
   gap: 10px;
 }
 .fp-pill {
-  border: 1px solid #D7E6E2;
+  border: 1px solid #d7e6e2;
   background: #fff;
   border-radius: 24px;
   padding: 8px 14px;
@@ -103,7 +119,7 @@
   gap: 10px;
 }
 .fp-activity-item {
-  border: 1px solid #D7E6E2;
+  border: 1px solid #d7e6e2;
   background: #fff;
   border-radius: 10px;
   padding: 12px;
@@ -111,26 +127,42 @@
   gap: 4px;
   cursor: pointer;
 }
-.fp-activity-item.is-active { border-color: #0a6a56; box-shadow: 0 0 0 2px rgba(10,106,86,0.1) inset; }
-.fp-activity-title { font-weight: 700; }
-.fp-activity-desc { font-size: 12px; color: #53756C; }
+.fp-activity-item.is-active {
+  border-color: #0a6a56;
+  box-shadow: 0 0 0 2px rgba(10, 106, 86, 0.1) inset;
+}
+.fp-activity-title {
+  font-weight: 700;
+}
+.fp-activity-desc {
+  font-size: 12px;
+  color: #53756c;
+}
 
 /* Days */
-.fp-days { display: grid; grid-auto-flow: column; gap: 8px; overflow:auto; }
+.fp-days {
+  display: grid;
+  grid-auto-flow: column;
+  gap: 8px;
+  overflow: auto;
+}
 
 /* Upload */
 .fp-upload {
-  border: 2px dashed #D7E6E2;
+  border: 2px dashed #d7e6e2;
   border-radius: 12px;
   padding: 18px;
   text-align: center;
-  color: #53756C;
+  color: #53756c;
 }
 
 /* CTA */
-.fp-cta-wrap { text-align: center; padding: 26px 0 10px; }
+.fp-cta-wrap {
+  text-align: center;
+  padding: 26px 0 10px;
+}
 .fp-cta {
-  background: linear-gradient(90deg, #066555 0%, #E2EF25 100%);
+  background: linear-gradient(90deg, #066555 0%, #e2ef25 100%);
   color: #062c24;
   padding: 14px 28px;
   border-radius: 999px;
@@ -139,4 +171,3 @@
   cursor: pointer;
   font-size: 18px;
 }
-

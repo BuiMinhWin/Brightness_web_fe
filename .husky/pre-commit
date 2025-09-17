@@ -1,0 +1,4 @@
+#!/usr/bin/env sh
+. ".git/hooks/husky.sh"
+
+npx --no-install lint-staged

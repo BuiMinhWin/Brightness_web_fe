@@ -6,7 +6,10 @@ const Profile: React.FC = () => {
     <div className="pf-page">
       {/* Topbar */}
       <div className="pf-topbar">
-        <div className="pf-brand"><div className="pf-logo"/><div className="pf-brand-name">BRIGHTNEST</div></div>
+        <div className="pf-brand">
+          <div className="pf-logo" />
+          <div className="pf-brand-name">BRIGHTNEST</div>
+        </div>
         <nav className="pf-nav">
           <a href="#">Home</a>
           <a href="#">Blogs</a>
@@ -14,14 +17,19 @@ const Profile: React.FC = () => {
           <a href="#">First aid</a>
           <a href="#">About</a>
         </nav>
-        <div className="pf-actions"><div className="pf-circle"/><div className="pf-circle"/></div>
+        <div className="pf-actions">
+          <div className="pf-circle" />
+          <div className="pf-circle" />
+        </div>
       </div>
 
       <div className="pf-wrap">
         {/* Left rail */}
         <aside className="pf-rail">
-          <div style={{height:12}}/>
-          {Array.from({length:5}).map((_,i)=> <div className="pf-ico" key={i}/>) }
+          <div style={{ height: 12 }} />
+          {Array.from({ length: 5 }).map((_, i) => (
+            <div className="pf-ico" key={i} />
+          ))}
         </aside>
 
         {/* Left profile column */}
@@ -89,15 +97,18 @@ const Profile: React.FC = () => {
             <div className="pf-post-date">hh:mm, dd/mm/yyyy</div>
           </div>
           <div className="pf-post-body">
-            Lorem ipsum dolor sit amet consecte tur adipiscing elit semper dalaracc lacus vel facilisis volutpat est velitolm.
-            Lorem ipsum dolor sit amet consecte tur adipiscing elit semper dalaracc lacus vel facilisis volutpat est velitolm.
-            Lorem ipsum dolor sit amet consecte tur adipiscing elit semper dalaracc lacus vel facilisis volutpat est velitolm.
+            Lorem ipsum dolor sit amet consecte tur adipiscing elit semper dalaracc lacus vel
+            facilisis volutpat est velitolm. Lorem ipsum dolor sit amet consecte tur adipiscing elit
+            semper dalaracc lacus vel facilisis volutpat est velitolm. Lorem ipsum dolor sit amet
+            consecte tur adipiscing elit semper dalaracc lacus vel facilisis volutpat est velitolm.
           </div>
           <div className="pf-grid">
-            <div className="pf-ph" /><div className="pf-ph" />
-            <div className="pf-ph" /><div className="pf-ph" />
+            <div className="pf-ph" />
+            <div className="pf-ph" />
+            <div className="pf-ph" />
+            <div className="pf-ph" />
           </div>
-          <div className="pf-post-actions">💬 28  🔁 15  🤍 31</div>
+          <div className="pf-post-actions">💬 28 🔁 15 🤍 31</div>
           <div className="pf-hr" />
         </aside>
       </div>
@@ -106,4 +117,3 @@ const Profile: React.FC = () => {
 };
 
 export default Profile;
-

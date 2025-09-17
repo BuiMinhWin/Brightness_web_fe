@@ -17,14 +17,19 @@ const Connect: React.FC = () => {
           <a href="#">First aid</a>
           <a href="#">About</a>
         </nav>
-        <div className="connect-actions"><div className="connect-circle"/><div className="connect-circle"/></div>
+        <div className="connect-actions">
+          <div className="connect-circle" />
+          <div className="connect-circle" />
+        </div>
       </div>
 
       <div className="connect-wrap">
         {/* Left rail */}
         <aside className="connect-rail">
-          <div style={{height:12}}/>
-          {Array.from({length:4}).map((_,i) => <div className="connect-ico" key={i}/>) }
+          <div style={{ height: 12 }} />
+          {Array.from({ length: 4 }).map((_, i) => (
+            <div className="connect-ico" key={i} />
+          ))}
         </aside>
 
         {/* Main area */}
@@ -51,7 +56,7 @@ const Connect: React.FC = () => {
             <div className="friends-title">Close Friends</div>
             <div className="friends-add">+</div>
           </div>
-          {[1,2,3,4].map(i => (
+          {[1, 2, 3, 4].map((i) => (
             <div className="friend-item" key={i}>
               <div className="friend-avatar" />
               <div>
@@ -76,4 +81,3 @@ const Connect: React.FC = () => {
 };
 
 export default Connect;
-

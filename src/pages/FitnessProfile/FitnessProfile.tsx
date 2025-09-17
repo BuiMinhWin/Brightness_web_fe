@@ -12,9 +12,7 @@ const FitnessProfile: React.FC = () => {
   const [daysSel, setDaysSel] = useState<string[]>(["Mon", "Wed", "Fri"]);
 
   const toggleDay = (d: string) =>
-    setDaysSel((cur) =>
-      cur.includes(d) ? cur.filter((x) => x !== d) : [...cur, d]
-    );
+    setDaysSel((cur) => (cur.includes(d) ? cur.filter((x) => x !== d) : [...cur, d]));
 
   return (
     <div className="fitness-profile-page">
@@ -22,8 +20,8 @@ const FitnessProfile: React.FC = () => {
         <section className="fp-hero">
           <h1 className="fp-title">Create Your Fitness Profile</h1>
           <p className="fp-subtitle">
-            Tell us about yourself so we can create a personalized workout and
-            nutrition plan tailored to your unique needs and goals.
+            Tell us about yourself so we can create a personalized workout and nutrition plan
+            tailored to your unique needs and goals.
           </p>
         </section>
 
@@ -102,9 +100,7 @@ const FitnessProfile: React.FC = () => {
                 ].map((a) => (
                   <div
                     key={a.t}
-                    className={`fp-activity-item ${
-                      activity === a.t ? "is-active" : ""
-                    }`}
+                    className={`fp-activity-item ${activity === a.t ? "is-active" : ""}`}
                     onClick={() => setActivity(a.t as any)}
                   >
                     <div className="fp-activity-title">{a.t}</div>
@@ -182,4 +178,3 @@ const FitnessProfile: React.FC = () => {
 };
 
 export default FitnessProfile;
-

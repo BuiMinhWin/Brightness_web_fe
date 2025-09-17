@@ -2,13 +2,18 @@
 .homepage {
   width: 100%;
   min-height: 100vh;
-  background: linear-gradient(352deg, rgba(91, 193, 127, 0.30) 10.49%, rgba(174, 255, 196, 0.30) 46.54%, rgba(0, 126, 133, 0.30) 80.3%);
+  background: linear-gradient(
+    352deg,
+    rgba(91, 193, 127, 0.3) 10.49%,
+    rgba(174, 255, 196, 0.3) 46.54%,
+    rgba(0, 126, 133, 0.3) 80.3%
+  );
   overflow-x: hidden;
 }
 
 /* Homepage header */
 .homepage-header {
-  background: #E0FFDF;
+  background: #e0ffdf;
   padding: 24px 0;
   position: relative;
 }
@@ -35,7 +40,7 @@
 
 .homepage-brand {
   color: white;
-  font-family: 'Lexend Tera', sans-serif;
+  font-family: "Lexend Tera", sans-serif;
   font-size: 26px;
   font-weight: 600;
   letter-spacing: -2.34px;
@@ -50,7 +55,7 @@
 
 .nav-item {
   color: black;
-  font-family: 'Lexend Tera', sans-serif;
+  font-family: "Lexend Tera", sans-serif;
   font-size: 20px;
   font-weight: 400;
   letter-spacing: -2.8px;
@@ -64,7 +69,7 @@
 }
 
 .nav-item.active::after {
-  content: '';
+  content: "";
   position: absolute;
   bottom: -6px;
   left: 8px;
@@ -97,7 +102,7 @@
 }
 
 .achievement-card {
-  background: #AEFFC4;
+  background: #aeffc4;
   border-radius: 20px;
   padding: 30px;
   max-width: 600px;
@@ -106,7 +111,7 @@
 
 .achievement-title {
   color: black;
-  font-family: 'DM Sans', sans-serif;
+  font-family: "DM Sans", sans-serif;
   font-size: 24px;
   font-weight: 700;
   margin: 0 0 20px 0;
@@ -114,7 +119,7 @@
 
 .achievement-subtitle {
   color: #666;
-  font-family: 'DM Sans', sans-serif;
+  font-family: "DM Sans", sans-serif;
   font-size: 16px;
   margin: 0 0 30px 0;
 }
@@ -131,7 +136,7 @@
 
 .stat-value {
   color: black;
-  font-family: 'DM Sans', sans-serif;
+  font-family: "DM Sans", sans-serif;
   font-size: 32px;
   font-weight: 700;
   margin: 0;
@@ -139,7 +144,7 @@
 
 .stat-label {
   color: black;
-  font-family: 'DM Sans', sans-serif;
+  font-family: "DM Sans", sans-serif;
   font-size: 16px;
   font-weight: 400;
   margin: 5px 0 0 0;
@@ -147,7 +152,7 @@
 
 .stat-sublabel {
   color: #666;
-  font-family: 'DM Sans', sans-serif;
+  font-family: "DM Sans", sans-serif;
   font-size: 12px;
   margin: 0;
 }
@@ -175,7 +180,7 @@
 
 .mood-title {
   color: white;
-  font-family: 'Pacifico', cursive;
+  font-family: "Pacifico", cursive;
   font-size: 80px;
   margin: 0 0 50px 0;
 }
@@ -191,7 +196,7 @@
   width: 113px;
   height: 113px;
   border-radius: 50%;
-  background: #E5F249;
+  background: #e5f249;
   border: 2px solid black;
   display: flex;
   align-items: center;
@@ -230,7 +235,7 @@
 .whats-new-title {
   color: white;
   text-align: center;
-  font-family: 'DM Sans', sans-serif;
+  font-family: "DM Sans", sans-serif;
   font-size: 48px;
   font-weight: 700;
   margin: 0 0 50px 0;
@@ -254,27 +259,27 @@
   width: 60px;
   height: 60px;
   border-radius: 50%;
-  background: #4B1414;
+  background: #4b1414;
   margin-bottom: 15px;
 }
 
 .article-author {
   color: black;
-  font-family: 'DM Sans', sans-serif;
+  font-family: "DM Sans", sans-serif;
   font-size: 16px;
   font-weight: 700;
   margin: 0 0 5px 0;
 }
 
 .article-rating {
-  color: #FED700;
+  color: #fed700;
   font-size: 14px;
   margin: 0 0 15px 0;
 }
 
 .article-content {
   color: black;
-  font-family: 'DM Sans', sans-serif;
+  font-family: "DM Sans", sans-serif;
   font-size: 14px;
   font-weight: 400;
   line-height: 1.5;
@@ -282,8 +287,8 @@
 }
 
 .article-link {
-  color: #FF7B17;
-  font-family: 'DM Sans', sans-serif;
+  color: #ff7b17;
+  font-family: "DM Sans", sans-serif;
   font-size: 14px;
   font-weight: 700;
   text-decoration: none;
@@ -305,7 +310,7 @@
 }
 
 .carousel-arrow::before {
-  content: '';
+  content: "";
   position: absolute;
   top: -5px;
   left: 0;
@@ -335,8 +340,8 @@
   background: #095747;
   border-radius: 50px;
   padding: 20px 40px;
-  color: #FED700;
-  font-family: 'DM Sans', sans-serif;
+  color: #fed700;
+  font-family: "DM Sans", sans-serif;
   font-size: 40px;
   font-weight: 700;
   z-index: 2;
@@ -353,11 +358,11 @@
 }
 
 .qa-question {
-  background: #AEFFC4;
+  background: #aeffc4;
   border-radius: 102px;
   padding: 17px 30px;
-  color: #007E85;
-  font-family: 'DM Sans', sans-serif;
+  color: #007e85;
+  font-family: "DM Sans", sans-serif;
   font-size: 24px;
   font-weight: 700;
   text-align: center;
@@ -381,7 +386,11 @@
 .top-performance-section {
   position: relative;
   padding: 100px 0;
-  background: linear-gradient(73deg, rgba(254, 215, 0, 0.50) -12.82%, rgba(0, 147, 185, 0.50) 108.79%);
+  background: linear-gradient(
+    73deg,
+    rgba(254, 215, 0, 0.5) -12.82%,
+    rgba(0, 147, 185, 0.5) 108.79%
+  );
   border-radius: 100px;
   margin: 50px 0;
 }
@@ -389,7 +398,7 @@
 .top-performance-title {
   color: white;
   text-align: center;
-  font-family: 'DM Sans', sans-serif;
+  font-family: "DM Sans", sans-serif;
   font-size: 48px;
   font-weight: 700;
   margin: 0 0 50px 0;
@@ -415,7 +424,7 @@
 }
 
 .performance-card.featured {
-  background: #FF9C50;
+  background: #ff9c50;
   color: white;
   width: 344px;
   transform: scale(1.1);
@@ -425,7 +434,7 @@
   width: 265px;
   height: 265px;
   border-radius: 50%;
-  background: #4B1414;
+  background: #4b1414;
   margin: -50px auto 20px auto;
 }
 
@@ -435,7 +444,7 @@
 }
 
 .performance-name {
-  font-family: 'DM Sans', sans-serif;
+  font-family: "DM Sans", sans-serif;
   font-size: 24px;
   font-weight: 700;
   color: black;
@@ -447,19 +456,19 @@
 }
 
 .performance-title {
-  font-family: 'DM Sans', sans-serif;
+  font-family: "DM Sans", sans-serif;
   font-size: 48px;
   font-weight: 700;
-  color: #007E85;
+  color: #007e85;
   margin: 0 0 20px 0;
 }
 
 .performance-card.featured .performance-title {
-  color: #022C3C;
+  color: #022c3c;
 }
 
 .performance-description {
-  font-family: 'DM Sans', sans-serif;
+  font-family: "DM Sans", sans-serif;
   font-size: 18px;
   font-weight: 400;
   line-height: 30px;
@@ -472,11 +481,11 @@
 }
 
 .view-more-btn {
-  background: #AEFFC4;
+  background: #aeffc4;
   border-radius: 82.5px;
   padding: 15px 40px;
   color: black;
-  font-family: 'DM Sans', sans-serif;
+  font-family: "DM Sans", sans-serif;
   font-size: 24px;
   font-weight: 700;
   border: none;
@@ -506,7 +515,7 @@
 
 .improve-title {
   color: #046753;
-  font-family: 'DM Sans', sans-serif;
+  font-family: "DM Sans", sans-serif;
   font-size: 48px;
   font-weight: 700;
   line-height: 46px;
@@ -515,7 +524,7 @@
 
 .improve-subtitle {
   color: black;
-  font-family: 'DM Sans', sans-serif;
+  font-family: "DM Sans", sans-serif;
   font-size: 24px;
   font-weight: 700;
   margin: 0 0 30px 0;
@@ -523,7 +532,7 @@
 
 .improve-description {
   color: black;
-  font-family: 'DM Sans', sans-serif;
+  font-family: "DM Sans", sans-serif;
   font-size: 18px;
   font-weight: 400;
   line-height: 30px;
@@ -531,11 +540,11 @@
 }
 
 .improve-cta {
-  background: linear-gradient(90deg, #076553 0%, #E2EF25 100%);
+  background: linear-gradient(90deg, #076553 0%, #e2ef25 100%);
   border-radius: 82.5px;
   padding: 16px 40px;
   color: white;
-  font-family: 'DM Sans', sans-serif;
+  font-family: "DM Sans", sans-serif;
   font-size: 40px;
   font-weight: 700;
   border: none;
@@ -557,7 +566,7 @@
 }
 
 .improve-bg-yellow {
-  background: #DCF02B;
+  background: #dcf02b;
   border-radius: 50px;
   width: 315px;
   height: 440px;
@@ -568,7 +577,7 @@
 
 /* Homepage footer */
 .homepage-footer {
-  background: #05644C;
+  background: #05644c;
   padding: 63px 0;
   color: white;
 }
@@ -596,7 +605,7 @@
 
 .homepage-footer-brand {
   color: white;
-  font-family: 'Lexend Tera', sans-serif;
+  font-family: "Lexend Tera", sans-serif;
   font-size: 26px;
   font-weight: 600;
   letter-spacing: -2.34px;
@@ -609,7 +618,7 @@
 
 .homepage-footer-contact-title {
   color: white;
-  font-family: 'DM Sans', sans-serif;
+  font-family: "DM Sans", sans-serif;
   font-size: 20px;
   font-weight: 700;
   line-height: 18px;
@@ -625,7 +634,7 @@
 
 .homepage-footer-contact-text {
   color: white;
-  font-family: 'DM Sans', sans-serif;
+  font-family: "DM Sans", sans-serif;
   font-size: 16px;
   font-weight: 700;
   line-height: 18px;
@@ -646,30 +655,30 @@
   .header {
     padding: 20px 40px;
   }
-  
+
   .hero-title {
     font-size: 60px;
   }
-  
+
   .about-logo {
     width: 400px;
     height: 400px;
   }
-  
+
   .about-title {
     font-size: 40px;
   }
-  
+
   .about-description {
     font-size: 28px;
   }
-  
+
   .service-item {
     grid-template-columns: 1fr;
     text-align: center;
     gap: 40px;
   }
-  
+
   .service-item.reverse {
     grid-template-columns: 1fr;
   }
@@ -681,89 +690,89 @@
     flex-direction: column;
     gap: 20px;
   }
-  
+
   .logo-container {
     flex-direction: column;
     text-align: center;
   }
-  
+
   .brand-text {
     font-size: 20px;
   }
-  
+
   .auth-buttons {
     gap: 20px;
   }
-  
+
   .hero-title {
     font-size: 40px;
     padding: 0 20px;
   }
-  
+
   .emoji-group {
     gap: 20px;
     flex-wrap: wrap;
   }
-  
+
   .emoji-face {
     width: 80px;
     height: 80px;
   }
-  
+
   .fox-illustration {
     width: 300px;
     height: 300px;
     left: 50%;
     transform: translateX(-50%) rotate(-10.633deg);
   }
-  
+
   .about-logo {
     width: 300px;
     height: 300px;
   }
-  
+
   .about-title {
     font-size: 32px;
   }
-  
+
   .about-description {
     font-size: 20px;
     line-height: 30px;
   }
-  
+
   .vietnamese-tagline {
     font-size: 24px;
   }
-  
+
   .services-title {
     font-size: 32px;
   }
-  
+
   .service-title {
     font-size: 28px;
   }
-  
+
   .service-description {
     font-size: 18px;
     line-height: 28px;
   }
-  
+
   .gamification-icons {
     grid-template-columns: 1fr;
     gap: 20px;
     justify-items: center;
   }
-  
+
   .gamification-item {
     width: 150px;
     height: 150px;
   }
-  
+
   .chat-bubbles {
     flex-direction: column;
     gap: 40px;
   }
-  
+
   .chat-avatar {
     position: relative;
     left: auto;
@@ -771,12 +780,12 @@
     transform: none;
     margin-bottom: 15px;
   }
-  
+
   .cta-title {
     font-size: 32px;
     padding: 0 20px;
   }
-  
+
   .footer-content {
     grid-template-columns: 1fr;
     text-align: center;

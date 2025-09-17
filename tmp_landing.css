@@ -1,11 +1,28 @@
 /* Global base styles */
-html, body, #root { height: 100%; margin: 0; padding: 0; }
-* { box-sizing: border-box; }
-body { 
-  margin: 0; 
-  font-family: 'DM Sans', ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif; 
-  color: #111827; 
-  background: #ffffff; 
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+}
+* {
+  box-sizing: border-box;
+}
+body {
+  margin: 0;
+  font-family:
+    "DM Sans",
+    ui-sans-serif,
+    system-ui,
+    -apple-system,
+    Segoe UI,
+    Roboto,
+    Helvetica,
+    Arial,
+    sans-serif;
+  color: #111827;
+  background: #ffffff;
   line-height: 1.5;
 }
 
@@ -40,15 +57,19 @@ body {
 }
 
 .brand-text {
-  font-family: 'Lexend Tera', sans-serif;
+  font-family: "Lexend Tera", sans-serif;
   font-size: 26px;
   font-weight: 600;
   letter-spacing: -2.34px;
   text-transform: capitalize;
 }
 
-.brand-bright { color: #FED700; }
-.brand-nest { color: #095747; }
+.brand-bright {
+  color: #fed700;
+}
+.brand-nest {
+  color: #095747;
+}
 
 .auth-buttons {
   display: flex;
@@ -59,7 +80,7 @@ body {
 .login-btn {
   color: #095747;
   text-align: center;
-  font-family: 'Lexend Tera', sans-serif;
+  font-family: "Lexend Tera", sans-serif;
   font-size: 20px;
   font-weight: 400;
   letter-spacing: -2.8px;
@@ -75,7 +96,7 @@ body {
   background: #066555;
   color: #fff;
   text-align: center;
-  font-family: 'Lexend Tera', sans-serif;
+  font-family: "Lexend Tera", sans-serif;
   font-size: 20px;
   font-weight: 400;
   letter-spacing: -2.8px;
@@ -88,7 +109,7 @@ body {
 .hero-section {
   position: relative;
   height: 815px;
-  background: linear-gradient(7deg, rgba(211, 212, 47, 0.60) 0.84%, rgba(80, 191, 165, 0.60) 98.93%);
+  background: linear-gradient(7deg, rgba(211, 212, 47, 0.6) 0.84%, rgba(80, 191, 165, 0.6) 98.93%);
   overflow: hidden;
 }
 
@@ -110,7 +131,7 @@ body {
 
 .hero-title {
   color: white;
-  font-family: 'Pacifico', cursive;
+  font-family: "Pacifico", cursive;
   font-size: 80px;
   margin: 0 0 50px 0;
   letter-spacing: 0em;
@@ -127,7 +148,7 @@ body {
   width: 113px;
   height: 113px;
   border-radius: 50%;
-  background: #E5F249;
+  background: #e5f249;
   border: 2px solid black;
   display: flex;
   align-items: center;
@@ -168,7 +189,7 @@ body {
 .about-section {
   position: relative;
   padding: 100px 0;
-  background: linear-gradient(113deg, rgba(208, 223, 0, 0.72) 23.72%, #FFAF72 87.59%);
+  background: linear-gradient(113deg, rgba(208, 223, 0, 0.72) 23.72%, #ffaf72 87.59%);
 }
 
 .about-content {
@@ -187,7 +208,7 @@ body {
 
 .about-title {
   color: #046753;
-  font-family: 'DM Sans', sans-serif;
+  font-family: "DM Sans", sans-serif;
   font-size: 55px;
   font-weight: 700;
   line-height: 46px;
@@ -196,7 +217,7 @@ body {
 
 .about-description {
   color: #066555;
-  font-family: 'DM Sans', sans-serif;
+  font-family: "DM Sans", sans-serif;
   font-size: 36px;
   font-weight: 700;
   line-height: 50px;
@@ -208,7 +229,7 @@ body {
 
 .vietnamese-tagline {
   color: #066555;
-  font-family: 'Pacifico', cursive;
+  font-family: "Pacifico", cursive;
   font-size: 40px;
   font-weight: 400;
   line-height: 50px;
@@ -218,13 +239,13 @@ body {
 /* Services section */
 .services-section {
   padding: 100px 0;
-  background: linear-gradient(113deg, rgba(208, 223, 0, 0.72) 23.72%, #FFAF72 87.59%);
+  background: linear-gradient(113deg, rgba(208, 223, 0, 0.72) 23.72%, #ffaf72 87.59%);
 }
 
 .services-title {
   color: #046753;
   text-align: center;
-  font-family: 'DM Sans', sans-serif;
+  font-family: "DM Sans", sans-serif;
   font-size: 48px;
   font-weight: 700;
   line-height: 46px;
@@ -256,7 +277,7 @@ body {
 
 .service-title {
   color: #066555;
-  font-family: 'DM Sans', sans-serif;
+  font-family: "DM Sans", sans-serif;
   font-size: 40px;
   font-weight: 700;
   line-height: 50px;
@@ -265,7 +286,7 @@ body {
 
 .service-description {
   color: #066555;
-  font-family: 'DM Sans', sans-serif;
+  font-family: "DM Sans", sans-serif;
   font-size: 24px;
   font-weight: 700;
   line-height: 35px;
@@ -305,8 +326,8 @@ body {
 }
 
 .gamification-title {
-  color: #FF7B17;
-  font-family: 'DM Sans', sans-serif;
+  color: #ff7b17;
+  font-family: "DM Sans", sans-serif;
   font-size: 20px;
   font-weight: 700;
   line-height: 35px;
@@ -329,7 +350,7 @@ body {
   height: 293px;
   border-radius: 50px;
   opacity: 0.74;
-  background: linear-gradient(98deg, #05644C -4.41%, #E2F043 105.95%);
+  background: linear-gradient(98deg, #05644c -4.41%, #e2f043 105.95%);
 }
 
 .chatbox-content {
@@ -342,7 +363,7 @@ body {
 
 .chatbox-title {
   color: #066555;
-  font-family: 'DM Sans', sans-serif;
+  font-family: "DM Sans", sans-serif;
   font-size: 40px;
   font-weight: 700;
   margin: 0 0 30px 0;
@@ -350,7 +371,7 @@ body {
 
 .chatbox-description {
   color: #066555;
-  font-family: 'DM Sans', sans-serif;
+  font-family: "DM Sans", sans-serif;
   font-size: 24px;
   font-weight: 700;
   line-height: 35px;
@@ -370,21 +391,25 @@ body {
   border-radius: 102px;
   padding: 17px 20px;
   color: #076553;
-  font-family: 'DM Sans', sans-serif;
+  font-family: "DM Sans", sans-serif;
   font-size: 20px;
   font-weight: 700;
   line-height: 34px;
   position: relative;
 }
 
-.chat-bubble.user1 { color: #076553; }
-.chat-bubble.user2 { color: #007E85; }
+.chat-bubble.user1 {
+  color: #076553;
+}
+.chat-bubble.user2 {
+  color: #007e85;
+}
 
 .chat-avatar {
   width: 73px;
   height: 73px;
   border-radius: 50%;
-  background: #4B1414;
+  background: #4b1414;
   position: absolute;
   top: 50%;
   transform: translateY(-50%);
@@ -402,12 +427,12 @@ body {
 .cta-section {
   padding: 100px 0;
   text-align: center;
-  background: linear-gradient(113deg, rgba(208, 223, 0, 0.72) 23.72%, #FFAF72 87.59%);
+  background: linear-gradient(113deg, rgba(208, 223, 0, 0.72) 23.72%, #ffaf72 87.59%);
 }
 
 .cta-title {
   color: #046753;
-  font-family: 'DM Sans', sans-serif;
+  font-family: "DM Sans", sans-serif;
   font-size: 48px;
   font-weight: 700;
   line-height: 46px;
@@ -420,9 +445,9 @@ body {
 .cta-button {
   padding: 16px 32px;
   border-radius: 17px;
-  background: linear-gradient(90deg, #076553 0%, #E2EF25 100%);
+  background: linear-gradient(90deg, #076553 0%, #e2ef25 100%);
   color: white;
-  font-family: 'DM Sans', sans-serif;
+  font-family: "DM Sans", sans-serif;
   font-size: 32px;
   font-weight: 700;
   line-height: 34px;
@@ -432,7 +457,7 @@ body {
 
 /* Footer */
 .footer {
-  background: #05644C;
+  background: #05644c;
   padding: 55px 0;
   color: white;
 }
@@ -460,7 +485,7 @@ body {
 
 .footer-brand {
   color: white;
-  font-family: 'Lexend Tera', sans-serif;
+  font-family: "Lexend Tera", sans-serif;
   font-size: 26px;
   font-weight: 600;
   letter-spacing: -2.34px;
@@ -473,7 +498,7 @@ body {
 
 .footer-contact-title {
   color: white;
-  font-family: 'DM Sans', sans-serif;
+  font-family: "DM Sans", sans-serif;
   font-size: 20px;
   font-weight: 700;
   line-height: 18px;
@@ -489,7 +514,7 @@ body {
 
 .footer-contact-text {
   color: white;
-  font-family: 'DM Sans', sans-serif;
+  font-family: "DM Sans", sans-serif;
   font-size: 16px;
   font-weight: 700;
   line-height: 18px;
@@ -504,4 +529,3 @@ body {
   align-items: center;
   justify-content: center;
 }
-

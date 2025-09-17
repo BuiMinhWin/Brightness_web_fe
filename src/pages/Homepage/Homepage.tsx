@@ -89,9 +89,7 @@ const Homepage: React.FC = () => {
       <section className="achievement-section">
         <div className="achievement-card">
           <h2 className="achievement-title">Achievement</h2>
-          <p className="achievement-subtitle">
-            Take a closer look at what you did yesterday
-          </p>
+          <p className="achievement-subtitle">Take a closer look at what you did yesterday</p>
           <div className="achievement-stats">
             <div className="stat-item">
               <h3 className="stat-value">1500</h3>
@@ -160,18 +158,8 @@ const Homepage: React.FC = () => {
                   stroke="black"
                   strokeWidth="2"
                 />
-                <path
-                  d="M37 41H37.05"
-                  stroke="black"
-                  strokeWidth="8"
-                  strokeLinecap="round"
-                />
-                <path
-                  d="M77 41H77.05"
-                  stroke="black"
-                  strokeWidth="8"
-                  strokeLinecap="round"
-                />
+                <path d="M37 41H37.05" stroke="black" strokeWidth="8" strokeLinecap="round" />
+                <path d="M77 41H77.05" stroke="black" strokeWidth="8" strokeLinecap="round" />
                 <path
                   d="M37 68C37 68 44.437 77.917 56.833 77.917C69.229 77.917 76.666 68 76.666 68"
                   stroke="black"
@@ -190,24 +178,9 @@ const Homepage: React.FC = () => {
                   stroke="black"
                   strokeWidth="2"
                 />
-                <path
-                  d="M37 41H37.05"
-                  stroke="black"
-                  strokeWidth="8"
-                  strokeLinecap="round"
-                />
-                <path
-                  d="M77 41H77.05"
-                  stroke="black"
-                  strokeWidth="8"
-                  strokeLinecap="round"
-                />
-                <path
-                  d="M37 68H76.67"
-                  stroke="black"
-                  strokeWidth="8"
-                  strokeLinecap="round"
-                />
+                <path d="M37 41H37.05" stroke="black" strokeWidth="8" strokeLinecap="round" />
+                <path d="M77 41H77.05" stroke="black" strokeWidth="8" strokeLinecap="round" />
+                <path d="M37 68H76.67" stroke="black" strokeWidth="8" strokeLinecap="round" />
               </svg>
             </div>
             <div className="mood-emoji">
@@ -220,18 +193,8 @@ const Homepage: React.FC = () => {
                   stroke="black"
                   strokeWidth="2"
                 />
-                <path
-                  d="M37 41H37.05"
-                  stroke="black"
-                  strokeWidth="8"
-                  strokeLinecap="round"
-                />
-                <path
-                  d="M77 41H77.05"
-                  stroke="black"
-                  strokeWidth="8"
-                  strokeLinecap="round"
-                />
+                <path d="M37 41H37.05" stroke="black" strokeWidth="8" strokeLinecap="round" />
+                <path d="M77 41H77.05" stroke="black" strokeWidth="8" strokeLinecap="round" />
                 <path
                   d="M76.67 72.917C76.67 72.917 69.23 63 56.83 63C44.44 63 37 72.917 37 72.917"
                   stroke="black"
@@ -265,8 +228,8 @@ const Homepage: React.FC = () => {
             <h4 className="article-author">Name</h4>
             <div className="article-rating">★★★★★</div>
             <p className="article-content">
-              Lorem ipsum dolor sit amet consecte tur adipiscing elit semper
-              dalaracc lacus vel facilisis volutpat est velitolm.
+              Lorem ipsum dolor sit amet consecte tur adipiscing elit semper dalaracc lacus vel
+              facilisis volutpat est velitolm.
             </p>
             <a href="#" className="article-link">
               Read more →
@@ -278,8 +241,8 @@ const Homepage: React.FC = () => {
             <h4 className="article-author">Name</h4>
             <div className="article-rating">★★★★★</div>
             <p className="article-content">
-              Lorem ipsum dolor sit amet consecte tur adipiscing elit semper
-              dalaracc lacus vel facilisis volutpat est velitolm.
+              Lorem ipsum dolor sit amet consecte tur adipiscing elit semper dalaracc lacus vel
+              facilisis volutpat est velitolm.
             </p>
             <a href="#" className="article-link">
               Read more →
@@ -291,8 +254,8 @@ const Homepage: React.FC = () => {
             <h4 className="article-author">Name</h4>
             <div className="article-rating">★★★★★</div>
             <p className="article-content">
-              Lorem ipsum dolor sit amet consecte tur adipiscing elit semper
-              dalaracc lacus vel facilisis volutpat est velitolm.
+              Lorem ipsum dolor sit amet consecte tur adipiscing elit semper dalaracc lacus vel
+              facilisis volutpat est velitolm.
             </p>
             <a href="#" className="article-link">
               Read more →
@@ -313,12 +276,8 @@ const Homepage: React.FC = () => {
         <div className="qa-questions">
           <button className="qa-question">When will I see results?</button>
           <button className="qa-question">How to start working out?</button>
-          <button className="qa-question">
-            What exercises are good for beginners?
-          </button>
-          <button className="qa-question">
-            How much protein do I need per day?
-          </button>
+          <button className="qa-question">What exercises are good for beginners?</button>
+          <button className="qa-question">How much protein do I need per day?</button>
         </div>
 
         <img
@@ -338,8 +297,7 @@ const Homepage: React.FC = () => {
             <h4 className="performance-name">Name</h4>
             <h3 className="performance-title">Top about</h3>
             <p className="performance-description">
-              Lorem ipsum dolor sit amet consecte tur adipiscing elit semper
-              dalaracc lacus
+              Lorem ipsum dolor sit amet consecte tur adipiscing elit semper dalaracc lacus
             </p>
           </div>
 
@@ -348,8 +306,8 @@ const Homepage: React.FC = () => {
             <h4 className="performance-name">Name</h4>
             <h3 className="performance-title">Top about</h3>
             <p className="performance-description">
-              Lorem ipsum dolor sit amet consecte tur adipiscing elit semper
-              dalaracc lacus vel facilisis volutpat est velitolm.
+              Lorem ipsum dolor sit amet consecte tur adipiscing elit semper dalaracc lacus vel
+              facilisis volutpat est velitolm.
             </p>
           </div>
 
@@ -358,8 +316,7 @@ const Homepage: React.FC = () => {
             <h4 className="performance-name">Name</h4>
             <h3 className="performance-title">Top about</h3>
             <p className="performance-description">
-              Lorem ipsum dolor sit amet consecte tur adipiscing elit semper
-              dalaracc lacus
+              Lorem ipsum dolor sit amet consecte tur adipiscing elit semper dalaracc lacus
             </p>
           </div>
         </div>
@@ -373,12 +330,10 @@ const Homepage: React.FC = () => {
           <h2 className="improve-title">Improve your experience</h2>
           <h3 className="improve-subtitle">Description</h3>
           <p className="improve-description">
-            Lorem ipsum dolor sit amet consecte tur adipiscing elit semper
-            dalaracc lacus vel facilisis volutpat est velitolm. Lorem ipsum
-            dolor sit amet consecte tur adipiscing elit semper dalaracc lacus
-            vel facilisis volutpat est velitolm. Lorem ipsum dolor sit amet
-            consecte tur adipiscing elit semper dalaracc lacus vel facilisis
-            volutpat est velitolm.
+            Lorem ipsum dolor sit amet consecte tur adipiscing elit semper dalaracc lacus vel
+            facilisis volutpat est velitolm. Lorem ipsum dolor sit amet consecte tur adipiscing elit
+            semper dalaracc lacus vel facilisis volutpat est velitolm. Lorem ipsum dolor sit amet
+            consecte tur adipiscing elit semper dalaracc lacus vel facilisis volutpat est velitolm.
           </p>
           <button className="improve-cta">TRY</button>
         </div>
@@ -412,11 +367,7 @@ const Homepage: React.FC = () => {
                   fill="none"
                   xmlns="http://www.w3.org/2000/svg"
                 >
-                  <path
-                    d="M1 1.49939L13.5 8.2485L26 1.49939"
-                    stroke="white"
-                    strokeWidth="2"
-                  />
+                  <path d="M1 1.49939L13.5 8.2485L26 1.49939" stroke="white" strokeWidth="2" />
                 </svg>
               </div>
               <span className="homepage-footer-contact-text">Contact us:</span>
@@ -430,13 +381,7 @@ const Homepage: React.FC = () => {
                   fill="none"
                   xmlns="http://www.w3.org/2000/svg"
                 >
-                  <circle
-                    cx="3.4625"
-                    cy="3.18748"
-                    r="1.7125"
-                    stroke="white"
-                    strokeWidth="2"
-                  />
+                  <circle cx="3.4625" cy="3.18748" r="1.7125" stroke="white" strokeWidth="2" />
                 </svg>
               </div>
               <span className="homepage-footer-contact-text">0xxxxxxxxxx</span>
@@ -449,5 +394,3 @@ const Homepage: React.FC = () => {
 };
 
 export default Homepage;
-
-
