@@ -10,6 +10,7 @@ import Dashboard from "../pages/Dashboard/Dashboard";
 import Connect from "../pages/Connect/Connect";
 import Schedule from "../pages/Schedule/Schedule";
 import Profile from "../pages/Profile/Profile";
+import Blogs from "../pages/Blogs/Blog";
 
 const AppRouter: React.FC = () => {
   return (
@@ -30,6 +31,7 @@ const AppRouter: React.FC = () => {
           <Route path="/connect" element={<Connect />} />
           <Route path="/schedule" element={<Schedule />} />
           <Route path="/profile" element={<Profile />} />
+          <Route path="/blogs" element={<Blogs />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </ScrollProvider>

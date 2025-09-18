@@ -1,0 +1,98 @@
+[
+  {
+    "id": "1",
+    "user": {
+      "name": "Alex Thompson",
+      "avatar": "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&h=150&fit=crop&crop=face"
+    },
+    "text": "Amazing post! This really resonates with me. Keep up the great work!",
+    "timestamp": "1 hour ago",
+    "likes": 5,
+    "replies": [
+      {
+        "id": "1-1",
+        "user": {
+          "name": "Sarah Johnson",
+          "avatar": "https://images.unsplash.com/photo-1494790108755-2616b612b786?w=150&h=150&fit=crop&crop=face"
+        },
+        "text": "Thank you Alex! I appreciate your kind words.",
+        "timestamp": "45 minutes ago",
+        "likes": 2
+      },
+      {
+        "id": "1-2",
+        "user": {
+          "name": "Mike Chen",
+          "avatar": "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&h=150&fit=crop&crop=face"
+        },
+        "text": "I totally agree with Alex. This is exactly what I needed to read today!",
+        "timestamp": "30 minutes ago",
+        "likes": 1
+      }
+    ]
+  },
+  {
+    "id": "2",
+    "user": {
+      "name": "Maria Garcia",
+      "avatar": "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=150&h=150&fit=crop&crop=face"
+    },
+    "text": "Could you share more details about your routine? I'd love to try something similar!",
+    "timestamp": "2 hours ago",
+    "likes": 3,
+    "replies": [
+      {
+        "id": "2-1",
+        "user": {
+          "name": "David Kim",
+          "avatar": "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&h=150&fit=crop&crop=face"
+        },
+        "text": "I'm also interested in learning more about this!",
+        "timestamp": "1 hour ago",
+        "likes": 0
+      }
+    ]
+  },
+  {
+    "id": "3",
+    "user": {
+      "name": "Emily Rodriguez",
+      "avatar": "https://images.unsplash.com/photo-1487412720507-e7ab37603c6f?w=150&h=150&fit=crop&crop=face"
+    },
+    "text": "This is so inspiring! I've been struggling with motivation lately, but this gives me hope.",
+    "timestamp": "3 hours ago",
+    "likes": 7
+  },
+  {
+    "id": "4",
+    "user": {
+      "name": "James Wilson",
+      "avatar": "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&h=150&fit=crop&crop=face"
+    },
+    "text": "Great content as always! Your posts never disappoint. Keep sharing your journey!",
+    "timestamp": "4 hours ago",
+    "likes": 4,
+    "replies": [
+      {
+        "id": "4-1",
+        "user": {
+          "name": "Lisa Wang",
+          "avatar": "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=150&h=150&fit=crop&crop=face"
+        },
+        "text": "I second that! Always look forward to your posts.",
+        "timestamp": "3 hours ago",
+        "likes": 2
+      }
+    ]
+  },
+  {
+    "id": "5",
+    "user": {
+      "name": "Rachel Green",
+      "avatar": "https://images.unsplash.com/photo-1494790108755-2616b612b786?w=150&h=150&fit=crop&crop=face"
+    },
+    "text": "The photos are beautiful! What camera do you use for your fitness shots?",
+    "timestamp": "5 hours ago",
+    "likes": 6
+  }
+]
