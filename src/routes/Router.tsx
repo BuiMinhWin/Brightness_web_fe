@@ -11,6 +11,8 @@ import Connect from "../pages/Connect/Connect";
 import Schedule from "../pages/Schedule/Schedule";
 import Profile from "../pages/Profile/Profile";
 import Blogs from "../pages/Blogs/Blog";
+import FirstAidPage from "@/pages/FirstAid/FirstAidPage";
+import VideoPage from "@/pages/FirstAid/VideoPage";
 
 const AppRouter: React.FC = () => {
   return (
@@ -32,6 +34,8 @@ const AppRouter: React.FC = () => {
           <Route path="/schedule" element={<Schedule />} />
           <Route path="/profile" element={<Profile />} />
           <Route path="/blogs" element={<Blogs />} />
+          <Route path="/first-aid" element={<FirstAidPage />} />
+          <Route path="/video/:id" element={<VideoPage />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </ScrollProvider>

@@ -1,5 +1,8 @@
+@import url("https://fonts.googleapis.com/css2?family=Pacifico&display=swap");
 @import "tailwindcss/preflight";
 @import "tailwindcss/utilities";
+@import "tailwindcss";
+@tailwind utilities;
 
 /* Global base styles only. Page-specific styles live next to each page. */
 html,
