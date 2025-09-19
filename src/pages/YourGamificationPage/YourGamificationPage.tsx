@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
-import Navbar from '../components/layout/Navbar';
+import Navbar from '../../components/layout/Navbar';
 import './YourGamificationPage.css';
-import GameFooter from '../components/layout/GameFooter';
+import GameFooter from '../../components/layout/GameFooter';
+import { useNavigate } from 'react-router-dom';
+import { ArrowLeft } from 'lucide-react';
 
 interface YourGamificationPageProps {
     onNavigate: (page: string) => void;
@@ -20,8 +22,9 @@ interface Mission {
   avatar: string;
 }
 
-const YourGamificationPage: React.FC<YourGamificationPageProps> = ({ onNavigate, onViewEventDetail, onNavigateBackToGame }) => {
+const YourGamificationPage: React.FC = () => {
   const [currentPage, setCurrentPage] = useState(1);
+  const navigate = useNavigate();
   const [missions] = useState<Mission[]>([
     {
       id: 1,
@@ -83,30 +86,32 @@ const YourGamificationPage: React.FC<YourGamificationPageProps> = ({ onNavigate,
     }
   };
 
-  const handleViewDetails = (missionId: number) => {
-    if (onViewEventDetail) {
-      onViewEventDetail(missionId);
-    }
+
+   const handleViewDetails = (missionId: number) => {
+    navigate(`/your-detail/${missionId}`);
   };
 
-  const handlePricingClick = () => {
-    onNavigate('pricing');
+  const handleYoursClick = () => {
+    navigate("/pricing");
   };
+
 
   return (
     <div className="your-missions-page">
       <Navbar currentPage="gamification" />
 
-    <button className="back-button" onClick={onNavigateBackToGame}>
-        ← Back
-      </button>
+    {/* Back button */}
+     
 
       <div className="your-missions-content">
         {/* Hero Section */}
         <div className="your-missions-hero">
           <div className="hero-header">
+             <button className="back-button" onClick={() => navigate('/gamification')}>
+              <ArrowLeft size={24} />
+            </button>
             <h1 className="your-missions-title">Your Missions</h1>
-            <button className="pricing-button" onClick={handlePricingClick}>
+            <button className="pricing-button" onClick={handleYoursClick}>
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
                 <path d="M12 1L15.09 8.26L22 9L17 14.74L18.18 22L12 18.27L5.82 22L7 14.74L2 9L8.91 8.26L12 1Z" fill="currentColor"/>
               </svg>

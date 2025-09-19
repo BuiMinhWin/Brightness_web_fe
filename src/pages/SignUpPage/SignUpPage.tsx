@@ -1,16 +1,20 @@
 import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import "./SignUpPage.css";
+import yogaImg from "../../assets/images/yoga_register.png";
+import logoImg from "../../assets/images/logo_color.png";
 
 
 interface SignUpPageProps {
   onNavigateToSignIn?: () => void;
 }
 
-const SignUpPage: React.FC<SignUpPageProps> = ({ onNavigateToSignIn }) => {
+const SignUpPage: React.FC = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [agreeTerms, setAgreeTerms] = useState(false);
+  const navigate = useNavigate(); 
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -35,7 +39,10 @@ const SignUpPage: React.FC<SignUpPageProps> = ({ onNavigateToSignIn }) => {
   return (
     <div className="signup-page">
       {/* Left: Yoga background image */}
-      <div className="signup-bg-image"></div>
+       <div
+          className="signup-bg-image"
+          style={{ backgroundImage: `url(${yogaImg})` }}
+        ></div>
 
       {/* Right: Form content */}
       <div className="signup-content">
@@ -44,7 +51,7 @@ const SignUpPage: React.FC<SignUpPageProps> = ({ onNavigateToSignIn }) => {
           <span className="signup-nav-text">Already have an account?</span>
           <button 
             className="signup-signin-btn"
-            onClick={onNavigateToSignIn}
+            onClick={() => navigate("/signin")} 
           >
             Sign In
           </button>
@@ -55,7 +62,10 @@ const SignUpPage: React.FC<SignUpPageProps> = ({ onNavigateToSignIn }) => {
           <div className="signup-form-card">
             {/* Header with Logo and Title */}
             <div className="signup-header">
-              <div className="signup-logo"></div>
+              <div
+                className="signup-logo"
+                style={{ backgroundImage: `url(${logoImg})` }}
+              ></div>
               <h1 className="signup-title">Create an account</h1>
             </div>
 

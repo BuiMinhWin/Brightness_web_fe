@@ -1,14 +1,17 @@
 import React, { useState } from "react";
 import "./SignInPage.css";
+import { useNavigate } from "react-router-dom";
+import yogaImg from "../../assets/images/yoga.png";
 
 interface SignInPageProps {
   onNavigateToSignUp?: () => void;
 }
 
-const SignInPage: React.FC<SignInPageProps> = ({ onNavigateToSignUp }) => {
+const SignInPage: React.FC = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  const navigate = useNavigate(); 
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -36,7 +39,7 @@ const SignInPage: React.FC<SignInPageProps> = ({ onNavigateToSignUp }) => {
     <span className="signin-nav-text">Don't have an account?</span>
     <button 
       className="signin-signup-btn"
-      onClick={onNavigateToSignUp}
+      onClick={() => navigate("/signup")} 
     >
       Sign Up
     </button>
@@ -144,7 +147,8 @@ const SignInPage: React.FC<SignInPageProps> = ({ onNavigateToSignUp }) => {
 
       {/* Right: Yoga background image */}
       <div className="signin-bg-image">
-      </div>
+      <img src={yogaImg} alt="Yoga" className="signin-img" />
+    </div>
 
     </div>
   );

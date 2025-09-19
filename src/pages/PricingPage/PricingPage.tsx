@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
-import Navbar from '../components/layout/Navbar';
-import GameFooter from '../components/layout/GameFooter';
+import Navbar from '../../components/layout/Navbar';
+import GameFooter from '../../components/layout/GameFooter';
 import './PricingPage.css';
+import { useNavigate } from 'react-router-dom';
 
 interface PricingPageProps {
   onNavigateBack: () => void;
@@ -19,10 +20,11 @@ interface PricingPlan {
   isPremiumTrial?: boolean;
 }
 
-const PricingPage: React.FC<PricingPageProps> = ({ onNavigateBack }) => {
+const PricingPage: React.FC = () => {
   const [selectedPlan, setSelectedPlan] = useState<string>('free');
   const [showConfirmModal, setShowConfirmModal] = useState<boolean>(false);
   const [pendingPlan, setPendingPlan] = useState<PricingPlan | null>(null);
+  const navigate = useNavigate();
 
   const pricingPlans: PricingPlan[] = [
     {
@@ -113,7 +115,10 @@ const PricingPage: React.FC<PricingPageProps> = ({ onNavigateBack }) => {
       <div className="pricing-content">
         {/* Header */}
         <div className="pricing-header">
-          <button className="back-button" onClick={onNavigateBack}>
+          <button className="back-button" onClick={() => navigate('/gamification')}>
+          {/* <button className="back-button" onClick={() => navigate('/gamification')}>
+        ← Back to Gamification
+          </button> */}
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
               <polyline points="15,18 9,12 15,6" stroke="currentColor" strokeWidth="2"/>
             </svg>

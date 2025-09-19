@@ -1,16 +1,18 @@
 import React, { useState } from 'react';
-import Navbar from '../components/layout/Navbar';
+import Navbar from '../../components/layout/Navbar';
 import './GamificationPage.css';
-import GameFooter from '../components/layout/GameFooter';
+import GameFooter from '../../components/layout/GameFooter';
+import { useNavigate } from 'react-router-dom';
 
 interface GamificationPageProps {
   onNavigate: (page: string) => void;
   onViewEventDetail?: (eventId: number) => void;
 }
 
-const GamificationPage: React.FC<GamificationPageProps> = ({ onNavigate, onViewEventDetail }) => {
+const GamificationPage: React.FC = () => {
   const [activeFilter, setActiveFilter] = useState('all');
   const [currentPage, setCurrentPage] = useState(1);
+    const navigate = useNavigate();
 
   const competitions = [
     {
@@ -98,14 +100,12 @@ const GamificationPage: React.FC<GamificationPageProps> = ({ onNavigate, onViewE
     }
   };
 
-  const handleViewDetails = (competitionId: number) => {
-    if (onViewEventDetail) {
-      onViewEventDetail(competitionId);
-    }
+ const handleViewDetails = (eventId: number) => {
+    navigate(`/event-detail/${eventId}`);
   };
 
   const handleYoursClick = () => {
-    onNavigate('your-missions');
+    navigate("/your-missions");
   };
 
   return (

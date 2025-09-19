@@ -1,65 +1,67 @@
 import React from 'react';
 import './Navbar.css';
+import logo from "../../assets/images/LogoWhite.png";
+import { NavLink, useNavigate } from "react-router-dom";
 
 interface NavbarProps {
-  currentPage?: string;
-  onNavigate?: (page: string) => void;
+  currentPage?: string; // giữ lại nếu bạn muốn highlight
 }
 
-const Navbar: React.FC<NavbarProps> = ({ currentPage = 'home', onNavigate }) => {
-  const handleNavigation = (page: string) => {
-    if (onNavigate) {
-      onNavigate(page);
-    }
-  };
+const Navbar: React.FC<NavbarProps> = ({ currentPage = 'home' }) => {
+  const navigate = useNavigate();
 
   return (
     <nav className="navbar">
       <div className="navbar-container">
         {/* Logo */}
-        <div className="navbar-logo">
-          <div className="navbar-logo-icon">
-            <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
-              <circle cx="16" cy="16" r="14" stroke="white" strokeWidth="2"/>
-              <circle cx="16" cy="16" r="8" stroke="white" strokeWidth="2"/>
-              <circle cx="16" cy="16" r="3" fill="white"/>
-            </svg>
-          </div>
+        <div 
+          className="navbar-logo"
+          onClick={() => navigate("/")} // click logo về Home
+          style={{ cursor: "pointer" }}
+        >
+          <div 
+            className="navbar-logo-icon" 
+            style={{ backgroundImage: `url(${logo})` }}
+          />
           <span className="navbar-logo-text">BRIGHTNEST</span>
         </div>
 
         {/* Navigation Links */}
         <div className="navbar-nav">
-          <button 
-            className={`navbar-link ${currentPage === 'home' ? 'active' : ''}`}
-            onClick={() => handleNavigation('home')}
+          <NavLink 
+            to="/" 
+            className={({ isActive }) => `navbar-link ${isActive ? "active" : ""}`}
           >
             Home
-          </button>
-          <button 
-            className={`navbar-link ${currentPage === 'blogs' ? 'active' : ''}`}
-            onClick={() => handleNavigation('blogs')}
+          </NavLink>
+
+          <NavLink 
+            to="/blogs" 
+            className={({ isActive }) => `navbar-link ${isActive ? "active" : ""}`}
           >
             Blogs
-          </button>
-          <button 
-            className={`navbar-link ${currentPage === 'gamification' ? 'active' : ''}`}
-            onClick={() => handleNavigation('gamification')}
+          </NavLink>
+
+          <NavLink 
+            to="/gamification" 
+            className={({ isActive }) => `navbar-link ${isActive ? "active" : ""}`}
           >
             Gamification
-          </button>
-          <button 
-            className={`navbar-link ${currentPage === 'first-aid' ? 'active' : ''}`}
-            onClick={() => handleNavigation('first-aid')}
+          </NavLink>
+
+          <NavLink 
+            to="/first-aid" 
+            className={({ isActive }) => `navbar-link ${isActive ? "active" : ""}`}
           >
             First aid
-          </button>
-          <button 
-            className={`navbar-link ${currentPage === 'about' ? 'active' : ''}`}
-            onClick={() => handleNavigation('about')}
+          </NavLink>
+
+          <NavLink 
+            to="/about" 
+            className={({ isActive }) => `navbar-link ${isActive ? "active" : ""}`}
           >
             About
-          </button>
+          </NavLink>
         </div>
 
         {/* Right side icons */}

@@ -1,7 +1,7 @@
 .navbar {
   width: 100%;
-  height: 70px;
-  background: linear-gradient(135deg, #047857 0%, #16a34a 50%, #84cc16 100%);
+  height: 100px;
+  background: linear-gradient(135deg, #047857 0%, #16a34a 50%, #E2F043 100%);
   position: fixed;
   top: 0;
   left: 0;
@@ -10,36 +10,46 @@
 }
 
 .navbar-container {
-  max-width: 1200px;
+  width: 100%;           
+  max-width: 100%;      
   height: 100%;
   margin: 0 auto;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 20px;
+  padding: 0 100px;      
 }
 
 /* Logo */
 .navbar-logo {
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: 12px;
   color: white;
   font-weight: 700;
-  font-size: 18px;
+  font-size: 22px;
   letter-spacing: 0.5px;
+  padding-left: 10px;
+  height: 40px;       
 }
+
 
 .navbar-logo-icon {
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  width: 100px;
+  height: 80px;
+  background-image: url("../assets/images/logo_color.png");
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-position: center;
+  flex-shrink: 0;
+  
 }
-
+ 
 .navbar-logo-text {
   font-family: 'Arial', sans-serif;
 }
-
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   
 /* Navigation */
 .navbar-nav {
   display: flex;
@@ -47,15 +57,16 @@
   gap: 32px;
 }
 
+
 .navbar-link {
   background: none;
   border: none;
   color: white;
-  font-size: 16px;
-  font-weight: 500;
+  font-size: 20px;        /* chữ to hơn */
+  font-weight: 600;       /* chữ đậm hơn một chút */
   cursor: pointer;
-  padding: 8px 16px;
-  border-radius: 20px;
+  padding: 12px 24px;     /* tăng khoảng cách để nút rộng ra */
+  border-radius: 24px;    /* bo tròn hợp với padding mới */
   transition: all 0.3s ease;
   position: relative;
 }

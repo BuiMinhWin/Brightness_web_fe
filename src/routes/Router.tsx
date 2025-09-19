@@ -1,129 +1,44 @@
 
-import React, { useState } from "react";
-import SignInPage from "../pages/SignInPage";
-import SignUpPage from "../pages/SignUpPage";
-import GamificationPage from "../pages/GamificationPage";
-import YourGamificationPage from "../pages/YourGamificationPage";
-import YourDetailPage from "../pages/YourDetailPage";
-import EventDetailPage from "../pages/EventDetailPage";
-import LeaderboardPage from "../pages/LeaderboardPage";
-import PricingPage from "../pages/PricingPage";
 
-const Router: React.FC = () => {
-  const [currentPage, setCurrentPage] = useState<'landing' | 'homepage' | 'fitness' | 'signin' | 'signup' | 'gamification' | 'your-missions' | 'your-detail' | 'event-detail' | 'leaderboard' | 'pricing'>('gamification');
-  const [selectedEventId, setSelectedEventId] = useState<number | null>(null);
-  const [selectedMissionId, setSelectedMissionId] = useState<number | null>(null);
+import React from "react";
+import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import Navbar from "../components/layout/Navbar";
 
-  const navigateToSignUp = () => {
-    setCurrentPage('signup');
-  };
+// Import các page
+import SignInPage from "../pages/SignInPage/SignInPage";
+import SignUpPage from "../pages/SignUpPage/SignUpPage";
+import GamificationPage from "../pages/GamificationPage/GamificationPage";
+import YourGamificationPage from "../pages/YourGamificationPage/YourGamificationPage";
+import YourDetailPage from "../pages/YourDetailPage/YourDetailPage";
+import EventDetailPage from "../pages/EventDetailPage/EventDetailPage";
+import LeaderboardPage from "../pages/LeaderboardPage/LeaderboardPage";
+import PricingPage from "../pages/PricingPage/PricingPage";
+import ReviewPostPage from "../pages/AdminReviewPostPage/ReviewPostPage";
+import EventManagementPage from "../pages/EventManagementPage/EventManagementPage";
+// import EventManagementPage from "../pages/EventManagementPage/EventManagementPage";
 
-  const navigateToSignIn = () => {
-    setCurrentPage('signin');
-  };
-
-  const navigateToGamification = () => {
-    setCurrentPage('gamification');
-  };
-
-  const navigateToYourMissions = () => {
-    setCurrentPage('your-missions');
-  };
-
-  const navigateToYourDetail = (missionId: number) => {
-    setSelectedMissionId(missionId);
-    setCurrentPage('your-detail');
-  };
-
-  const navigateBackToYourMissions = () => {
-    setCurrentPage('your-missions');
-  };
-
-  const navigateToEventDetail = (eventId: number) => {
-    setSelectedEventId(eventId);
-    setCurrentPage('event-detail');
-  };
-
-  const navigateToLeaderboard = (missionId: number) => {
-    setSelectedMissionId(missionId);
-    setCurrentPage('leaderboard');
-  };
-
-  const navigateBackToYourDetail = () => {
-    setCurrentPage('your-detail');
-  };
-
-  const navigateToPricing = () => {
-    setCurrentPage('pricing');
-  };
-
-  const navigateBackFromPricing = () => {
-    setCurrentPage('your-missions');
-  };
-
-  const handleNavigate = (page: string) => {
-    if (page === 'your-missions') {
-      navigateToYourMissions();
-    } else if (page === 'your-detail') {
-      // This would be called with a mission ID in real implementation
-      navigateToYourDetail(1);
-    } else if (page === 'leaderboard') {
-      navigateToLeaderboard(selectedMissionId || 1);
-    } else if (page === 'pricing') {
-      navigateToPricing();
-    } else {
-      setCurrentPage(page as 'landing' | 'homepage' | 'fitness' | 'signin' | 'signup' | 'gamification' | 'your-missions' | 'your-detail' | 'event-detail' | 'leaderboard' | 'pricing');
-    }
-  };
-
-  const renderPage = () => {
-    switch (currentPage) {
-      case 'signin':
-        return <SignInPage onNavigateToSignUp={navigateToSignUp} />;
-      case 'signup':
-        return <SignUpPage onNavigateToSignIn={navigateToSignIn} />;
-      case 'gamification':
-        return <GamificationPage onNavigate={handleNavigate} onViewEventDetail={navigateToEventDetail} />;
-      case 'your-missions':
-        return <YourGamificationPage onNavigate={handleNavigate} onViewEventDetail={navigateToYourDetail} onNavigateBackToGame={navigateToGamification} />;
-      case 'your-detail':
-        return (
-          <YourDetailPage 
-            onNavigateBack={navigateBackToYourMissions}
-            onNavigateToLeaderboard={() => navigateToLeaderboard(selectedMissionId || 1)}
-            missionId={selectedMissionId || undefined}
-          />
-        );
-      case 'event-detail':
-        return (
-          <EventDetailPage 
-            onNavigateBack={navigateToGamification} 
-            eventId={selectedEventId || undefined}
-          />
-        );
-      case 'leaderboard':
-        return (
-          <LeaderboardPage 
-            onNavigateBack={navigateBackToYourDetail}
-            missionId={selectedMissionId || undefined}
-          />
-        );
-      case 'pricing':
-        return (
-          <PricingPage 
-            onNavigateBack={navigateBackFromPricing}
-          />
-        );
-      default:
-        return <SignInPage onNavigateToSignUp={navigateToSignUp} />;
-    }
-  };
-
+const App: React.FC = () => {
   return (
-    <div>
-      {renderPage()}
-    </div>
+    <Router>
+      {/* Navbar luôn hiển thị */}
+ 
+
+      {/* Khu vực đổi trang */}
+      <Routes>
+        <Route path="/" element={<SignInPage />} />
+        <Route path="/signin" element={<SignInPage />} />
+        <Route path="/signup" element={<SignUpPage />} />
+        <Route path="/gamification" element={<GamificationPage />} />
+        <Route path="/your-missions" element={<YourGamificationPage />} />
+        <Route path="/your-detail/:missionId" element={<YourDetailPage />} />
+        <Route path="/event-detail/:eventId" element={<EventDetailPage />} />
+        <Route path="/leaderboard/:missionId" element={<LeaderboardPage />} />
+        <Route path="/pricing" element={<PricingPage />} />
+        <Route path="/review-posts" element={<ReviewPostPage />} />
+        <Route path="/event-management" element={<EventManagementPage />} />
+      </Routes>
+    </Router>
   );
 };
 
-export default Router;
+export default App;

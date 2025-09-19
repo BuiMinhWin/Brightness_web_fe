@@ -1,13 +1,9 @@
 import React, { useState } from 'react';
-import Navbar from '../components/layout/Navbar';
-import GameFooter from '../components/layout/GameFooter';
+import { useNavigate, useParams } from 'react-router-dom';
+import Navbar from '../../components/layout/Navbar';
+import GameFooter from '../../components/layout/GameFooter';
 import './LeaderboardPage.css';
 import { ArrowLeft } from 'lucide-react';
-
-interface LeaderboardPageProps {
-  onNavigateBack: () => void;
-  missionId?: number;
-}
 
 interface LeaderboardEntry {
   id: number;
@@ -26,12 +22,17 @@ interface MissionData {
   streak: number;
 }
 
-const LeaderboardPage: React.FC<LeaderboardPageProps> = ({ onNavigateBack, missionId = 1 }) => {
+const LeaderboardPage: React.FC = () => {
+  const navigate = useNavigate();
+  const { missionId } = useParams<{ missionId: string }>();
   const [activeTab, setActiveTab] = useState<'today' | 'this-week' | 'all-time'>('today');
 
-  // Mock data - in real app this would come from database based on missionId
+  // Convert missionId param từ string sang number (fallback 1)
+  const missionIdNum = missionId ? parseInt(missionId, 10) : 1;
+
+  // Mock mission data
   const missionData: MissionData = {
-    id: missionId,
+    id: missionIdNum,
     title: 'Summer Fitness Challenge',
     duration: '30 Days',
     participants: 156,
@@ -53,10 +54,10 @@ const LeaderboardPage: React.FC<LeaderboardPageProps> = ({ onNavigateBack, missi
   const currentUserData: LeaderboardEntry = {
     id: 999,
     rank: 15,
-    name: 'Name',
+    name: 'You',
     points: 253,
     avatar: '/api/placeholder/60/60',
-    isCurrentUser: true
+    isCurrentUser: true,
   };
 
   const topThree = leaderboardData.slice(0, 3);
@@ -65,25 +66,24 @@ const LeaderboardPage: React.FC<LeaderboardPageProps> = ({ onNavigateBack, missi
   return (
     <div className="leaderboard-page">
       <Navbar currentPage="gamification" />
-      
+
       <div className="leaderboard-content">
         {/* Header */}
         <div className="leaderboard-header">
           <button 
-            onClick={onNavigateBack}
+            onClick={() => navigate(`/your-detail/${missionId}`)} 
             className="back-button"
           >
             <ArrowLeft size={24} />
-            <span>Back</span>
           </button>
-          
+
           <div className="header-info">
             <h1 className="challenge-title">{missionData.title}</h1>
             <p className="challenge-meta">
               {missionData.duration} • {missionData.participants} Participants
             </p>
           </div>
-          
+
           <div className="streak-badge">
             <span className="streak-icon">🔥</span>
             <span>{missionData.streak} Day Streak</span>
@@ -92,19 +92,19 @@ const LeaderboardPage: React.FC<LeaderboardPageProps> = ({ onNavigateBack, missi
 
         {/* Tab Navigation */}
         <div className="leaderboard-tabs">
-          <button 
+          <button
             className={`tab-button ${activeTab === 'today' ? 'active' : ''}`}
             onClick={() => setActiveTab('today')}
           >
             Today
           </button>
-          <button 
+          <button
             className={`tab-button ${activeTab === 'this-week' ? 'active' : ''}`}
             onClick={() => setActiveTab('this-week')}
           >
             This week
           </button>
-          <button 
+          <button
             className={`tab-button ${activeTab === 'all-time' ? 'active' : ''}`}
             onClick={() => setActiveTab('all-time')}
           >
@@ -115,7 +115,7 @@ const LeaderboardPage: React.FC<LeaderboardPageProps> = ({ onNavigateBack, missi
         {/* Top 3 Podium */}
         <div className="top-three-container">
           <h2 className="top-title">TOP 10</h2>
-          
+
           <div className="podium">
             {/* Second Place */}
             <div className="podium-place second">
@@ -151,7 +151,7 @@ const LeaderboardPage: React.FC<LeaderboardPageProps> = ({ onNavigateBack, missi
 
         {/* Rest of Leaderboard */}
         <div className="leaderboard-list">
-          {restOfLeaderboard.map((entry, index) => (
+          {restOfLeaderboard.map((entry) => (
             <div key={entry.id} className="leaderboard-item">
               <div className="rank-number">{String(entry.rank).padStart(2, '0')}</div>
               <div className="user-avatar">
@@ -179,16 +179,16 @@ const LeaderboardPage: React.FC<LeaderboardPageProps> = ({ onNavigateBack, missi
             <span>•</span>
             <span>•</span>
           </div>
-          
+
           <div className="you-are-here">
             <span>You are here!!</span>
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-              <path d="M7 17L17 7M17 7H7M17 7V17" stroke="currentColor" strokeWidth="2"/>
+              <path d="M7 17L17 7M17 7H7M17 7V17" stroke="currentColor" strokeWidth="2" />
             </svg>
           </div>
 
           <div className="current-user-item">
-            <div className="rank-number">{String(currentUserData.rank).padStart(3, 'x')}</div>
+            <div className="rank-number">{String(currentUserData.rank).padStart(2, '0')}</div>
             <div className="user-avatar current">
               <img src={currentUserData.avatar} alt={currentUserData.name} />
             </div>

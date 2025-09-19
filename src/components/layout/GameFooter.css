@@ -1,42 +1,76 @@
 .gamification-footer {
-  background-color: #111827;
+  background: color(#05644C);
   color: white;
   padding: 40px 20px;
-  margin-top: 40px;
 }
 
-.footer-content {
+.footer-container {
   display: flex;
   justify-content: space-between;
-  max-width: 1200px;
-  margin: 0 auto;
+  align-items: flex-start;
+  max-width: 800px;
+  margin: 0 220px;
   flex-wrap: wrap;
+  gap: 60px;
 }
 
+/* Logo */
 .footer-logo {
   display: flex;
   align-items: center;
-  gap: 10px;
+  justify-content: center;
+  gap: 12px;
+  color: white;
+  font-weight: 700;
+  font-size: 22px;
+  letter-spacing: 0.5px;
+  padding-left: 0px;
+  height: 40px;
+  margin-top: 40px;
+}
+
+.footer-logo-icon {
+  width: 130px;
+  height: 110px;
+  background-image: url("../assets/images/logo_color.png");
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-position: center;
+  flex-shrink: 0;
 }
 
 .footer-logo-text {
-  font-size: 18px;
-  font-weight: bold;
+  font-size: 32px;
+  font-weight: 700;
+  letter-spacing: 1px;
 }
 
+/* Contact */
 .footer-contact {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 5px;
 }
 
 .footer-contact h4 {
   margin-bottom: 10px;
+  margin-top: 0px;
+  font-size: 25px;
 }
 
 .contact-item {
   display: flex;
   align-items: center;
   gap: 8px;
-  font-size: 14px;
+  font-size: 18px;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .footer-container {
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: 20px;
+  }
 }
