@@ -1,39 +1,42 @@
-/* Landing Page styles extracted from index.css */
+/* Optimized LandingPage CSS - duplicates removed, rules consolidated */
 
-/* Header */
+/* Container */
 .landing-page {
   width: 100%;
   min-height: 100vh;
+  height: 100vh;
   background: #fff;
   overflow-x: hidden;
-  height: 100vh;
   overflow-y: auto;
-  /* JS-driven snapping; CSS snap disabled to avoid conflicts */
-  /* scroll-snap-type: y mandatory; */
   scroll-behavior: smooth;
-  /* Overlay mode: header/footer are fixed and do not affect layout */
+  -webkit-overflow-scrolling: touch;
   --header-h: 0px;
-  /* Hide scrollbar while preserving scroll functionality */
-  -ms-overflow-style: none; /* IE and old Edge */
-  scrollbar-width: none; /* Firefox */
-  /* Avoid reserving gutter when scrollbar is hidden */
-  scrollbar-gutter: auto;
+  /* Global vertical offset for section contents */
+  --section-offset: 60px;
+  /* Small upward nudge for selected elements */
+  --nudge-up: 20px;
+  /* Specific nudge just for chatbox mockup */
+  --chatbox-nudge-up: 40px;
+  /* Specific nudge for gamification row */
+  --gamification-nudge-up: 120px;
   scroll-padding-top: var(--header-h);
+  /* JS-driven snapping; keep CSS snap disabled to avoid conflicts with JS */
+  /* scroll-snap-type: none; */
+  -ms-overflow-style: none;
+  scrollbar-width: none;
 }
-
-/* Ensure each direct section fits exactly the viewport minus sticky header */
-.landing-page > section {
-  height: 100vh; /* full viewport; header overlays */
+/* Base for sections: full viewport, box-sizing and optional top padding */
+.landing-page > section,
+.landing-page > .chatbox-content {
+  min-height: 100vh;
+  height: 100vh;
   box-sizing: border-box;
+  padding-top: calc(var(--header-h) + var(--section-offset, 0px));
+  position: relative;
+  padding-bottom: 10px;
 }
 
-/* WebKit (Chrome/Safari/Edge Chromium) */
-.landing-page::-webkit-scrollbar {
-  width: 0px;
-  height: 0px;
-  display: none;
-}
-
+/* Header */
 .header {
   display: flex;
   align-items: center;
@@ -48,13 +51,11 @@
   align-items: center;
   gap: 20px;
 }
-
 .logo-image {
   width: 85px;
   height: 85px;
   flex-shrink: 0;
 }
-
 .brand-text {
   font-family: "Lexend Tera", sans-serif;
   font-size: 26px;
@@ -62,11 +63,9 @@
   letter-spacing: -2.34px;
   text-transform: capitalize;
 }
-
 .brand-bright {
   color: #fed700;
 }
-
 .brand-nest {
   color: #095747;
 }
@@ -76,10 +75,8 @@
   align-items: center;
   gap: 36px;
 }
-
 .login-btn {
   color: #0b3d33;
-  text-align: center;
   font-family: "DM Sans", sans-serif;
   font-size: 16px;
   font-weight: 700;
@@ -87,13 +84,11 @@
   border: none;
   cursor: pointer;
 }
-
 .signup-btn {
   padding: 8px 18px;
   border-radius: 999px;
   background: linear-gradient(90deg, #066555 0%, #dce642 100%);
-  color: #ffffff;
-  text-align: center;
+  color: #fff;
   font-family: "DM Sans", sans-serif;
   font-size: 14px;
   font-weight: 800;
@@ -108,18 +103,7 @@
   min-height: 100vh;
   background: linear-gradient(270deg, #e2f043 0%, #05644c 90%);
   overflow: hidden;
-  /* snap disabled; handled in JS */
 }
-
-.hero-bg-svg {
-  position: absolute;
-  top: -48px;
-  left: -393px;
-  width: 2322px;
-  height: 862px;
-  z-index: 1;
-}
-
 .hero-content {
   position: relative;
   z-index: 2;
@@ -129,31 +113,27 @@
   flex-direction: column;
   align-items: flex-end;
   text-align: right;
-  padding-top: 120px;
+  padding-top: calc(120px + var(--section-offset, 0px) - var(--nudge-up, 0px));
   padding-right: 40px;
 }
-
 .hero-title {
-  color: white;
+  color: #fff;
   font-family: "Pacifico", cursive;
   font-size: 80px;
   margin: 0 0 50px;
-  letter-spacing: 0;
 }
-
 .emoji-group {
   display: flex;
   justify-content: flex-end;
   gap: 24px;
   margin: 20px 0 100px 0;
 }
-
 .emoji-face {
   width: 113px;
   height: 113px;
   border-radius: 50%;
   background: #e5f249;
-  border: 2px solid black;
+  border: 2px solid #000;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -169,7 +149,6 @@
   transform: rotate(-10.633deg);
   z-index: 3;
 }
-
 .leaf-decoration-1 {
   position: absolute;
   bottom: 150px;
@@ -179,7 +158,6 @@
   transform: rotate(-61.321deg);
   z-index: 3;
 }
-
 .leaf-decoration-2 {
   position: absolute;
   bottom: 200px;
@@ -192,35 +170,35 @@
 /* About */
 .about-section {
   position: relative;
-  padding: 100px 0;
-  background: linear-gradient(0%, #d3d42f 100%, 100%, #50bfa5 100%);
+  padding: calc(100px + var(--section-offset, 0px)) 0;
+  background:
+    url("/assets/brightnesslogo.png") center/540px auto no-repeat,
+    linear-gradient(0deg, #d4d42f80 10%, #50bfa56c 100%);
   min-height: 100vh;
-  /* snap disabled; handled in JS */
+  display: grid;
+  place-items: center;
 }
-
+.about-overlay {
+  position: absolute;
+  inset: 0;
+  background: none;
+  pointer-events: none;
+}
 .about-content {
   max-width: 1200px;
   margin: 0 auto;
   text-align: center;
   padding: 0 20px;
+  position: relative;
+  z-index: 1;
 }
-
-.about-logo {
-  width: 620px;
-  height: 620px;
-  margin: 0 auto 50px;
-  display: block;
-}
-
 .about-title {
   color: #046753;
   font-family: "DM Sans", sans-serif;
   font-size: 55px;
   font-weight: 700;
-  line-height: 46px;
   margin: 0 0 50px;
 }
-
 .about-description {
   color: #066555;
   font-family: "DM Sans", sans-serif;
@@ -232,68 +210,48 @@
   margin-left: auto;
   margin-right: auto;
 }
-
 .vietnamese-tagline {
   color: #066555;
   font-family: "Pacifico", cursive;
   font-size: 40px;
-  font-weight: 400;
-  line-height: 50px;
-  margin: 0;
-}
-/* Services */
-.services-section {
-  padding: 100px 0;
-  background: linear-gradient(113deg, rgba(208, 223, 0, 0.72) 23.72%, #ffaf72 87.59%);
-  /* snap disabled; handled in JS */
-  display: grid;
-  align-content: start;
-}
-.gamification-section {
-  padding: 100px 0;
-  background: linear-gradient(113deg, rgba(208, 223, 0, 0.72) 23.72%, #ffaf72 87.59%);
-  /* snap disabled; handled in JS */
-  display: grid;
-  align-content: start;
 }
 
+/* Services */
+.services-section {
+  padding: calc(100px + var(--section-offset, 0px)) 0;
+  background: linear-gradient(113deg, rgba(208, 223, 0, 0.72) 23.72%, #ffaf72 87.59%);
+  min-height: 100vh;
+  display: grid;
+  align-content: start;
+}
 .services-title {
   color: #046753;
   text-align: center;
   font-family: "DM Sans", sans-serif;
   font-size: 48px;
   font-weight: 700;
-  line-height: 46px;
   margin: 0 0 32px;
 }
-
 .service-item {
   margin: 0 auto;
-  /* generous left/right padding to visually center content */
   padding: 0 96px;
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 32px; /* tighter gap between columns */
+  gap: 32px;
   align-items: start;
   max-width: 1280px;
 }
-
 .service-item.reverse {
-  grid-template-columns: 1fr 1fr;
-  background: linear-gradient(113deg, rgba(208, 223, 0, 0.72) 23.72%, #ffaf72 87.59%);
   direction: rtl;
 }
-
 .service-item.reverse > * {
   direction: ltr;
 }
-
 .service-image {
   width: 100%;
   height: auto;
   border-radius: 12px;
 }
-
 .service-title {
   color: #046753;
   font-family: "DM Sans", sans-serif;
@@ -301,15 +259,32 @@
   font-weight: 700;
   margin: 0 0 20px;
 }
-
 .service-description {
-  color: black;
+  color: #000;
   font-family: "DM Sans", sans-serif;
   font-size: 20px;
   line-height: 32px;
   margin: 0;
 }
 
+/* Gamification */
+.gamification-section {
+  padding: calc(100px + var(--section-offset, 0px)) 0;
+  background: linear-gradient(113deg, rgba(208, 223, 0, 0.72) 23.72%, #ffaf72 87.59%);
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+}
+.gamification-row {
+  max-width: 1280px;
+  margin: 0 auto;
+  margin-top: calc(-1 * var(--gamification-nudge-up, 0px));
+  padding: 0 96px;
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 48px;
+  align-items: center;
+}
 .gamification-icons {
   display: grid;
   grid-template-columns: 180px 180px;
@@ -318,18 +293,11 @@
   align-items: start;
   justify-items: center;
 }
-
-.gamification-item {
-  display: none;
-}
-
-/* Leaf/quarter-circle cards */
-/* Circular icon cards to match design */
 .gami-card {
   position: relative;
   width: 180px;
   height: 180px;
-  background: #ffffff;
+  background: #fff;
   border: 2px solid #ff7b17;
   border-radius: 28px;
   display: flex;
@@ -339,7 +307,6 @@
   padding: 18px 16px;
   box-shadow: 0 6px 16px rgba(0, 0, 0, 0.08);
 }
-
 .gami-label {
   color: #ff7b17;
   font-family: "DM Sans", sans-serif;
@@ -347,8 +314,6 @@
   font-weight: 700;
   margin-top: 10px;
 }
-
-/* Quarter-leaf radii for each position */
 .gami-card.tl {
   border-radius: 100px 100px 0 100px;
 }
@@ -359,37 +324,23 @@
   border-radius: 100px 0 100px 100px;
 }
 
-/* Make cards a bit larger on desktop to enhance "fan blade" look */
-/* Layout adjustment specific to Gamification row */
-#gamification .service-item {
-  grid-template-columns: auto 1fr;
-  align-items: center;
-  gap: 48px;
-}
-
-.gamification-title {
-  color: #ff7b17;
-  font-family: "DM Sans", sans-serif;
-  font-size: 20px;
-  font-weight: 700;
-  margin-top: 8px;
-}
-
-.gamification-item.full-width {
-  grid-column: 1 / -1;
-}
+/* Chatbox (single consolidated definition) */
 .chatbox-content {
-  padding: 44px 120px;
+  padding-top: 10px;
   text-align: left;
-  height: 100%;
+  display: grid;
+  place-content: start center;
+  height: 100vh;
+  box-sizing: border-box;
+  background: linear-gradient(113deg, rgba(208, 223, 0, 0.72) 23.72%, #ffaf72 87.59%);
 }
-
 .chatbox-header {
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   text-align: center;
+  margin-bottom: 40px;
 }
 .chatbox-mockup {
   position: relative;
@@ -400,15 +351,15 @@
   border: 3px solid #1ea7ff;
   background: linear-gradient(90deg, #4c995d 0%, #c9d85b 100%);
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+  margin-top: calc(-1 * var(--chatbox-nudge-up, 0px));
+  margin-bottom: 50px;
 }
-
 .chatbox-title {
   color: #046753;
   font-family: "DM Sans", sans-serif;
   font-size: 36px;
   font-weight: 700;
 }
-
 .chatbox-description {
   color: #022c3c;
   font-family: "DM Sans", sans-serif;
@@ -418,19 +369,17 @@
   padding-bottom: 20px;
   margin-top: -36px;
 }
-
 .chat-bubbles {
   position: relative;
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 24px;
-  flex-wrap: nowrap; /* giữ 1 hàng ngang */
+  flex-wrap: nowrap;
   width: 100%;
 }
-
 .chat-bubble {
-  background: #ffffff;
+  background: #fff;
   border-radius: 999px;
   padding: 14px 24px;
   font-family: "DM Sans", sans-serif;
@@ -440,21 +389,13 @@
   color: #0b7e63;
   box-shadow: 0 6px 14px rgba(0, 0, 0, 0.1);
   max-width: 460px;
-  position: relative;
   display: inline-block;
   white-space: nowrap;
 }
-
-.chat-bubble.user1 {
-  align-self: center;
-  margin-left: 0;
-}
-
+.chat-bubble.user1,
 .chat-bubble.user2 {
   align-self: center;
-  margin-right: 0;
 }
-
 .chat-avatar {
   width: 73px;
   height: 73px;
@@ -464,15 +405,12 @@
   top: 50%;
   transform: translateY(-50%);
 }
-
 .chat-avatar.left {
   left: -100px;
 }
-
 .chat-avatar.right {
   right: -100px;
 }
-
 .chat-dot {
   width: 56px;
   height: 56px;
@@ -482,7 +420,6 @@
   top: 50%;
   transform: translateY(-50%);
 }
-
 .chat-dot.left {
   left: 24px;
 }
@@ -490,94 +427,39 @@
   right: 24px;
 }
 
-/* Subtle vertical offset between bubbles to match mock */
-.chat-bubble.user1 {
-  align-self: center;
-}
-
-.chat-bubble.user2 {
-  align-self: center;
-}
-
-/* Keep headings visible across breakpoints */
-
-/* Tighter spacing between Services and Chatbox */
-.services-section {
-  min-height: 100vh; /* match About */
-  padding: 100px 0; /* same vertical padding */
-  display: grid;
-  align-content: start;
-}
-.services-section .service-item:last-child {
-  margin-bottom: 0;
-}
-.chatbox-content {
-  /* snap disabled; handled in JS */
-  display: grid;
-  place-content: center;
-  background: linear-gradient(113deg, rgba(208, 223, 0, 0.72) 23.72%, #ffaf72 87.59%);
-  height: 100vh;
-  box-sizing: border-box;
-}
-
-/* CTA */
-.cta-section {
-  padding: 100px 0;
+/* CTA inside chatbox */
+.cta-inline {
   text-align: center;
-  background: transparent;
-  min-height: 100vh;
-  /* snap disabled; handled in JS */
-  display: grid;
-  place-content: center;
+  padding-top: 60px;
+  margin-top: -60px;
 }
-
-/* Ensure About is visible and shares equal height */
-.about-section {
-  position: relative;
-  padding: 100px 0;
-  background: linear-gradient(0%, #d3d42f 100%, 100%, #50bfa5 100%);
-  min-height: 100vh;
-  /* snap disabled; handled in JS */
-}
-
 .cta-title {
   color: #046753;
   font-family: "DM Sans", sans-serif;
   font-size: 48px;
   font-weight: 700;
   line-height: 46px;
-  margin: 0 0 50px;
   max-width: 848px;
-  margin-left: auto;
-  margin-right: auto;
+  margin: 0 auto 50px;
 }
-
 .cta-button {
   padding: 16px 32px;
   border-radius: 17px;
   background: linear-gradient(90deg, #076553 0%, #e2ef25 100%);
-  color: white;
+  color: #fff;
   font-family: "DM Sans", sans-serif;
   font-size: 32px;
   font-weight: 700;
-  line-height: 34px;
   border: none;
   cursor: pointer;
 }
 
-/* CTA inline placed inside chatbox-content */
-.cta-inline {
-  text-align: center;
-  padding-top: 100px;
-}
-
-/* Footer (Landing) */
+/* Footer */
 .footer {
   background: #05644c;
   padding: 55px 0;
-  color: white;
+  color: #fff;
 }
-
 .footer-content {
   max-width: 1200px;
   margin: 0 auto;
@@ -587,74 +469,56 @@
   gap: 60px;
   align-items: center;
 }
-
 .footer-logo {
   display: flex;
   align-items: center;
   gap: 20px;
 }
-
 .footer-logo-image {
   width: 81px;
   height: 81px;
 }
-
 .footer-brand {
-  color: white;
+  color: #fff;
   font-family: "Lexend Tera", sans-serif;
   font-size: 26px;
   font-weight: 600;
   letter-spacing: -2.34px;
   text-transform: capitalize;
 }
-
 .footer-contact {
   text-align: left;
 }
-
 .footer-contact-title {
-  color: white;
+  color: #fff;
   font-family: "DM Sans", sans-serif;
   font-size: 20px;
   font-weight: 700;
-  line-height: 18px;
   margin: 0 0 20px;
 }
-
 .footer-contact-item {
   display: flex;
   align-items: center;
   gap: 15px;
   margin-bottom: 15px;
 }
-
 .footer-contact-text {
-  color: white;
+  color: #fff;
   font-family: "DM Sans", sans-serif;
   font-size: 16px;
   font-weight: 700;
-  line-height: 18px;
 }
 
-.contact-icon {
-  width: 25px;
-  height: 25px;
-  border: 2px solid white;
-  border-radius: 8px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-/* Remove previous desktop hiding rules (titles stay visible) */
-
-/* Responsive (Landing) */
+/* Responsive adjustments (combined and simplified) */
 @media (max-width: 1200px) {
   .header {
     padding: 20px 40px;
   }
   .service-item {
     padding: 0 60px;
+    grid-template-columns: 1fr;
+    text-align: center;
+    gap: 40px;
   }
   .hero-title {
     font-size: 60px;
@@ -669,19 +533,14 @@
   .about-description {
     font-size: 28px;
   }
-  .service-item {
-    grid-template-columns: 1fr;
-    text-align: center;
-    gap: 40px;
-  }
-  .service-item.reverse {
-    grid-template-columns: 1fr;
+  .gamification-row {
+    padding: 0 60px;
   }
 }
 
 @media (max-width: 991.98px) {
   .chatbox-content {
-    padding: 24px 64px;
+    padding: calc(24px + var(--section-offset, 0px)) 64px;
     border-radius: 28px;
   }
   .chat-dot {
@@ -708,9 +567,6 @@
   }
   .brand-text {
     font-size: 20px;
-  }
-  .auth-buttons {
-    gap: 20px;
   }
   .hero-title {
     font-size: 40px;
@@ -754,14 +610,16 @@
     font-size: 18px;
     line-height: 28px;
   }
+  .gamification-row {
+    grid-template-columns: 1fr;
+    text-align: center;
+    gap: 32px;
+    padding: 0 24px;
+  }
   .gamification-icons {
     grid-template-columns: 1fr;
     gap: 12px;
     justify-items: center;
-  }
-  .gami-card {
-    width: 180px;
-    aspect-ratio: 1 / 1;
   }
   .chat-bubbles {
     flex-direction: column;
@@ -787,7 +645,7 @@
 
 @media (max-width: 575.98px) {
   .chatbox-content {
-    padding: 20px 48px;
+    padding: calc(20px + var(--section-offset, 0px)) 48px;
   }
   .chat-bubbles {
     display: flex;
@@ -800,6 +658,7 @@
   .chat-bubble {
     align-self: flex-start;
     max-width: 100%;
+    white-space: normal;
   }
 }
 
@@ -941,7 +800,7 @@
 
 /* === Standalone Gamification section === */
 .gamification-section {
-  padding: 100px 0;
+  padding: calc(100px + var(--section-offset, 0px)) 0;
   background: linear-gradient(113deg, rgba(208, 223, 0, 0.72) 23.72%, #ffaf72 87.59%);
   /* snap disabled; handled in JS */
   min-height: 100vh; /* match About section height */
@@ -952,6 +811,7 @@
 .gamification-row {
   max-width: 1280px;
   margin: 0 auto;
+  margin-top: calc(-1 * var(--gamification-nudge-up, 0px));
   padding: 0 96px;
   display: grid;
   grid-template-columns: auto 1fr;

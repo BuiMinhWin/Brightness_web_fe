@@ -1,5 +1,5 @@
-﻿// src/pages/LandingPage/LandingPage.tsx
-import React, { useMemo, useRef } from "react";
+﻿// ...existing code...
+import React, { useMemo, useRef, useEffect, useState } from "react";
 import "./LandingPage.css";
 import { motion } from "framer-motion";
 import AppHeader from "../../components/layout/AppHeader";
@@ -13,15 +13,176 @@ const LandingPage: React.FC = () => {
   const aboutRef = useRef<HTMLElement | null>(null);
   const servicesRef = useRef<HTMLElement | null>(null);
   const gamificationRef = useRef<HTMLElement | null>(null);
+  const chatboxRef = useRef<HTMLElement | null>(null);
+
+  // container ref to attach native listeners
+  const containerRef = useRef<HTMLDivElement | null>(null);
 
   // Snap order (down): hero -> about -> service -> gamification
-  const sections = useMemo(() => [heroRef, aboutRef, servicesRef, gamificationRef], []);
+  const sections = useMemo(() => [heroRef, aboutRef, servicesRef, gamificationRef, chatboxRef], []);
   // Map each section to a route for deep-linking and back/forward support
-  const routes = useMemo(() => ["/", "/about-content", "/services", "/gamification"], []);
+  const routes = useMemo(
+    () => ["/", "/about-content", "/services", "/gamification", "/chatbox"],
+    []
+  );
   const { handlers } = useFullpageScroll(sections as any, routes);
 
+  // Controlled scrolling state
+  const [activeIndex, setActiveIndex] = useState(0);
+  const isScrollingRef = useRef(false);
+  const touchStartYRef = useRef<number | null>(null);
+
+  // Ensure initial scroll on mount (in case route/deep-link)
+  useEffect(() => {
+    const el = sections[activeIndex]?.current as HTMLElement | null;
+    if (el) el.scrollIntoView({ behavior: "auto", block: "start" });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const scrollToIndex = (index: number) => {
+    if (isScrollingRef.current) return;
+    const bounded = Math.max(0, Math.min(index, sections.length - 1));
+    if (bounded === activeIndex) return;
+    isScrollingRef.current = true;
+    setActiveIndex(bounded);
+    const el = sections[bounded]?.current as HTMLElement | null;
+    if (el) {
+      el.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+    // Thời gian chờ để tránh trigger liên tiếp (tùy chỉnh theo animation)
+    window.setTimeout(() => {
+      isScrollingRef.current = false;
+    }, 700);
+  };
+
+  // Native listeners — đảm bảo preventDefault và passive:false để ngăn cuộn mặc định
+  useEffect(() => {
+    const root = containerRef.current;
+    if (!root) return;
+
+    let touchStartY: number | null = null;
+
+    const onWheel = (ev: WheelEvent) => {
+      ev.preventDefault();
+      if (isScrollingRef.current) return;
+      if (ev.deltaY > 0) scrollToIndex(activeIndex + 1);
+      else if (ev.deltaY < 0) scrollToIndex(activeIndex - 1);
+    };
+
+    const onTouchStart = (ev: TouchEvent) => {
+      touchStartY = ev.touches[0]?.clientY ?? null;
+    };
+
+    const onTouchMove = (ev: TouchEvent) => {
+      // khi đã bắt touch, ngăn scroll mặc định để tránh cuộn lướt tự do
+      if (touchStartY != null) ev.preventDefault();
+    };
+
+    const onTouchEnd = (ev: TouchEvent) => {
+      if (isScrollingRef.current) return;
+      const endY = ev.changedTouches[0]?.clientY ?? null;
+      if (touchStartY == null || endY == null) {
+        touchStartY = null;
+        return;
+      }
+      const diff = touchStartY - endY;
+      const threshold = 40;
+      if (diff > threshold) scrollToIndex(activeIndex + 1);
+      else if (diff < -threshold) scrollToIndex(activeIndex - 1);
+      touchStartY = null;
+    };
+
+    root.addEventListener("wheel", onWheel, { passive: false, capture: true });
+    root.addEventListener("touchstart", onTouchStart, { passive: true });
+    root.addEventListener("touchmove", onTouchMove, { passive: false });
+    root.addEventListener("touchend", onTouchEnd, { passive: true });
+
+    return () => {
+      root.removeEventListener("wheel", onWheel, { capture: true } as any);
+      root.removeEventListener("touchstart", onTouchStart as any);
+      root.removeEventListener("touchmove", onTouchMove as any);
+      root.removeEventListener("touchend", onTouchEnd as any);
+    };
+    // activeIndex intentionally in deps so scrollToIndex uses latest index
+  }, [activeIndex, sections.length]);
+
+  const handleWheel = (e: React.WheelEvent) => {
+    // Keep React-level handler but native listener above is primary
+    e.preventDefault();
+    if (isScrollingRef.current) return;
+    if (e.deltaY > 0) {
+      scrollToIndex(activeIndex + 1);
+    } else if (e.deltaY < 0) {
+      scrollToIndex(activeIndex - 1);
+    }
+  };
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    touchStartYRef.current = e.touches[0]?.clientY ?? null;
+  };
+
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    if (isScrollingRef.current) return;
+    const startY = touchStartYRef.current;
+    const endY = e.changedTouches[0]?.clientY ?? null;
+    if (startY == null || endY == null) return;
+    const diff = startY - endY;
+    const threshold = 40; // ngưỡng px để xác nhận swipe
+    if (diff > threshold) {
+      // swipe lên -> xuống trang tiếp theo
+      scrollToIndex(activeIndex + 1);
+    } else if (diff < -threshold) {
+      // swipe xuống -> lên trang trước
+      scrollToIndex(activeIndex - 1);
+    }
+    touchStartYRef.current = null;
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === "ArrowDown" || e.key === "PageDown") {
+      e.preventDefault();
+      scrollToIndex(activeIndex + 1);
+    } else if (e.key === "ArrowUp" || e.key === "PageUp") {
+      e.preventDefault();
+      scrollToIndex(activeIndex - 1);
+    } else if (e.key === "Home") {
+      e.preventDefault();
+      scrollToIndex(0);
+    } else if (e.key === "End") {
+      e.preventDefault();
+      scrollToIndex(sections.length - 1);
+    }
+  };
+
+  // Combine external handlers (from useFullpageScroll) with our controlled handlers.
+  // Our handlers intentionally prevent default wheel/touch to enforce full-section snapping.
+  const combinedHandlers = {
+    ...handlers,
+    onWheel: (e: React.WheelEvent) => {
+      handlers?.onWheel?.(e);
+      handleWheel(e);
+    },
+    onTouchStart: (e: React.TouchEvent) => {
+      handlers?.onTouchStart?.(e);
+      handleTouchStart(e);
+    },
+    onTouchEnd: (e: React.TouchEvent) => {
+      handlers?.onTouchEnd?.(e);
+      handleTouchEnd(e);
+    },
+    onKeyDown: (e: React.KeyboardEvent) => {
+      handlers?.onKeyDown?.(e);
+      handleKeyDown(e);
+    },
+  };
+
   return (
-    <div className="landing-page" {...handlers}>
+    <div
+      className="landing-page"
+      ref={containerRef}
+      {...(combinedHandlers as any)}
+      tabIndex={0} // enable keyboard capture
+    >
       <AppHeader />
 
       {/* Hero - Không cần Reveal vì luôn hiển thị */}
@@ -262,7 +423,7 @@ const LandingPage: React.FC = () => {
       </section>
 
       {/* AI Chatbox + CTA - Chỉ hiện khi scroll tới */}
-      <section className="chatbox-content">
+      <section className="chatbox-content" id="chatbox" ref={chatboxRef as any}>
         <Reveal sectionId="chatbox" variant="scale">
           <div className="chatbox-header">
             <h3 className="chatbox-title">AI Chatbox</h3>
@@ -291,3 +452,4 @@ const LandingPage: React.FC = () => {
 };
 
 export default LandingPage;
+// ...existing code...
