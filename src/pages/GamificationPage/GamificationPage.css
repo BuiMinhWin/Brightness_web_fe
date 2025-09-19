@@ -1,3 +1,5 @@
+
+
 /* Gamification Page Styles */
 .gamification-page {
   min-height: 100vh;
@@ -13,17 +15,19 @@
 
 /* Hero Section */
 .gamification-hero {
-  text-align: center;
+  text-align: left;
   margin-bottom: 60px;
 }
 
 .gamification-title {
   font-size: 48px;
   font-weight: 700;
+  font-style: italic;
   color: #047857;
   margin-bottom: 16px;
-  font-family: 'Georgia', serif;
+  font-family: 'Lobster', cursive;
   text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
+
 }
 
 .gamification-subtitle {
@@ -31,7 +35,8 @@
   color: #374151;
   font-weight: 400;
   max-width: 600px;
-  margin: 0 auto;
+  margin-bottom: 16px;
+  text-align: left;
 }
 
 /* Filter Section */

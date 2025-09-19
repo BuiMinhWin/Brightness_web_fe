@@ -177,6 +177,15 @@ const EventManagementPage: React.FC = () => {
     }
   };
 
+  const getEventsForDay = (day: number, month: number, year: number) => {
+  return events.filter(event => {
+    const start = new Date(event.startDate);
+    const end = new Date(event.endDate);
+    const current = new Date(year, month, day);
+    return current >= start && current <= end;
+  });
+};
+
   const handleSaveEvent = () => {
     if (eventModal.type === 'create') {
       const newEvent: Event = {
@@ -336,16 +345,29 @@ const EventManagementPage: React.FC = () => {
 
     // Current month days
     for (let day = 1; day <= daysInMonth; day++) {
-      const isToday = currentDate.getFullYear() === today.getFullYear() &&
-                     currentDate.getMonth() === today.getMonth() &&
-                     day === today.getDate();
-      
-      days.push(
-        <div key={day} className={`calendar-day ${isToday ? 'today' : ''}`}>
-          {day}
-        </div>
-      );
-    }
+  const isToday = currentDate.getFullYear() === today.getFullYear() &&
+                 currentDate.getMonth() === today.getMonth() &&
+                 day === today.getDate();
+
+  const dayEvents = getEventsForDay(day, currentDate.getMonth(), currentDate.getFullYear());
+
+  days.push(
+    <div key={day} className={`calendar-day ${isToday ? 'today' : ''}`}>
+      <div className="calendar-day-number">{day}</div>
+      <div className="calendar-events">
+        {dayEvents.map(ev => (
+          <div 
+            key={ev.id} 
+            className={`calendar-event ${getStatusClass(ev.status)}`}
+            title={ev.title}
+          >
+            {ev.title}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
 
     // Next month's first days
     const totalCells = 42; // 6 rows * 7 days
