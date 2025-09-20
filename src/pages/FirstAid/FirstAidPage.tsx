@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import FirstAidHeader from "../../components/firstAid/firstAidHeader";
 import FirstAidSearchBar from "../../components/firstAid/firstAidSearchBar";
 import VideoCard from "../../components/firstAid/VideoCard";
-import Pagination from "../../components/Pagination";
+import Pagination from "../../components/ui/Pagination";
 import sampleVideos from "../../assets/temps/sampleVideos.json";
 
 const FirstAidPage: React.FC = () => {

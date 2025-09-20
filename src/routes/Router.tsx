@@ -13,6 +13,7 @@ import Profile from "../pages/Profile/Profile";
 import Blogs from "../pages/Blogs/Blog";
 import FirstAidPage from "@/pages/FirstAid/FirstAidPage";
 import VideoPage from "@/pages/FirstAid/VideoPage";
+import AdminMain from "@/pages/admin/AdminMain";
 
 const AppRouter: React.FC = () => {
   return (
@@ -36,6 +37,7 @@ const AppRouter: React.FC = () => {
           <Route path="/blogs" element={<Blogs />} />
           <Route path="/first-aid" element={<FirstAidPage />} />
           <Route path="/video/:id" element={<VideoPage />} />
+          <Route path="/admin/*" element={<AdminMain />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </ScrollProvider>

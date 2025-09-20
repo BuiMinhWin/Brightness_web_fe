@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import BlogPost from "../../components/blogs/BlogPost";
-import Pagination from "../../components/Pagination";
+import Pagination from "../../components/ui/Pagination";
 import PostDialog from "../../components/blogs/PostDialog";
 import FAB from "../../components/blogs/FAB";
 import samplePosts from "../../assets/temps/samplePosts.json";

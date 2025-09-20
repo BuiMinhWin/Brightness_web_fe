@@ -2,6 +2,8 @@
 @import "tailwindcss/preflight";
 @import "tailwindcss/utilities";
 @import "tailwindcss";
+
+@custom-variant dark (&:is(.dark *));
 @tailwind utilities;
 
 /* Global base styles only. Page-specific styles live next to each page. */
