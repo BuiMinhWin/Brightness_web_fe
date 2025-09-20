@@ -1,3 +1,9 @@
+/* Imports must come first */
+@import url("https://fonts.googleapis.com/css2?family=Pacifico&display=swap");
+/* Tailwind v4 without preflight (base) to avoid visual shifts */
+@import "tailwindcss/theme";
+@import "tailwindcss/utilities";
+
 /* Global base styles only. Page-specific styles live next to each page. */
 html,
 body,
@@ -25,45 +31,8 @@ body {
   background: #ffffff;
   line-height: 1.5;
 }
-
-/* Tailwind layers (preflight disabled to avoid visual changes) */
-@tailwind components;
-@tailwind utilities;
-@import url("https://fonts.googleapis.com/css2?family=Pacifico&display=swap");
-@import "tailwindcss/preflight";
-@import "tailwindcss/utilities";
-@import "tailwindcss";
 
 @custom-variant dark (&:is(.dark *));
-@tailwind utilities;
-
-/* Global base styles only. Page-specific styles live next to each page. */
-html,
-body,
-#root {
-  height: 100%;
-  margin: 0;
-  padding: 0;
-}
-* {
-  box-sizing: border-box;
-}
-body {
-  margin: 0;
-  font-family:
-    "DM Sans",
-    ui-sans-serif,
-    system-ui,
-    -apple-system,
-    Segoe UI,
-    Roboto,
-    Helvetica,
-    Arial,
-    sans-serif;
-  color: #111827;
-  background: #ffffff;
-  line-height: 1.5;
-}
 
 @theme inline {
   --radius-sm: calc(var(--radius) - 4px);

@@ -52,20 +52,20 @@ const Homepage: React.FC = () => {
                 </h5>
                 <div className="achievement-stats grid grid-cols-4 ">
                   <div className="stat text-[#046753] mx-auto text-center">
-                    <div className="stat-value text-[48px] font-bold">1500</div>
+                    <div className="stat-value text-[36px] font-bold">1500</div>
                     <div className="stat-label text-[20px] font-normal">Step</div>
                     <div className="stat-sub text-black/60 text-[16px]">~150m</div>
                   </div>
                   <div className="stat text-[#046753] mx-auto text-center">
-                    <div className="stat-value text-[48px] font-bold">8h03</div>
+                    <div className="stat-value text-[36px] font-bold">8h03</div>
                     <div className="stat-label text-[20px] font-normal">Sleep</div>
                   </div>
                   <div className="stat text-[#046753 ] mx-auto text-center">
-                    <div className="stat-value text-[48px] font-bold">12K</div>
+                    <div className="stat-value text-[36px] font-bold">12K</div>
                     <div className="stat-label text-[20px] font-normal">Calories</div>
                   </div>
                   <div className="stat text-[#046753] mx-auto text-center">
-                    <div className="stat-value text-[48px] font-bold">3 cups</div>
+                    <div className="stat-value text-[36px] font-bold">3 cups</div>
                     <div className="stat-label text-[20px] font-normal">Water</div>
                     <div className="stat-sub text-black/60 text-[16px]">~1,2L</div>
                   </div>
