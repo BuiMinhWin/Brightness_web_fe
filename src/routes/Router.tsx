@@ -20,6 +20,10 @@ import LeaderboardPage from "../pages/LeaderboardPage/LeaderboardPage";
 import PricingPage from "../pages/PricingPage/PricingPage";
 import ReviewPostPage from "../pages/AdminReviewPostPage/ReviewPostPage";
 import EventManagementPage from "../pages/EventManagementPage/EventManagementPage";
+import Blogs from "../pages/Blogs/Blog";
+import FirstAidPage from "@/pages/FirstAid/FirstAidPage";
+import VideoPage from "@/pages/FirstAid/VideoPage";
+import AdminMain from "@/pages/admin/AdminMain";
 
 const AppRouter: React.FC = () => {
   return (
@@ -40,6 +44,10 @@ const AppRouter: React.FC = () => {
           <Route path="/connect" element={<Connect />} />
           <Route path="/schedule" element={<Schedule />} />
           <Route path="/profile" element={<Profile />} />
+          <Route path="/blogs" element={<Blogs />} />
+          <Route path="/first-aid" element={<FirstAidPage />} />
+          <Route path="/video/:id" element={<VideoPage />} />
+          <Route path="/admin/*" element={<AdminMain />} />
           <Route path="*" element={<Navigate to="/" replace />} />
           <Route path="/" element={<SignInPage />} />
           <Route path="/signin" element={<SignInPage />} />

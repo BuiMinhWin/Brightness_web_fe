@@ -1,0 +1,102 @@
+[
+  {
+    "user": {
+      "name": "Sarah Johnson",
+      "avatar": "https://images.unsplash.com/photo-1494790108755-2616b612b786?w=150&h=150&fit=crop&crop=face",
+      "rating": 5
+    },
+    "timestamp": "2 hours ago",
+    "content": {
+      "text": "Just finished an amazing workout session! 💪 The new fitness routine is really paying off. Feeling stronger and more energized than ever!",
+      "media": [
+        "https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=400&h=300&fit=crop",
+        "https://images.unsplash.com/photo-1540497077202-7c8a3999166f?w=400&h=300&fit=crop"
+      ]
+    },
+    "interactions": {
+      "comments": 12,
+      "retweets": 8,
+      "likes": 24
+    }
+  },
+  {
+    "user": {
+      "name": "Mike Chen",
+      "avatar": "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&h=150&fit=crop&crop=face",
+      "rating": 4
+    },
+    "timestamp": "4 hours ago",
+    "content": {
+      "text": "Beautiful sunset from my evening run today! 🌅 There's something magical about exercising outdoors during golden hour.",
+      "media": ["https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=400&h=400&fit=crop"]
+    },
+    "interactions": {
+      "comments": 7,
+      "retweets": 15,
+      "likes": 31
+    }
+  },
+  {
+    "user": {
+      "name": "Emily Rodriguez",
+      "avatar": "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=150&h=150&fit=crop&crop=face",
+      "rating": 5
+    },
+    "timestamp": "6 hours ago",
+    "content": {
+      "text": "Nutrition tips for busy professionals! 🥗 Meal prep doesn't have to be complicated. Here's my weekly routine that keeps me on track:",
+      "media": [
+        "https://images.unsplash.com/photo-1490645935967-10de6ba17061?w=400&h=300&fit=crop",
+        "https://images.unsplash.com/photo-1546554137-f86b9593a222?w=400&h=300&fit=crop",
+        "https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=400&h=300&fit=crop",
+        "https://images.unsplash.com/photo-1551782450-17144efb9c50?w=400&h=300&fit=crop"
+      ]
+    },
+    "interactions": {
+      "comments": 23,
+      "retweets": 19,
+      "likes": 47
+    }
+  },
+  {
+    "user": {
+      "name": "David Kim",
+      "avatar": "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&h=150&fit=crop&crop=face",
+      "rating": 4
+    },
+    "timestamp": "1 day ago",
+    "content": {
+      "text": "Morning meditation and yoga session complete! 🧘‍♂️ Starting the day with mindfulness sets the perfect tone for productivity and inner peace.",
+      "media": [
+        "https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?w=400&h=300&fit=crop",
+        "https://images.unsplash.com/photo-1506126613408-eca07ce68773?w=400&h=300&fit=crop"
+      ]
+    },
+    "interactions": {
+      "comments": 18,
+      "retweets": 12,
+      "likes": 35
+    }
+  },
+  {
+    "user": {
+      "name": "Lisa Wang",
+      "avatar": "https://images.unsplash.com/photo-1487412720507-e7ab37603c6f?w=150&h=150&fit=crop&crop=face",
+      "rating": 5
+    },
+    "timestamp": "2 days ago",
+    "content": {
+      "text": "Team building hike was incredible! 🏔️ Nothing beats connecting with colleagues while enjoying nature. The view from the summit was absolutely breathtaking!",
+      "media": [
+        "https://images.unsplash.com/photo-1551632811-561732d1e306?w=400&h=300&fit=crop",
+        "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=400&h=300&fit=crop",
+        "https://images.unsplash.com/photo-1464822759844-d150baecb4e1?w=400&h=300&fit=crop"
+      ]
+    },
+    "interactions": {
+      "comments": 31,
+      "retweets": 24,
+      "likes": 58
+    }
+  }
+]
