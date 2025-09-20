@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import "./EventDetailPage.css";
 import { useNavigate } from "react-router-dom";
+import Navbar from "../../components/layout/Navbar";
 
 // Định nghĩa kiểu dữ liệu Event
 interface Event {
@@ -149,31 +150,24 @@ const EventDetailPage: React.FC = () => {
   };
 
   return (
+    
     <div className="event-detail-page">
       {/* Header */}
-      <div className="event-header">
-        <div className="event-header-content">
-          <button onClick={handleYoursClick} className="back-button">
-            <ArrowLeft size={24} />
-            <span>Back to Events</span>
-          </button>
-          <h1 className="header-title">Event Details</h1>
-          <div className="header-spacer"></div>
-        </div>
-      </div>
+      <Navbar currentPage="gamification" />
+      
 
       {/* Hero Banner */}
-      <div className="hero-banner">
-        <div className="hero-overlay"></div>
-        <div className="hero-content">
-          <div className="hero-info">
-            <div
+      {/* <div className="hero-banner"> */}
+        {/* <div className="hero-overlay"></div> */}
+        {/* <div className="hero-content"> */}
+          {/* <div className="hero-info"> */}
+            {/* <div
               className="event-avatar"
               style={{ backgroundColor: getStatusBg(event.status) }}
             >
               {event.avatar}
-            </div>
-            <div className="hero-text">
+            </div> */}
+            {/* <div className="hero-text">
               <h1 className="hero-title">{event.title}</h1>
               <p className="hero-subtitle">{event.subtitle}</p>
             </div>
@@ -182,16 +176,16 @@ const EventDetailPage: React.FC = () => {
             <div className="stat-item">
               <Clock size={20} />
               <span>{event.timeRemaining}</span>
-            </div>
-            <div className="stat-item">
+            </div> */}
+            {/* <div className="stat-item">
               <Users size={20} />
               <span>{event.participants}</span>
             </div>
             <div className="stat-item">
               <Trophy size={20} />
               <span>{event.prize}</span>
-            </div>
-            <div
+            </div> */}
+            {/* <div
               className="status-badge"
               style={{
                 backgroundColor: getStatusBg(event.status),
@@ -199,10 +193,49 @@ const EventDetailPage: React.FC = () => {
               }}
             >
               {event.status}
-            </div>
-          </div>
+            </div> */}
+          {/* </div> */}
+        {/* </div> */}
+      {/* </div> */}
+
+      {/* <div className="hero-banner gradient-overlay">
+  <div className="hero-overlay"></div>
+  
+  <div className="hero-content">
+    <h1 className="hero-title">
+      Transform Your Fitness Journey
+    </h1>
+    
+    <p className="hero-subtitle">
+      Join thousands who've achieved their goals with our AI-powered fitness platform
+    </p>
+    
+    <div className="hero-cta">
+      <button className="cta-button cta-primary">
+        Start Free Trial
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+          <path d="M5 12h14M12 5l7 7-7 7" stroke="currentColor" strokeWidth="2"/>
+        </svg>
+      </button>
+      
+      <button className="cta-button cta-secondary">
+        Learn More
+      </button>
+    </div>
+  </div>
+</div> */}
+
+      <div className="event-header">
+        <div className="event-header-content">
+          <button onClick={handleYoursClick} className="back-button">
+            <ArrowLeft size={24} />
+          </button>
+          <h1 className="header-title">Event Details</h1>
+          <div className="header-spacer"></div>
         </div>
       </div>
+
+      <h1 className="hero-title">{event.title}</h1>
 
       {/* Content */}
       <div className="event-content">

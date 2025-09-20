@@ -27,7 +27,7 @@ const LeaderboardPage: React.FC = () => {
   const { missionId } = useParams<{ missionId: string }>();
   const [activeTab, setActiveTab] = useState<'today' | 'this-week' | 'all-time'>('today');
 
-  // Convert missionId param từ string sang number (fallback 1)
+  // Convert missionId param from string to number (fallback 1)
   const missionIdNum = missionId ? parseInt(missionId, 10) : 1;
 
   // Mock mission data
@@ -54,7 +54,7 @@ const LeaderboardPage: React.FC = () => {
   const currentUserData: LeaderboardEntry = {
     id: 999,
     rank: 15,
-    name: 'You',
+    name: 'Name',
     points: 253,
     avatar: '/api/placeholder/60/60',
     isCurrentUser: true,
@@ -112,92 +112,100 @@ const LeaderboardPage: React.FC = () => {
           </button>
         </div>
 
-        {/* Top 3 Podium */}
-        <div className="top-three-container">
-          <h2 className="top-title">TOP 10</h2>
+        {/* Main: Two Column Layout */}
+        <div className="leaderboard-main">
+          {/* Left Column: Top 3 Podium */}
+          <div className="top-three-container">
+            <h2 className="top-title">TOP 10</h2>
+            <div className="podium">
+              {/* Second Place */}
+              {topThree[1] && (
+                <div className="podium-place second">
+                  <div className="podium-avatar">
+                    <img src={topThree[1].avatar} alt={topThree[1].name} />
+                    <div className="podium-rank">2</div>
+                  </div>
+                  <div className="podium-name">{topThree[1].name}</div>
+                  <div className="podium-points">• {topThree[1].points}</div>
+                </div>
+              )}
 
-          <div className="podium">
-            {/* Second Place */}
-            <div className="podium-place second">
-              <div className="podium-avatar">
-                <img src={topThree[1]?.avatar || '/api/placeholder/60/60'} alt={topThree[1]?.name} />
-              </div>
-              <div className="podium-rank">2</div>
-              <div className="podium-name">{topThree[1]?.name}</div>
-              <div className="podium-points">• {topThree[1]?.points}</div>
-            </div>
+              {/* First Place */}
+              {topThree[0] && (
+                <div className="podium-place first">
+                  <div className="podium-avatar">
+                    <img src={topThree[0].avatar} alt={topThree[0].name} />
+                    <div className="podium-rank">1</div>
+                  </div>
+                  <div className="podium-name">{topThree[0].name}</div>
+                  <div className="podium-points">• {topThree[0].points}</div>
+                </div>
+              )}
 
-            {/* First Place */}
-            <div className="podium-place first">
-              <div className="podium-avatar">
-                <img src={topThree[0]?.avatar || '/api/placeholder/60/60'} alt={topThree[0]?.name} />
-              </div>
-              <div className="podium-rank">1</div>
-              <div className="podium-name">{topThree[0]?.name}</div>
-              <div className="podium-points">• {topThree[0]?.points}</div>
-            </div>
-
-            {/* Third Place */}
-            <div className="podium-place third">
-              <div className="podium-avatar">
-                <img src={topThree[2]?.avatar || '/api/placeholder/60/60'} alt={topThree[2]?.name} />
-              </div>
-              <div className="podium-rank">3</div>
-              <div className="podium-name">{topThree[2]?.name}</div>
-              <div className="podium-points">• {topThree[2]?.points}</div>
+              {/* Third Place */}
+              {topThree[2] && (
+                <div className="podium-place third">
+                  <div className="podium-avatar">
+                    <img src={topThree[2].avatar} alt={topThree[2].name} />
+                    <div className="podium-rank">3</div>
+                  </div>
+                  <div className="podium-name">{topThree[2].name}</div>
+                  <div className="podium-points">• {topThree[2].points}</div>
+                </div>
+              )}
             </div>
           </div>
-        </div>
 
-        {/* Rest of Leaderboard */}
-        <div className="leaderboard-list">
-          {restOfLeaderboard.map((entry) => (
-            <div key={entry.id} className="leaderboard-item">
-              <div className="rank-number">{String(entry.rank).padStart(2, '0')}</div>
-              <div className="user-avatar">
-                <img src={entry.avatar} alt={entry.name} />
-              </div>
-              <div className="user-info">
-                <span className="user-name">{entry.name}</span>
-                <span className="user-points">{entry.points} points</span>
-              </div>
-              <div className="status-indicator">
-                {entry.rank <= 5 ? (
-                  <div className="status-dot blue"></div>
-                ) : (
-                  <div className="status-dot red"></div>
-                )}
-              </div>
+          {/* Right Column: Leaderboard List + Current User */}
+          <div className="leaderboard-right">
+            <div className="leaderboard-list">
+              {restOfLeaderboard.map((entry) => (
+                <div key={entry.id} className="leaderboard-item">
+                  <div className="rank-number">{String(entry.rank).padStart(2, '0')}</div>
+                  <div className="user-avatar">
+                    <img src={entry.avatar} alt={entry.name} />
+                  </div>
+                  <div className="user-info">
+                    <span className="user-name">{entry.name}</span>
+                    <span className="user-points">{entry.points} points</span>
+                  </div>
+                  <div className="status-indicator">
+                    {entry.rank <= 5 ? (
+                      <div className="status-dot blue"></div>
+                    ) : (
+                      <div className="status-dot red"></div>
+                    )}
+                  </div>
+                </div>
+              ))}
             </div>
-          ))}
-        </div>
 
-        {/* Current User Position */}
-        <div className="current-user-section">
-          <div className="separator-dots">
-            <span>•</span>
-            <span>•</span>
-            <span>•</span>
-          </div>
-
-          <div className="you-are-here">
-            <span>You are here!!</span>
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-              <path d="M7 17L17 7M17 7H7M17 7V17" stroke="currentColor" strokeWidth="2" />
-            </svg>
-          </div>
-
-          <div className="current-user-item">
-            <div className="rank-number">{String(currentUserData.rank).padStart(2, '0')}</div>
-            <div className="user-avatar current">
-              <img src={currentUserData.avatar} alt={currentUserData.name} />
-            </div>
-            <div className="user-info">
-              <span className="user-name current">{currentUserData.name}</span>
-              <span className="user-points">{currentUserData.points} points</span>
-            </div>
-            <div className="status-indicator">
-              <div className="status-dot pink"></div>
+            {/* Current User Section */}
+            <div className="current-user-section">
+              <div className="separator-dots">
+                <span>•</span>
+                <span>•</span>
+                <span>•</span>
+              </div>
+              <div className="you-are-here">
+                <span>You are here!!</span>
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                  <path d="M7 17L17 7M17 7H7M17 7V17" stroke="currentColor" strokeWidth="2" />
+                </svg>
+              </div>
+              <div className="current-user-item">
+                <div className="rank-number">xxx</div>
+                <div className="user-avatar current">
+                  <img src={currentUserData.avatar} alt={currentUserData.name} />
+                </div>
+                <div className="user-info">
+                  <span className="user-name current">{currentUserData.name}</span>
+                  <span className="user-points">{currentUserData.points} points</span>
+                </div>
+                <div className="status-indicator">
+                  <div className="status-dot pink"></div>
+                </div>
+              </div>
             </div>
           </div>
         </div>

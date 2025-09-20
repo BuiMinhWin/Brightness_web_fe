@@ -8,15 +8,15 @@
 
 /* Header Styles */
 .event-header {
-  background: linear-gradient(to right, #047857, #3b82f6);
-  color: white;
-  padding: 24px;
+  background: white;
+  padding: 5px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 
 .event-header-content {
   max-width: 1200px;
-  margin: 0 auto;
+  /* margin: 0 auto; */
+  margin-top: 75px;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -44,6 +44,8 @@
   font-weight: 700;
   text-align: center;
   flex: 1;
+  color: black;
+  margin-left: 200px;
 }
 
 .header-spacer {
@@ -53,15 +55,29 @@
 /* Hero Banner */
 .hero-banner {
   position: relative;
-  background: linear-gradient(to right, #7c3aed, #ec4899, #f97316);
+  width: 100vw;
+  height: 80vh;
+  min-height: 600px;
+  margin-left: calc(-50vw + 50%);
+  background-image: url('path/to/your/image.jpg'); /* Replace with your image path */
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
   color: white;
-  padding: 64px 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
 }
 
 .hero-overlay {
   position: absolute;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.2);
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.4); /* Dark overlay for better text readability */
+  backdrop-filter: blur(1px);
 }
 
 .hero-content {
@@ -92,7 +108,7 @@
 }
 
 .hero-text {
-  text-align: left;
+  text-align: center;
 }
 
 .hero-title {
@@ -147,12 +163,13 @@
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
 }
 
-.card-header {
+/* .card-header {
   display: flex;
-  align-items: center;
+  align-items: flex-start; 
   gap: 12px;
   margin-bottom: 24px;
-}
+  text-align: left; 
+} */
 
 .icon-wrapper {
   width: 40px;
@@ -180,10 +197,19 @@
   background: #eab308;
 }
 
+.card-header {
+  display: flex;
+  align-items: center;   /* icon và chữ nằm cùng hàng giữa */
+  gap: 100px;             /* khoảng cách giữa icon và chữ */
+  margin-bottom: 24px;
+}
+
 .section-title {
   font-size: 32px;
   font-weight: 700;
   color: #1f2937;
+  margin: 0;             /* bỏ margin thừa */
+  text-align: left;      /* chữ luôn căn trái */
 }
 
 .description-text {

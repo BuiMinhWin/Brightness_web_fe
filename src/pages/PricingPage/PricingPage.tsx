@@ -115,7 +115,7 @@ const PricingPage: React.FC = () => {
       <div className="pricing-content">
         {/* Header */}
         <div className="pricing-header">
-          <button className="back-button" onClick={() => navigate('/gamification')}>
+          <button className="back-button" onClick={() => navigate('/your-missions')}>
           {/* <button className="back-button" onClick={() => navigate('/gamification')}>
         ← Back to Gamification
           </button> */}
@@ -235,7 +235,7 @@ const PricingPage: React.FC = () => {
                 
                 <div className="confirmation-text">
                   <p>Are you sure you want to upgrade to the Premium plan?</p>
-                  <p className="billing-note">You will be charged {pendingPlan.price} {pendingPlan.subtitle.replace('/', '')} and your subscription will auto-renew.</p>
+                  {/* <p className="billing-note">You will be charged {pendingPlan.price} {pendingPlan.subtitle.replace('/', '')} and your subscription will auto-renew.</p> */}
                 </div>
 
                 <div className="modal-actions">

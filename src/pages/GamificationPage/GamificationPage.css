@@ -10,7 +10,7 @@
 .gamification-content {
   max-width: 1200px;
   margin: 0 auto;
-  padding: 40px 20px;
+  padding: 20px 20px;
 }
 
 /* Hero Section */
@@ -35,7 +35,7 @@
   color: #374151;
   font-weight: 400;
   max-width: 600px;
-  margin-bottom: 16px;
+  margin-bottom: 90px;
   text-align: left;
 }
 
@@ -115,6 +115,14 @@
   overflow: hidden;
 }
 
+.competition-title{
+  font-size: 22px;
+  font-weight: 700;
+  color: #1f2937;
+  margin-bottom: 12px;
+  color:  #FF7B17;
+}
+
 .competition-card::before {
   content: '';
   position: absolute;
@@ -129,6 +137,7 @@
   transform: translateY(-8px);
   box-shadow: 0 16px 32px rgba(0, 0, 0, 0.15);
 }
+
 
 .card-header {
   display: flex;

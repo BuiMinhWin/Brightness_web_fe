@@ -16,7 +16,7 @@
   display: flex;
   align-items: center;
   gap: 12px;
-  margin-top: 40px;
+  margin-top: 20px;
   margin-bottom: 20px;
   background: rgba(255, 255, 255, 0.7);
   backdrop-filter: blur(10px);
@@ -77,11 +77,10 @@
 /* Tab Navigation */
 .tab-navigation {
   display: flex;
-  background: white;
   border-radius: 12px;
   padding: 4px;
   margin-bottom: 24px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  gap : 8px;
 }
 
 .tab-button {

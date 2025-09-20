@@ -47,20 +47,22 @@ interface EventModal {
 
 const EventManagementPage: React.FC = () => {
   const [currentDate, setCurrentDate] = useState(new Date());
+  const [activeView, setActiveView] = useState('Month');
+  
   const [events, setEvents] = useState<Event[]>([
     {
       id: 1,
-      title: "Summer Fitness Challenge",
-      subtitle: "Get fit this summer with our 30-day challenge",
-      status: "active",
-      timeRemaining: "15 days",
-      participants: "234",
+      title: "StepUp Sprint",
+      subtitle: "6 August 2025 07:19 AM",
+      status: "upcoming",
+      timeRemaining: "5 days to start",
+      participants: "15",
       prize: "$500",
       avatar: "",
-      description: "Join our exciting summer fitness challenge...",
-      startDate: "2025-08-01",
-      endDate: "2025-08-31",
-      durationDays: 30,
+      description: "56 Gaylon Mission Suite 157, Meaghanberg",
+      startDate: "2025-08-06",
+      endDate: "2025-08-20",
+      durationDays: 14,
       minPerDay: 30,
       howToParticipate: {
         steps: [
@@ -77,29 +79,83 @@ const EventManagementPage: React.FC = () => {
     },
     {
       id: 2,
-      title: "Yoga Mastery Program",
-      subtitle: "Master the art of yoga in 21 days",
+      title: "Core Clash",
+      subtitle: "16 August 2025 at 5:00 PM",
       status: "upcoming",
-      timeRemaining: "5 days to start",
-      participants: "89",
+      timeRemaining: "10 days to start",
+      participants: "20",
       prize: "$300",
       avatar: "",
-      description: "Transform your practice with our yoga program...",
-      startDate: "2025-09-25",
-      endDate: "2025-10-15",
-      durationDays: 21,
+      description: "853 Moore Flats Suite 158, Sweden",
+      startDate: "2025-08-16",
+      endDate: "2025-08-30",
+      durationDays: 14,
       minPerDay: 45,
       howToParticipate: {
         steps: [
           { number: 1, title: "Join", description: "Register for the program" },
-          { number: 2, title: "Practice", description: "Complete daily yoga sessions" }
+          { number: 2, title: "Practice", description: "Complete daily sessions" }
         ],
-        rules: ["Practice yoga for 45 minutes daily", "Submit daily check-ins"]
+        rules: ["Core workout for 45 minutes daily", "Submit daily check-ins"]
       },
       rewards: {
-        grandPrize: { amount: "$300", description: "Yoga retreat voucher" },
-        topFinishers: { count: 5, reward: "Yoga equipment set" },
+        grandPrize: { amount: "$300", description: "Fitness equipment voucher" },
+        topFinishers: { count: 5, reward: "Core training gear" },
         allCompetitors: { reward: "Digital certificate" }
+      }
+    },
+    {
+      id: 3,
+      title: "The 3-Day Burn",
+      subtitle: "22-24 August 2025 at 8:00 PM",
+      status: "upcoming",
+      timeRemaining: "16 days to start",
+      participants: "14",
+      prize: "$200",
+      avatar: "",
+      description: "646 Walter Road Apt. 571, Turks and Caicos Islands",
+      startDate: "2025-08-22",
+      endDate: "2025-08-25",
+      durationDays: 3,
+      minPerDay: 60,
+      howToParticipate: {
+        steps: [
+          { number: 1, title: "Register", description: "Sign up for intensive challenge" },
+          { number: 2, title: "Complete", description: "Finish daily burn sessions" }
+        ],
+        rules: ["High intensity workout for 60 minutes daily", "Complete all 3 days"]
+      },
+      rewards: {
+        grandPrize: { amount: "$200", description: "Burn challenge winner prize" },
+        topFinishers: { count: 3, reward: "HIIT equipment" },
+        allCompetitors: { reward: "Completion badge" }
+      }
+    },
+    {
+      id: 4,
+      title: "Sweat & Win",
+      subtitle: "27 August 2025 at 10:00 PM",
+      status: "upcoming",
+      timeRemaining: "21 days to start",
+      participants: "12",
+      prize: "$400",
+      avatar: "",
+      description: "506 Satterfield Tunnel Apt. 963, San Marino",
+      startDate: "2025-08-27",
+      endDate: "2025-09-10",
+      durationDays: 14,
+      minPerDay: 40,
+      howToParticipate: {
+        steps: [
+          { number: 1, title: "Join", description: "Enter the sweat challenge" },
+          { number: 2, title: "Sweat", description: "Complete daily workouts" }
+        ],
+        rules: ["Cardio workout for 40 minutes daily", "Track heart rate"]
+      },
+      rewards: {
+        grandPrize: { amount: "$400", description: "Sweat challenge grand prize" },
+        topFinishers: { count: 7, reward: "Cardio equipment" },
+        allCompetitors: { reward: "Participation medal" }
       }
     }
   ]);
@@ -132,7 +188,6 @@ const EventManagementPage: React.FC = () => {
   });
 
   useEffect(() => {
-    // Calculate duration when dates change
     if (formData.startDate && formData.endDate) {
       const start = new Date(formData.startDate);
       const end = new Date(formData.endDate);
@@ -176,15 +231,6 @@ const EventManagementPage: React.FC = () => {
       setEvents(events.filter(event => event.id !== eventId));
     }
   };
-
-  const getEventsForDay = (day: number, month: number, year: number) => {
-  return events.filter(event => {
-    const start = new Date(event.startDate);
-    const end = new Date(event.endDate);
-    const current = new Date(year, month, day);
-    return current >= start && current <= end;
-  });
-};
 
   const handleSaveEvent = () => {
     if (eventModal.type === 'create') {
@@ -248,7 +294,6 @@ const EventManagementPage: React.FC = () => {
 
   const removeStep = (index: number) => {
     const newSteps = formData.howToParticipate?.steps.filter((_, i) => i !== index) || [];
-    // Renumber steps
     const renumberedSteps = newSteps.map((step, i) => ({ ...step, number: i + 1 }));
     setFormData(prev => ({
       ...prev,
@@ -294,15 +339,6 @@ const EventManagementPage: React.FC = () => {
     }));
   };
 
-  const getStatusClass = (status: string) => {
-    switch (status) {
-      case 'active': return 'status-active';
-      case 'upcoming': return 'status-upcoming';
-      case 'completed': return 'status-completed';
-      default: return 'status-upcoming';
-    }
-  };
-
   // Calendar functionality
   const getDaysInMonth = (date: Date) => {
     return new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate();
@@ -324,6 +360,24 @@ const EventManagementPage: React.FC = () => {
     });
   };
 
+  const getEventForDate = (date: Date) => {
+    const dateStr = date.toISOString().split('T')[0];
+    return events.filter(event => {
+      const startDate = new Date(event.startDate);
+      const endDate = new Date(event.endDate);
+      return date >= startDate && date <= endDate;
+    });
+  };
+
+  const getEventClass = (title: string) => {
+    const titleLower = title.toLowerCase();
+    if (titleLower.includes('core')) return 'event-core-clash';
+    if (titleLower.includes('step')) return 'event-stepup-sprint';
+    if (titleLower.includes('burn')) return 'event-3day-burn';
+    if (titleLower.includes('sweat')) return 'event-sweat-win';
+    return '';
+  };
+
   const renderCalendar = () => {
     const daysInMonth = getDaysInMonth(currentDate);
     const firstDay = getFirstDayOfMonth(currentDate);
@@ -334,79 +388,74 @@ const EventManagementPage: React.FC = () => {
 
     // Previous month's last days
     const prevMonth = new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 0);
+    const prevMonthDays = prevMonth.getDate();
     for (let i = firstDay - 1; i >= 0; i--) {
-      const day = prevMonth.getDate() - i;
+      const day = prevMonthDays - i;
+      const date = new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, day);
+      const dayEvents = getEventForDate(date);
+      
       days.push(
         <div key={`prev-${day}`} className="calendar-day other-month">
-          {day}
+          <div className="calendar-day-number">{day}</div>
+          {dayEvents.map(event => (
+            <div key={event.id} className={`calendar-event ${getEventClass(event.title)}`}>
+              {event.title}
+            </div>
+          ))}
         </div>
       );
     }
 
     // Current month days
     for (let day = 1; day <= daysInMonth; day++) {
-  const isToday = currentDate.getFullYear() === today.getFullYear() &&
-                 currentDate.getMonth() === today.getMonth() &&
-                 day === today.getDate();
-
-  const dayEvents = getEventsForDay(day, currentDate.getMonth(), currentDate.getFullYear());
-
-  days.push(
-    <div key={day} className={`calendar-day ${isToday ? 'today' : ''}`}>
-      <div className="calendar-day-number">{day}</div>
-      <div className="calendar-events">
-        {dayEvents.map(ev => (
-          <div 
-            key={ev.id} 
-            className={`calendar-event ${getStatusClass(ev.status)}`}
-            title={ev.title}
-          >
-            {ev.title}
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
+      const date = new Date(currentDate.getFullYear(), currentDate.getMonth(), day);
+      const isToday = currentDate.getFullYear() === today.getFullYear() &&
+                     currentDate.getMonth() === today.getMonth() &&
+                     day === today.getDate();
+      const dayEvents = getEventForDate(date);
+      
+      days.push(
+        <div key={day} className={`calendar-day ${isToday ? 'today' : ''}`}>
+          <div className="calendar-day-number">{day}</div>
+          {dayEvents.map(event => (
+            <div key={event.id} className={`calendar-event ${getEventClass(event.title)}`}>
+              {event.title}
+            </div>
+          ))}
+        </div>
+      );
+    }
 
     // Next month's first days
     const totalCells = 42; // 6 rows * 7 days
     const remainingCells = totalCells - days.length;
     for (let day = 1; day <= remainingCells; day++) {
+      const date = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, day);
+      const dayEvents = getEventForDate(date);
+      
       days.push(
         <div key={`next-${day}`} className="calendar-day other-month">
-          {day}
+          <div className="calendar-day-number">{day}</div>
+          {dayEvents.map(event => (
+            <div key={event.id} className={`calendar-event ${getEventClass(event.title)}`}>
+              {event.title}
+            </div>
+          ))}
         </div>
       );
     }
 
-    return (
-      <div className="calendar-widget">
-        <div className="calendar-header">
-          <h3 className="calendar-title">
-            {monthNames[currentDate.getMonth()]} {currentDate.getFullYear()}
-          </h3>
-          <div className="calendar-nav">
-            <button className="calendar-nav-btn" onClick={() => navigateMonth('prev')}>
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-                <polyline points="15,18 9,12 15,6" stroke="currentColor" strokeWidth="2"/>
-              </svg>
-            </button>
-            <button className="calendar-nav-btn" onClick={() => navigateMonth('next')}>
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-                <polyline points="9,18 15,12 9,6" stroke="currentColor" strokeWidth="2"/>
-              </svg>
-            </button>
-          </div>
-        </div>
-        <div className="calendar-grid">
-          {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
-            <div key={day} className="calendar-day-header">{day}</div>
-          ))}
-          {days}
-        </div>
-      </div>
-    );
+    return days;
+  };
+
+  const formatTodayDate = () => {
+    const today = new Date();
+    const options: Intl.DateTimeFormatOptions = { 
+      day: '2-digit', 
+      month: '2-digit', 
+      year: 'numeric' 
+    };
+    return `Today ${today.toLocaleDateString('en-GB', options)}`;
   };
 
   return (
@@ -414,87 +463,90 @@ const EventManagementPage: React.FC = () => {
       <div className="event-management-content">
         {/* Hero Section */}
         <div className="event-management-hero">
-          <h1 className="event-management-title">Event Management</h1>
-          <button className="add-event-btn" onClick={handleCreateEvent}>
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-              <line x1="12" y1="5" x2="12" y2="19" stroke="currentColor" strokeWidth="2"/>
-              <line x1="5" y1="12" x2="19" y2="12" stroke="currentColor" strokeWidth="2"/>
-            </svg>
-            Add New Event
-          </button>
+          <h1 className="event-management-title">Calender</h1>
         </div>
 
-        {/* Calendar Widget */}
-        {renderCalendar()}
+        {/* Main Layout */}
+        <div className="event-management-main">
+          {/* Left Sidebar - Events */}
+          <div className="events-sidebar">
+            <div className="sidebar-header">
+              <button className="add-event-btn" onClick={handleCreateEvent}>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                  <line x1="12" y1="5" x2="12" y2="19" stroke="currentColor" strokeWidth="2"/>
+                  <line x1="5" y1="12" x2="19" y2="12" stroke="currentColor" strokeWidth="2"/>
+                </svg>
+                Add New Event
+              </button>
+            </div>
 
-        {/* Events Grid */}
-        <div className="events-grid">
-          {events.map((event) => (
-            <div key={event.id} className="event-card">
-              <div className="event-card-header">
-                {event.avatar ? (
-                  <img src={event.avatar} alt={event.title} className="event-avatar" />
-                ) : (
-                  <div className="event-avatar" style={{ 
-                    background: 'linear-gradient(135deg, #059669 0%, #84cc16 100%)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    color: 'white',
-                    fontSize: '48px',
-                    fontWeight: 'bold'
-                  }}>
+            <div className="events-coming-soon">Event coming soon</div>
+
+            <div className="events-list">
+              {events.map((event, index) => (
+                <div key={event.id} className="event-item" onClick={() => handleEditEvent(event)}>
+                  <div className="event-avatar">
                     {event.title.charAt(0)}
                   </div>
-                )}
-                <div className={`event-status ${getStatusClass(event.status)}`}>
-                  {event.status}
-                </div>
-              </div>
-              
-              <div className="event-card-content">
-                <h3 className="event-card-title">{event.title}</h3>
-                <p className="event-card-subtitle">{event.subtitle}</p>
-                
-                <div className="event-card-stats">
-                  <div className="event-stat">
-                    <div className="event-stat-value">{event.timeRemaining}</div>
-                    <div className="event-stat-label">Duration</div>
-                  </div>
-                  <div className="event-stat">
-                    <div className="event-stat-value">{event.participants}</div>
-                    <div className="event-stat-label">Participants</div>
-                  </div>
-                  <div className="event-stat">
-                    <div className="event-stat-value">{event.prize}</div>
-                    <div className="event-stat-label">Prize</div>
+                  <div className="event-info">
+                    <div className="event-title">{event.title}</div>
+                    <div className="event-details">{event.subtitle}</div>
+                    <div className="event-location">{event.description}</div>
+                    <div className="event-participants">
+                      <div className="participant-avatars">
+                        <div className="participant-avatar">A</div>
+                        <div className="participant-avatar">B</div>
+                        <div className="participant-avatar">C</div>
+                      </div>
+                      <div className="participant-count">{event.participants}+</div>
+                    </div>
                   </div>
                 </div>
-                
-                <div className="event-card-actions">
-                  <button 
-                    className="event-action-btn edit-btn"
-                    onClick={() => handleEditEvent(event)}
-                  >
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" style={{ marginRight: '8px' }}>
-                      <path d="m18 2 4 4-14 14H4v-4L18 2z" stroke="currentColor" strokeWidth="2"/>
-                    </svg>
-                    Edit
-                  </button>
-                  <button 
-                    className="event-action-btn delete-btn"
-                    onClick={() => handleDeleteEvent(event.id)}
-                  >
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" style={{ marginRight: '8px' }}>
-                      <polyline points="3,6 5,6 21,6" stroke="currentColor" strokeWidth="2"/>
-                      <path d="m19,6v14a2,2 0 0,1-2,2H7a2,2 0 0,1-2-2V6m3,0V4a2,2 0 0,1,2-2h4a2,2 0 0,1,2,2v2" stroke="currentColor" strokeWidth="2"/>
-                    </svg>
-                    Delete
-                  </button>
+              ))}
+            </div>
+
+            <button className="see-more-btn">See More</button>
+          </div>
+
+          {/* Right Side - Calendar */}
+          <div className="calendar-section">
+            <div className="calendar-header">
+              <div className="today-info">{formatTodayDate()}</div>
+              <div className="calendar-controls">
+                <button className="calendar-nav-btn" onClick={() => navigateMonth('prev')}>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                    <polyline points="15,18 9,12 15,6" stroke="currentColor" strokeWidth="2"/>
+                  </svg>
+                </button>
+                <h3 className="calendar-title">
+                  {new Date(currentDate).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
+                </h3>
+                <button className="calendar-nav-btn" onClick={() => navigateMonth('next')}>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                    <polyline points="9,18 15,12 9,6" stroke="currentColor" strokeWidth="2"/>
+                  </svg>
+                </button>
+                <div className="view-toggles">
+                  {['Day', 'Week', 'Month'].map(view => (
+                    <button
+                      key={view}
+                      className={`view-toggle ${activeView === view ? 'active' : ''}`}
+                      onClick={() => setActiveView(view)}
+                    >
+                      {view}
+                    </button>
+                  ))}
                 </div>
               </div>
             </div>
-          ))}
+            
+            <div className="calendar-grid">
+              {['MON', 'TUE', 'WED', 'THE', 'FRI', 'SAT', 'SUN'].map(day => (
+                <div key={day} className="calendar-day-header">{day}</div>
+              ))}
+              {renderCalendar()}
+            </div>
+          </div>
         </div>
       </div>
 
