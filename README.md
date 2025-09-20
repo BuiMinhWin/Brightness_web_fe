@@ -1,3 +1,13 @@
+Brightness Web FE
+
+Mã nguồn frontend được khởi tạo bằng Vite + React + TypeScript.
+
+I. Công nghệ
+
+- React 18, TypeScript, Vite
+
+II. Cấu trúc thư mục hiện tại
+
 brightness_web_fe/
 ├─ public/ # Các tệp tĩnh (favicon, index.html, manifest.json)
 ├─ src/ # Mã nguồn chính

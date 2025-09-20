@@ -4,11 +4,7 @@ import { ThemeProvider } from "@mui/material/styles";
 import theme from "./mui/theme";
 
 const App: React.FC = () => {
-  return (
-    <ThemeProvider theme={theme}>
-      <Router />
-    </ThemeProvider>
-  );
+  return <RootLayout />;
 };
 
 export default App;

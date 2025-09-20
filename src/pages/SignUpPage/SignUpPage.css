@@ -1,0 +1,428 @@
+/* Container */
+.signup-page {
+  display: flex;
+  min-height: 100vh;
+  max-height: 100vh;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+/* Left: Yoga Image */
+.signup-bg-image {
+  flex: 0 0 320px; /* Thay đổi từ 35% thành fixed width */
+  min-width: 280px; /* Thêm min-width */
+  max-width: 400px; /* Thêm max-width để giới hạn */
+  background-size: cover;
+  background-repeat: no-repeat;
+  background-position: center;
+  background-color: #f8f9fa;
+  overflow: hidden; /* Thêm để ẩn phần ảnh thừa */
+}
+
+/* Right: Form */
+.signup-content {
+  flex: 1; /* Thay đổi từ 65% thành flex: 1 */
+  min-width: 0; /* Thêm để cho phép shrink */
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 30px 40px; /* Giảm padding */
+  background: linear-gradient(to bottom, #c4fccc, #c5edfc, #bdfcbb);
+  position: relative;
+  box-sizing: border-box;
+}
+
+/* Form Container */
+.signup-form-container {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+/* Top Nav */
+.signup-top-nav {
+  position: absolute;
+  top: 20px; /* Giảm từ 24px */
+  right: 24px; /* Giảm từ 32px */
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  z-index: 10; /* Thêm z-index cao hơn */
+}
+
+.signup-nav-text {
+  font-size: 14px;
+  color: #333;
+}
+
+.signup-signin-btn {
+  background: #015c48;
+  color: #fff;
+  border: none;
+  padding: 8px 18px; /* Giảm padding */
+  border-radius: 20px;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 14px; /* Thêm font-size */
+  transition: background 0.2s;
+}
+
+.signup-signin-btn:hover {
+  background: #014133;
+}
+
+/* Card */
+.signup-form-card {
+  width: 100%;
+  height: auto; /* Thay đổi từ 93% thành auto */
+  max-height: 90vh; /* Thêm max-height */
+  max-width: 550px; /* Giảm từ 600px */
+  background: #fff;
+  border-radius: 12px;
+  padding: 30px 35px; /* Giảm padding */
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+  margin: 0 auto;
+  overflow-y: auto; /* Thêm scroll nếu cần */
+}
+
+/* Header container */
+.signup-header {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px; /* Giảm từ 16px */
+  margin-bottom: 6px; /* Giảm từ 8px */
+  margin-top: -20px; /* Tăng margin-top âm để đẩy lên */
+}
+
+/* Logo */
+.signup-logo {
+  width: 80px; /* Giảm từ 70px */
+  height: 60px; /* Giảm từ 35px */
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-position: center;
+  flex-shrink: 0;
+}
+
+.signup-title {
+  font-size: 24px; /* Giảm từ 26px */
+  font-weight: 600;
+  margin: 0;
+  color: #0f172a;
+}
+
+.signup-subtitle {
+  font-size: 14px;
+  color: #64748b;
+  text-align: center;
+  margin-bottom: 20px; /* Giảm từ 24px */
+  line-height: 1.4;
+}
+
+/* Inputs */
+.signup-field {
+  margin-bottom: 16px; /* Giảm từ 18px */
+}
+
+.signup-label {
+  display: block;
+  font-size: 14px;
+  margin-bottom: 6px;
+  font-weight: 500;
+  color: #333;
+}
+
+.signup-input {
+  width: 100%;
+  padding: 12px; /* Giảm từ 14px */
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+  font-size: 14px;
+  box-sizing: border-box;
+  transition:
+    border-color 0.2s,
+    box-shadow 0.2s;
+}
+
+.signup-input:focus {
+  border-color: #10b981;
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1);
+}
+
+/* Password */
+.signup-password-container {
+  position: relative;
+}
+
+.signup-password-toggle {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 12px;
+  color: #64748b;
+  padding: 4px;
+}
+
+/* Terms checkbox */
+.signup-terms {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin-bottom: 18px; /* Giảm từ 20px */
+}
+
+.signup-checkbox {
+  margin-top: 2px;
+  width: 16px;
+  height: 16px;
+  accent-color: #10b981;
+}
+
+.signup-terms-text {
+  font-size: 12px; /* Giảm từ 13px */
+  color: #64748b;
+  line-height: 1.4;
+}
+
+.signup-terms-link {
+  color: #f59e0b;
+  text-decoration: none;
+}
+
+.signup-terms-link:hover {
+  text-decoration: underline;
+}
+
+/* Buttons */
+.signup-btn {
+  width: 100%;
+  padding: 12px; /* Giảm từ 14px */
+  font-size: 15px;
+  font-weight: 600;
+  border: none;
+  border-radius: 8px;
+  background: #9ca3af;
+  color: white;
+  cursor: pointer;
+  margin-bottom: 0px;
+  transition: background 0.2s;
+}
+
+.signup-btn.enabled {
+  background: #10b981;
+}
+
+.signup-btn.enabled:hover {
+  background: #059669;
+}
+
+/* Divider */
+.signup-divider {
+  margin: 14px 0; /* Giảm từ 16px */
+  text-align: center;
+  color: #9ca3af;
+  font-size: 14px;
+  position: relative;
+}
+
+.signup-divider::before,
+.signup-divider::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  width: 40%;
+  height: 1px;
+  background: #e5e7eb;
+}
+
+.signup-divider::before {
+  left: 0;
+}
+
+.signup-divider::after {
+  right: 0;
+}
+
+/* Social buttons */
+.signup-social {
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  gap: 14px; /* Giảm từ 16px */
+  margin-bottom: 0px;
+}
+
+.signup-social-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: auto;
+  min-width: 110px; /* Giảm từ 120px */
+  height: 44px; /* Giảm từ 48px */
+  padding: 10px 16px; /* Giảm padding */
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  background: #fff;
+  cursor: pointer;
+  transition:
+    background 0.2s,
+    border-color 0.2s;
+}
+
+.signup-social-btn:hover {
+  background: #f8fafc;
+  border-color: #cbd5e1;
+}
+
+.signup-social-text {
+  font-size: 14px;
+  font-weight: 500;
+  color: #374151;
+}
+
+/* Responsive - Cải thiện */
+@media (max-width: 1200px) {
+  .signup-bg-image {
+    flex: 0 0 280px;
+    min-width: 250px;
+    max-width: 320px;
+  }
+
+  .signup-content {
+    padding: 25px 30px;
+  }
+
+  .signup-form-card {
+    max-width: 500px;
+    padding: 35px 30px;
+  }
+}
+
+@media (max-width: 1024px) {
+  .signup-bg-image {
+    flex: 0 0 250px;
+    min-width: 220px;
+    max-width: 280px;
+  }
+
+  .signup-content {
+    padding: 20px 25px;
+  }
+
+  .signup-form-card {
+    max-width: 450px;
+    padding: 30px 25px;
+  }
+
+  .signup-title {
+    font-size: 24px;
+  }
+}
+
+@media (max-width: 768px) {
+  .signup-page {
+    flex-direction: column;
+  }
+
+  .signup-bg-image {
+    flex: none;
+    width: 100%;
+    min-height: 200px;
+    max-height: 250px;
+    order: 2;
+  }
+
+  .signup-content {
+    flex: none;
+    width: 100%;
+    order: 1;
+    padding: 20px;
+  }
+
+  .signup-form-card {
+    max-width: 100%;
+    padding: 30px 20px;
+  }
+
+  .signup-title {
+    font-size: 22px;
+  }
+
+  .signup-top-nav {
+    position: relative;
+    top: auto;
+    right: auto;
+    justify-content: center;
+    margin-bottom: 20px;
+  }
+
+  .signup-nav-text {
+    font-size: 12px;
+  }
+
+  .signup-signin-btn {
+    padding: 8px 16px;
+    font-size: 13px;
+  }
+
+  /* Mobile responsive cho header */
+  .signup-header {
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .signup-logo {
+    width: 60px;
+    height: 30px;
+  }
+}
+
+@media (max-width: 480px) {
+  .signup-content {
+    padding: 15px;
+  }
+
+  .signup-form-card {
+    padding: 25px 15px;
+  }
+
+  .signup-title {
+    font-size: 20px;
+  }
+
+  .signup-subtitle {
+    font-size: 13px;
+  }
+
+  .signup-input {
+    padding: 10px;
+  }
+
+  .signup-btn {
+    padding: 10px;
+  }
+
+  .signup-social-btn {
+    padding: 10px 12px;
+    min-width: 90px;
+    font-size: 13px;
+    height: 40px;
+  }
+
+  .signup-social {
+    gap: 10px;
+  }
+
+  .signup-social-text {
+    font-size: 13px;
+  }
+}
