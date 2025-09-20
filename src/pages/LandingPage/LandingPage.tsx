@@ -178,7 +178,7 @@ const LandingPage: React.FC = () => {
 
   return (
     <div
-      className="landing-page"
+      className="landing-page w-full h-screen overflow-x-hidden overflow-y-auto"
       ref={containerRef}
       {...(combinedHandlers as any)}
       tabIndex={0} // enable keyboard capture
@@ -186,8 +186,12 @@ const LandingPage: React.FC = () => {
       <AppHeader />
 
       {/* Hero - Không cần Reveal vì luôn hiển thị */}
-      <section id="hero" className="hero-section" ref={heroRef as any}>
-        <div className="hero-content">
+      <section
+        id="hero"
+        className="hero-section relative min-h-screen overflow-hidden"
+        ref={heroRef as any}
+      >
+        <div className="hero-content relative z-20 max-w-[1200px] mx-auto flex flex-col items-end text-right pt-[calc(120px+var(--section-offset,0px)-var(--nudge-up,0px))] pr-10">
           <motion.h1
             className="hero-title"
             initial={{ opacity: 0, y: 24 }}
@@ -196,7 +200,7 @@ const LandingPage: React.FC = () => {
           >
             How are you today?
           </motion.h1>
-          <div className="emoji-group">
+          <div className="emoji-group flex justify-end gap-6 mt-5 mb-[100px]">
             <div className="emoji-face">
               <svg width="113" height="113" viewBox="0 0 113 113" fill="none">
                 <circle
@@ -255,17 +259,17 @@ const LandingPage: React.FC = () => {
           </div>
         </div>
         <img
-          className="fox-illustration"
+          className="fox-illustration absolute bottom-[100px] left-[86px] w-[578px] h-[564px] -rotate-[10.633deg] z-[3]"
           src="https://api.builder.io/api/v1/image/assets/TEMP/9e48ea33ceadf9e90f946b17a07cc7729d8c8c34?width=1156"
           alt="Fox"
         />
         <img
-          className="leaf-decoration-1"
+          className="leaf-decoration-1 absolute bottom-[150px] left-[215px] w-[217px] h-[133px] -rotate-[61.321deg] z-[3]"
           src="https://api.builder.io/api/v1/image/assets/TEMP/288871bc2234fd41595e2acaee689ebf87895367?width=433"
           alt="Leaf"
         />
         <img
-          className="leaf-decoration-2"
+          className="leaf-decoration-2 absolute bottom-[200px] left-[479px] w-[217px] h-[133px] z-[3]"
           src="https://api.builder.io/api/v1/image/assets/TEMP/1bc954f19c70fdb4619ccc91981956a180bcad93?width=433"
           alt="Leaf"
         />

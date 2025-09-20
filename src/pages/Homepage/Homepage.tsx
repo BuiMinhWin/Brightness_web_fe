@@ -1,20 +1,24 @@
-import React from "react";
+import React, { useRef } from "react";
 import "./Homepage.css";
+
 import AppHeader from "../../components/layout/AppHeader";
+import HomepageHeader from "../../components/layout/HomepageHeader";
+import WhatNewCarousel from "./WhatNewCarousel";
 
 const Homepage: React.FC = () => {
+  const whatRef = useRef<HTMLDivElement | null>(null);
   return (
-    <div className="homepage">
-      <AppHeader />
-
-      {/* Hero (Achievement + Mood) */}
-      <section className="mood-section">
+    <div className="homepage min-h-screen w-full overflow-x-hidden">
+      {/* Hero (Header + Achievement + Mood) */}
+      <section className="mood-section relative py-10 text-center">
+        <HomepageHeader />
         <svg
           className="mood-bg"
           width="1440"
-          height="807"
+          height="1407"
           viewBox="0 0 1440 807"
           fill="none"
+          preserveAspectRatio="none"
           xmlns="http://www.w3.org/2000/svg"
         >
           <path
@@ -22,51 +26,61 @@ const Homepage: React.FC = () => {
             fill="url(#paint0_linear_1_707)"
           />
           <defs>
+            {/* Match header gradient: right-to-left E2F043 → 05644C */}
             <linearGradient
               id="paint0_linear_1_707"
-              x1="1475.5"
-              y1="-36.4999"
-              x2="-102.5"
-              y2="741"
+              x1="1440"
+              y1="0"
+              x2="0"
+              y2="0"
               gradientUnits="userSpaceOnUse"
             >
               <stop stopColor="#E2F043" />
-              <stop offset="1" stopColor="#05644C" />
+              <stop offset="0.9" stopColor="#05644C" />
             </linearGradient>
           </defs>
         </svg>
-        <div className="mood-inner">
-          <div className="achievement-card">
-            <h2 className="achievement-title">Achievement</h2>
-            <p className="achievement-subtitle">Take a closer look at what you did yesterday</p>
-            <div className="achievement-stats">
-              <div className="stat-item">
-                <h3 className="stat-value">1500</h3>
-                <p className="stat-label">Step</p>
-                <p className="stat-sublabel">12%</p>
-              </div>
-              <div className="stat-item">
-                <h3 className="stat-value">8h03</h3>
-                <p className="stat-label">Sleep</p>
-                <p className="stat-sublabel">+4%</p>
-              </div>
-              <div className="stat-item">
-                <h3 className="stat-value">12K</h3>
-                <p className="stat-label">Calories</p>
-                <p className="stat-sublabel">-8%</p>
-              </div>
-              <div className="stat-item">
-                <h3 className="stat-value">3 cups</h3>
-                <p className="stat-label">Water</p>
-                <p className="stat-sublabel">+5%</p>
+        <div className="mood-inner relative z-1 max-w-[500px] ml-[91px] pr-[150px] grid  text-center">
+          <div className="mood-content  mt-1 text-left">
+            <div className="achievement">
+              <div>
+                <h2 className="achievement-title text-[#046753] text-[48px] font-bold mx-auto ">
+                  Achievement
+                </h2>
+                <h5 className="achievement-subtitle text-[#046753] font-normal ">
+                  Take a closer look on what you did yesterday
+                </h5>
+                <div className="achievement-stats grid grid-cols-4 ">
+                  <div className="stat text-[#046753] mx-auto text-center">
+                    <div className="stat-value text-[48px] font-bold">1500</div>
+                    <div className="stat-label text-[20px] font-normal">Step</div>
+                    <div className="stat-sub text-black/60 text-[16px]">~150m</div>
+                  </div>
+                  <div className="stat text-[#046753] mx-auto text-center">
+                    <div className="stat-value text-[48px] font-bold">8h03</div>
+                    <div className="stat-label text-[20px] font-normal">Sleep</div>
+                  </div>
+                  <div className="stat text-[#046753 ] mx-auto text-center">
+                    <div className="stat-value text-[48px] font-bold">12K</div>
+                    <div className="stat-label text-[20px] font-normal">Calories</div>
+                  </div>
+                  <div className="stat text-[#046753] mx-auto text-center">
+                    <div className="stat-value text-[48px] font-bold">3 cups</div>
+                    <div className="stat-label text-[20px] font-normal">Water</div>
+                    <div className="stat-sub text-black/60 text-[16px]">~1,2L</div>
+                  </div>
+                </div>
               </div>
             </div>
-          </div>
 
-          <div className="mood-content">
-            <h1 className="mood-title">How are you today?</h1>
+            <h1
+              className="mood-title text-[#ffffff] text-[80px] mb-5 whitespace-nowrap"
+              style={{ fontFamily: "Pacifico" }}
+            >
+              How are you today?
+            </h1>
 
-            <div className="mood-emojis">
+            <div className="mood-emojis flex justify-start gap-[56px] mb-[120px]">
               <div className="mood-emoji">
                 <svg width="113" height="113" viewBox="0 0 113 113" fill="none">
                   <circle
@@ -130,141 +144,131 @@ const Homepage: React.FC = () => {
       </section>
 
       {/* What's New Section */}
-      <section className="whats-new-section">
-        <h2 className="whats-new-title">What new?</h2>
-
-        <div className="article-cards">
-          <div className="article-card">
-            <div className="article-avatar"></div>
-            <h4 className="article-author">Name</h4>
-            <div className="article-rating">★★★★★</div>
-            <p className="article-content">
-              Lorem ipsum dolor sit amet consecte tur adipiscing elit semper dalaracc lacus vel
-              facilisis volutpat est velitolm.
-            </p>
-            <a href="#" className="article-link">
-              Read more →
-            </a>
-          </div>
-
-          <div className="article-card">
-            <div className="article-avatar"></div>
-            <h4 className="article-author">Name</h4>
-            <div className="article-rating">★★★★★</div>
-            <p className="article-content">
-              Lorem ipsum dolor sit amet consecte tur adipiscing elit semper dalaracc lacus vel
-              facilisis volutpat est velitolm.
-            </p>
-            <a href="#" className="article-link">
-              Read more →
-            </a>
-          </div>
-
-          <div className="article-card">
-            <div className="article-avatar"></div>
-            <h4 className="article-author">Name</h4>
-            <div className="article-rating">★★★★★</div>
-            <p className="article-content">
-              Lorem ipsum dolor sit amet consecte tur adipiscing elit semper dalaracc lacus vel
-              facilisis volutpat est velitolm.
-            </p>
-            <a href="#" className="article-link">
-              Read more →
-            </a>
-          </div>
-        </div>
-
-        <div className="carousel-controls">
-          <div className="carousel-arrow left"></div>
-          <div className="carousel-arrow right"></div>
-        </div>
+      <section className="whats-new-section relative  mx-auto px-1 rounded-t-[100px] overflow-hidden">
+        <WhatNewCarousel />
       </section>
 
       {/* Q&A Section */}
-      <section className="qa-section">
-        <div className="qa-bubble">What you wonder?</div>
+      <section className="qa-section relative py-[100px]">
+        <div className="qa-bubble absolute top-0 right-[100px] bg-[#095747] rounded-[50px] py-[20px] px-[40px] text-[#FED700] font-bold text-[40px] z-20">
+          What you wonder?
+        </div>
 
-        <div className="qa-questions">
-          <button className="qa-question">When will I see results?</button>
-          <button className="qa-question">How to start working out?</button>
-          <button className="qa-question">What exercises are good for beginners?</button>
-          <button className="qa-question">How much protein do I need per day?</button>
+        <div className="qa-questions max-w-[800px] mx-auto px-5 flex flex-col gap-5 mt-[100px]">
+          <button className="qa-question bg-[#AEFFC4] rounded-[102px] py-[17px] px-[30px] font-bold text-[#007E85]">
+            When will I see results?
+          </button>
+          <button className="qa-question bg-[#AEFFC4] rounded-[102px] py-[17px] px-[30px] font-bold text-[#007E85]">
+            How to start working out?
+          </button>
+          <button className="qa-question bg-[#AEFFC4] rounded-[102px] py-[17px] px-[30px] font-bold text-[#007E85]">
+            What exercises are good for beginners?
+          </button>
+          <button className="qa-question bg-[#AEFFC4] rounded-[102px] py-[17px] px-[30px] font-bold text-[#007E85]">
+            How much protein do I need per day?
+          </button>
         </div>
       </section>
 
       {/* Top Performance Section */}
-      <section className="top-performance-section">
-        <h2 className="top-performance-title">Top performance</h2>
+      <section
+        className="top-performance-section relative py-[100px] rounded-[100px] my-[50px]"
+        style={{
+          background:
+            "linear-gradient(73deg, rgba(254,215,0,0.5) -12.82%, rgba(0,147,185,0.5) 108.79%)",
+        }}
+      >
+        <h2 className="top-performance-title text-white text-center font-bold text-[48px] mb-[50px]">
+          Top performance
+        </h2>
 
-        <div className="performance-cards">
-          <div className="performance-card">
-            <div className="performance-avatar"></div>
-            <h4 className="performance-name">Name</h4>
-            <h3 className="performance-title">Top about</h3>
+        <div className="performance-cards flex justify-center gap-10 max-w-[1200px] mx-auto px-5 flex-wrap">
+          <div className="performance-card bg-white rounded-[16px] p-[30px] text-center w-[312px] relative">
+            <div className="performance-avatar w-[265px] h-[265px] rounded-full bg-[#4b1414] -mt-[50px] mx-auto mb-5"></div>
+            <h4 className="performance-name font-bold text-[24px] mb-2">Name</h4>
+            <h3 className="performance-title font-bold text-[48px] mb-5">Top about</h3>
             <p className="performance-description">
               Lorem ipsum dolor sit amet consecte tur adipiscing elit semper dalaracc lacus
             </p>
           </div>
 
-          <div className="performance-card featured">
-            <div className="performance-avatar featured"></div>
-            <h4 className="performance-name">Name</h4>
-            <h3 className="performance-title">Top about</h3>
+          <div className="performance-card featured bg-[#FF9C50] text-white rounded-[16px] p-[30px] text-center w-[344px] relative scale-[1.1]">
+            <div className="performance-avatar featured w-[292px] h-[292px] rounded-full bg-[#4b1414] -mt-[50px] mx-auto mb-5"></div>
+            <h4 className="performance-name font-bold text-[24px] mb-2">Name</h4>
+            <h3 className="performance-title font-bold text-[48px] mb-5">Top about</h3>
             <p className="performance-description">
               Lorem ipsum dolor sit amet consecte tur adipiscing elit semper dalaracc lacus vel
               facilisis volutpat est velitolm.
             </p>
           </div>
 
-          <div className="performance-card">
-            <div className="performance-avatar"></div>
-            <h4 className="performance-name">Name</h4>
-            <h3 className="performance-title">Top about</h3>
+          <div className="performance-card bg-white rounded-[16px] p-[30px] text-center w-[312px] relative">
+            <div className="performance-avatar w-[265px] h-[265px] rounded-full bg-[#4b1414] -mt-[50px] mx-auto mb-5"></div>
+            <h4 className="performance-name font-bold text-[24px] mb-2">Name</h4>
+            <h3 className="performance-title font-bold text-[48px] mb-5">Top about</h3>
             <p className="performance-description">
               Lorem ipsum dolor sit amet consecte tur adipiscing elit semper dalaracc lacus
             </p>
           </div>
         </div>
 
-        <button className="view-more-btn">View more →</button>
+        <button className="view-more-btn bg-[#AEFFC4] rounded-[82.5px] py-[15px] px-[40px] text-black font-bold text-[24px] mx-auto block mt-10">
+          View more →
+        </button>
       </section>
 
       {/* Improve Experience Section */}
-      <section className="improve-section">
-        <div className="improve-content">
-          <h2 className="improve-title">Improve your experience</h2>
-          <h3 className="improve-subtitle">Description</h3>
-          <p className="improve-description">
+      <section className="improve-section grid grid-cols-1 md:grid-cols-2 gap-[60px] items-center py-[100px] max-w-[1200px] mx-auto px-5">
+        <div className="improve-content pr-0 md:pr-10">
+          <h2 className="improve-title text-[#046753] font-bold text-[48px] leading-[46px] mb-5">
+            Improve your experience
+          </h2>
+          <h3 className="improve-subtitle text-black font-bold text-[24px] mb-[30px]">
+            Description
+          </h3>
+          <p className="improve-description text-black text-[20px] leading-8 mb-[30px]">
             Lorem ipsum dolor sit amet consecte tur adipiscing elit semper dalaracc lacus vel
             facilisis volutpat est velitolm. Lorem ipsum dolor sit amet consecte tur adipiscing elit
             semper dalaracc lacus vel facilisis volutpat est velitolm. Lorem ipsum dolor sit amet
             consecte tur adipiscing elit semper dalaracc lacus vel facilisis volutpat est velitolm.
           </p>
-          <button className="improve-cta">TRY</button>
+          <button className="improve-cta bg-[#046753] text-white text-center font-bold text-[32px] py-4 px-11 rounded-[16px]">
+            TRY
+          </button>
         </div>
 
-        <div className="improve-visual">
-          <div className="improve-bg-green"></div>
-          <div className="improve-bg-yellow"></div>
+        <div className="improve-visual relative min-h-[368px]">
+          <div
+            className="improve-bg-green absolute right-0 top-0 w-[350px] h-[368px] rounded-[20px]"
+            style={{ background: "rgba(4,103,83,0.75)" }}
+          ></div>
+          <div
+            className="improve-bg-yellow absolute left-0 bottom-0 w-[350px] h-[407px] rounded-[20px]"
+            style={{ background: "rgba(226,240,67,0.75)" }}
+          ></div>
         </div>
       </section>
 
       {/* Footer */}
-      <footer className="homepage-footer">
-        <div className="homepage-footer-content">
-          <div className="homepage-footer-logo">
+      <footer className="homepage-footer bg-[#05644C] py-[63px] text-white">
+        <div className="homepage-footer-content max-w-[1200px] mx-auto px-5 grid grid-cols-1 md:grid-cols-2 gap-[60px] items-center">
+          <div className="homepage-footer-logo flex items-center gap-5">
             <img
-              className="homepage-footer-logo-image"
+              className="homepage-footer-logo-image w-[81px] h-[81px]"
               src="https://api.builder.io/api/v1/image/assets/TEMP/de986a7279fe24b5c6a9695fbf1915b1da6131e9?width=162"
               alt="BRIGHTNEST Logo"
             />
-            <div className="homepage-footer-brand">BRIGHTNEST</div>
+            <div className="homepage-footer-brand font-[600] text-[26px] text-[#ffffff] tracking-[-2.34px] capitalize">
+              BRIGHTNEST
+            </div>
           </div>
 
-          <div className="homepage-footer-contact">
-            <h4 className="homepage-footer-contact-title">Contact us</h4>
-            <div className="homepage-footer-contact-item">
-              <div className="homepage-contact-icon">
+          <div className="homepage-footer-contact text-left">
+            <h4 className="homepage-footer-contact-title text-[20px] font-bold leading-[18px] mb-5">
+              Contact us
+            </h4>
+            <div className="homepage-footer-contact-item flex items-center gap-[15px] mb-[15px]">
+              <div className="homepage-contact-icon w-[25px] h-[25px] border-2 border-white rounded-[8px] flex items-center justify-center">
                 <svg
                   width="27"
                   height="10"
@@ -275,10 +279,12 @@ const Homepage: React.FC = () => {
                   <path d="M1 1.49939L13.5 8.2485L26 1.49939" stroke="white" strokeWidth="2" />
                 </svg>
               </div>
-              <span className="homepage-footer-contact-text">Contact us:</span>
+              <span className="homepage-footer-contact-text font-bold text-[16px] leading-[18px]">
+                Contact us:
+              </span>
             </div>
-            <div className="homepage-footer-contact-item">
-              <div className="homepage-contact-icon">
+            <div className="homepage-footer-contact-item flex items-center gap-[15px] mb-[15px]">
+              <div className="homepage-contact-icon w-[25px] h-[25px] border-2 border-white rounded-[8px] flex items-center justify-center">
                 <svg
                   width="7"
                   height="6"
@@ -289,7 +295,9 @@ const Homepage: React.FC = () => {
                   <circle cx="3.4625" cy="3.18748" r="1.7125" stroke="white" strokeWidth="2" />
                 </svg>
               </div>
-              <span className="homepage-footer-contact-text">0xxxxxxxxxx</span>
+              <span className="homepage-footer-contact-text font-bold text-[16px] leading-[18px]">
+                0xxxxxxxxxx
+              </span>
             </div>
           </div>
         </div>
