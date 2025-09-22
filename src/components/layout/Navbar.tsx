@@ -37,7 +37,7 @@ const Navbar: React.FC<NavbarProps> = ({ currentPage = "home" }) => {
           </NavLink>
 
           <NavLink
-            to="/gamification"
+            to="/gamification-feature"
             className={({ isActive }) => `navbar-link ${isActive ? "active" : ""}`}
           >
             Gamification

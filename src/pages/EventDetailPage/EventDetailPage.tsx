@@ -138,19 +138,19 @@ const EventDetailPage: React.FC = () => {
   };
 
   const handleYoursClick = () => {
-    navigate("/gamification");
+    navigate("/gamification-feature");
   };
 
   const handleJoinEvent = () => {
     setShowJoinDialog(false);
-    <button className="back-button" onClick={() => navigate("/gamification")}></button>;
+    <button className="back-button" onClick={() => navigate("/gamification-feature")}></button>;
     alert(`Successfully joined ${event.title}!`);
   };
 
   return (
     <div className="event-detail-page">
       {/* Header */}
-      <Navbar currentPage="gamification" />
+      {/* <Navbar currentPage="gamification" /> */}
 
       {/* Hero Banner */}
       {/* <div className="hero-banner"> */}

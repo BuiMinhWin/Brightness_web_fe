@@ -39,7 +39,7 @@ const LeaderboardPage: React.FC = () => {
     streak: 12,
   };
 
-  // Mock leaderboard data
+  // Extended mock leaderboard data for scrolling demonstration
   const leaderboardData: LeaderboardEntry[] = [
     { id: 1, rank: 1, name: "Maxwell", points: 2304, avatar: "/api/placeholder/60/60" },
     { id: 2, rank: 2, name: "Camelia", points: 1570, avatar: "/api/placeholder/60/60" },
@@ -49,6 +49,12 @@ const LeaderboardPage: React.FC = () => {
     { id: 6, rank: 6, name: "Ethan Carter", points: 548, avatar: "/api/placeholder/60/60" },
     { id: 7, rank: 7, name: "Liam Johnson", points: 580, avatar: "/api/placeholder/60/60" },
     { id: 8, rank: 8, name: "Oliver Smith", points: 578, avatar: "/api/placeholder/60/60" },
+    { id: 9, rank: 9, name: "Emma Wilson", points: 567, avatar: "/api/placeholder/60/60" },
+    { id: 10, rank: 10, name: "Noah Davis", points: 556, avatar: "/api/placeholder/60/60" },
+    { id: 11, rank: 11, name: "Ava Brown", points: 543, avatar: "/api/placeholder/60/60" },
+    { id: 12, rank: 12, name: "Lucas Miller", points: 532, avatar: "/api/placeholder/60/60" },
+    { id: 13, rank: 13, name: "Mia Garcia", points: 521, avatar: "/api/placeholder/60/60" },
+    { id: 14, rank: 14, name: "Alexander Lee", points: 510, avatar: "/api/placeholder/60/60" },
   ];
 
   const currentUserData: LeaderboardEntry = {
@@ -113,41 +119,47 @@ const LeaderboardPage: React.FC = () => {
         <div className="leaderboard-main">
           {/* Left Column: Top 3 Podium */}
           <div className="top-three-container">
-            <h2 className="top-title">TOP 10</h2>
+            <h2 className="top-title">TOP 3</h2>
             <div className="podium">
               {/* Second Place */}
               {topThree[1] && (
                 <div className="podium-place second">
-                  <div className="podium-avatar">
-                    <img src={topThree[1].avatar} alt={topThree[1].name} />
-                    <div className="podium-rank">2</div>
+                  <div className="podium-bar">
+                    <div className="podium-avatar">
+                      <img src={topThree[1].avatar} alt={topThree[1].name} />
+                      <div className="podium-rank">2</div>
+                    </div>
+                    <div className="podium-name">{topThree[1].name}</div>
+                    <div className="podium-points">• {topThree[1].points}</div>
                   </div>
-                  <div className="podium-name">{topThree[1].name}</div>
-                  <div className="podium-points">• {topThree[1].points}</div>
                 </div>
               )}
 
               {/* First Place */}
               {topThree[0] && (
                 <div className="podium-place first">
-                  <div className="podium-avatar">
-                    <img src={topThree[0].avatar} alt={topThree[0].name} />
-                    <div className="podium-rank">1</div>
+                  <div className="podium-bar">
+                    <div className="podium-avatar">
+                      <img src={topThree[0].avatar} alt={topThree[0].name} />
+                      <div className="podium-rank">1</div>
+                    </div>
+                    <div className="podium-name">{topThree[0].name}</div>
+                    <div className="podium-points">• {topThree[0].points}</div>
                   </div>
-                  <div className="podium-name">{topThree[0].name}</div>
-                  <div className="podium-points">• {topThree[0].points}</div>
                 </div>
               )}
 
               {/* Third Place */}
               {topThree[2] && (
                 <div className="podium-place third">
-                  <div className="podium-avatar">
-                    <img src={topThree[2].avatar} alt={topThree[2].name} />
-                    <div className="podium-rank">3</div>
+                  <div className="podium-bar">
+                    <div className="podium-avatar">
+                      <img src={topThree[2].avatar} alt={topThree[2].name} />
+                      <div className="podium-rank">3</div>
+                    </div>
+                    <div className="podium-name">{topThree[2].name}</div>
+                    <div className="podium-points">• {topThree[2].points}</div>
                   </div>
-                  <div className="podium-name">{topThree[2].name}</div>
-                  <div className="podium-points">• {topThree[2].points}</div>
                 </div>
               )}
             </div>
@@ -179,25 +191,26 @@ const LeaderboardPage: React.FC = () => {
 
             {/* Current User Section */}
             <div className="current-user-section">
-              <div className="separator-dots">
+              {/* <div className="separator-dots">
                 <span>•</span>
                 <span>•</span>
                 <span>•</span>
-              </div>
-              <div className="you-are-here">
-                <span>You are here!!</span>
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-                  <path d="M7 17L17 7M17 7H7M17 7V17" stroke="currentColor" strokeWidth="2" />
-                </svg>
-              </div>
+              </div> */}
+
               <div className="current-user-item">
-                <div className="rank-number">xxx</div>
+                <div className="rank-number">{String(currentUserData.rank).padStart(2, "0")}</div>
                 <div className="user-avatar current">
                   <img src={currentUserData.avatar} alt={currentUserData.name} />
                 </div>
                 <div className="user-info">
                   <span className="user-name current">{currentUserData.name}</span>
                   <span className="user-points">{currentUserData.points} points</span>
+                </div>
+                <div className="you-are-here">
+                  <span>You are here!!</span>
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                    <path d="M7 17L17 7M17 7H7M17 7V17" stroke="currentColor" strokeWidth="2" />
+                  </svg>
                 </div>
                 <div className="status-indicator">
                   <div className="status-dot pink"></div>

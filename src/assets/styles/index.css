@@ -1,41 +1,16 @@
-/* Global base styles only. Page-specific styles live next to each page. */
-html,
-body,
-#root {
-  height: 100%;
-  margin: 0;
-  padding: 0;
-}
-* {
-  box-sizing: border-box;
-}
-body {
-  margin: 0;
-  font-family:
-    "DM Sans",
-    ui-sans-serif,
-    system-ui,
-    -apple-system,
-    Segoe UI,
-    Roboto,
-    Helvetica,
-    Arial,
-    sans-serif;
-  color: #111827;
-  background: #ffffff;
-  line-height: 1.5;
-}
+@import url("https://fonts.googleapis.com/css2?family=Pacifico&display=swap");
+@import "tailwindcss";
 
 /* Tailwind layers (preflight disabled to avoid visual changes) */
-@tailwind components;
+/* @tailwind components;
 @tailwind utilities;
 @import url("https://fonts.googleapis.com/css2?family=Pacifico&display=swap");
 @import "tailwindcss/preflight";
 @import "tailwindcss/utilities";
-@import "tailwindcss";
+@import "tailwindcss"; */
 
-@custom-variant dark (&:is(.dark *));
-@tailwind utilities;
+/* @custom-variant dark (&:is(.dark *));
+@tailwind utilities; */
 
 /* Global base styles only. Page-specific styles live next to each page. */
 html,

@@ -112,7 +112,7 @@ const YourGamificationPage: React.FC = () => {
         {/* Hero Section */}
         <div className="your-missions-hero">
           <div className="hero-header">
-            <button className="back-button" onClick={() => navigate("/gamification")}>
+            <button className="back-button" onClick={() => navigate("/gamification-feature")}>
               <ArrowLeft size={24} />
             </button>
             <h1 className="your-missions-title">Your Missions</h1>

@@ -154,8 +154,6 @@ const ReviewPostPage: React.FC = () => {
 
   return (
     <div className="review-post-page">
-      <Navbar currentPage="review-posts" />
-
       <div className="review-post-content">
         {/* Hero Section */}
         <div className="review-post-hero">
@@ -270,9 +268,6 @@ const ReviewPostPage: React.FC = () => {
           </div>
         </div>
       )}
-
-      {/* Footer */}
-      <GameFooter />
     </div>
   );
 };
