@@ -90,6 +90,10 @@ const BlogPost: React.FC<BlogPostProps> = ({ user, timestamp, content, interacti
         margin: "16px 0",
         cursor: onClick ? "pointer" : "default",
         transition: "transform 0.2s ease",
+        backgroundColor: "rgba(255, 255, 255, 0.2)",
+        borderRadius: "12px",
+        border: "1px solid rgba(44, 124, 74, 0.2)",
+        boxShadow: "0 2px 8px rgba(0, 0, 0, 0.1)",
       }}
       onMouseEnter={(e) => {
         if (onClick) {
@@ -204,8 +208,9 @@ const BlogPost: React.FC<BlogPostProps> = ({ user, timestamp, content, interacti
         style={{
           display: "flex",
           justifyContent: "flex-start",
-          paddingBottom: "12px",
-          borderBottom: "1px solid #2C7C4A",
+          paddingTop: "12px",
+          marginTop: "16px",
+          borderTop: "1px solid rgba(44, 124, 74, 0.3)",
         }}
       >
         <div

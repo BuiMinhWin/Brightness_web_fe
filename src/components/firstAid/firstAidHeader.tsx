@@ -11,7 +11,7 @@ const FirstAidHeader: React.FC = () => {
         width: "100%",
         maxWidth: "1200px",
         margin: "0 auto",
-        paddingTop: "4px",
+        paddingTop: "40px",
         paddingBottom: "4px",
       }}
     >

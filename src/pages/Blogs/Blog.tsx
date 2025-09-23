@@ -3,6 +3,7 @@ import BlogPost from "../../components/blogs/BlogPost";
 import Pagination from "../../components/ui/Pagination";
 import PostDialog from "../../components/blogs/PostDialog";
 import FAB from "../../components/blogs/FAB";
+import BlogHeader from "../../components/blogs/BlogHeader";
 import samplePosts from "../../assets/temps/samplePosts.json";
 import Navbar from "@/components/layout/Navbar";
 import GameFooter from "@/components/layout/GameFooter";
@@ -40,19 +41,23 @@ const Blogs: React.FC = () => {
           background:
             "linear-gradient(135deg, #5BC17F 17%, rgba(255, 123, 23, 0.3) 54%, #007E85 91%)",
           margin: 0,
-          padding: "80px 0 20px", // Add top padding for fixed navbar
+          padding: "80px 0 0", // Add top padding for fixed navbar
           display: "flex",
           flexDirection: "column",
           alignItems: "center",
           boxSizing: "border-box",
         }}
       >
+        {/* Blog Header */}
+        <BlogHeader />
+
         <div
           style={{
-            width: "100%",
-            maxWidth: "600px",
+            width: "65%",
+            maxWidth: "800px",
             padding: "0 20px",
             boxSizing: "border-box",
+            flex: 1,
           }}
         >
           {samplePosts.map((post, index) => (
@@ -81,8 +86,12 @@ const Blogs: React.FC = () => {
 
         {/* Floating Action Button */}
         <FAB />
+
+        {/* Footer */}
+        <div style={{ width: "100%" }}>
+          <GameFooter />
+        </div>
       </div>
-      <GameFooter />
     </>
   );
 };

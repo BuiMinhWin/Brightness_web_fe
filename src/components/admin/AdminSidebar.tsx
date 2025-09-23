@@ -1,4 +1,4 @@
-import { Outlet } from "react-router-dom";
+import { Outlet, useLocation } from "react-router-dom";
 import { AppSidebar } from "@/components/ui/app-sidebar";
 import {
   Breadcrumb,
@@ -11,7 +11,6 @@ import {
 import { Separator } from "@/components/ui/separator";
 import { SidebarInset, SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { NavUser } from "../ui/nav-user";
-import { SearchForm } from "../ui/search-form";
 
 const data = {
   user: {
@@ -22,6 +21,44 @@ const data = {
 };
 
 export default function AdminSidebar() {
+  const location = useLocation();
+
+  // Generate breadcrumb items based on current path
+  const generateBreadcrumbs = () => {
+    const pathSegments = location.pathname.split("/").filter((segment) => segment !== "");
+    const breadcrumbs = [];
+
+    // Always start with Admin
+    breadcrumbs.push({
+      label: "Admin",
+      href: "/admin",
+      isLast: pathSegments.length === 1,
+    });
+
+    // Add other segments
+    let currentPath = "/admin";
+    for (let i = 1; i < pathSegments.length; i++) {
+      currentPath += `/${pathSegments[i]}`;
+      const isLast = i === pathSegments.length - 1;
+
+      // Convert path segment to readable label
+      const label = pathSegments[i]
+        .split("-")
+        .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+        .join(" ");
+
+      breadcrumbs.push({
+        label,
+        href: currentPath,
+        isLast,
+      });
+    }
+
+    return breadcrumbs;
+  };
+
+  const breadcrumbs = generateBreadcrumbs();
+
   return (
     <SidebarProvider>
       <AppSidebar />
@@ -32,7 +69,22 @@ export default function AdminSidebar() {
 
           {/* 70% Left Section */}
           <div className="flex-[0.7] flex items-center gap-4">
-            <SearchForm />
+            <Breadcrumb>
+              <BreadcrumbList>
+                {breadcrumbs.map((breadcrumb, index) => (
+                  <div key={index} className="flex items-center">
+                    <BreadcrumbItem>
+                      {breadcrumb.isLast ? (
+                        <BreadcrumbPage>{breadcrumb.label}</BreadcrumbPage>
+                      ) : (
+                        <BreadcrumbLink href={breadcrumb.href}>{breadcrumb.label}</BreadcrumbLink>
+                      )}
+                    </BreadcrumbItem>
+                    {!breadcrumb.isLast && <BreadcrumbSeparator />}
+                  </div>
+                ))}
+              </BreadcrumbList>
+            </Breadcrumb>
           </div>
 
           {/* 30% Right Section */}
