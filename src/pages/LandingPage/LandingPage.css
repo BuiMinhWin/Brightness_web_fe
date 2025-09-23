@@ -1,28 +1,18 @@
-/* LandingPage.css */
-
-/* The main container that holds our full-page experience.
-   It's set to the full viewport height and width, and overflow is hidden
-   to prevent any native browser scrolling. The hook will handle the scrolling. */
 .landing-page-container {
   position: relative;
   width: 100%;
   height: 100vh;
-  overflow: hidden; /* This is crucial */
-  background-color: #fff; /* A default background */
-  outline: none; /* Remove outline when focused */
+  overflow: hidden;
+  background-color: #fff;
+  outline: none;
 }
 
-/* The wrapper is the element that will be animated up and down by framer-motion.
-   It contains all the individual sections. */
 .scroll-wrapper {
   width: 100%;
   height: 100%;
   position: relative;
 }
 
-/* Each section should take up the full viewport height.
-   We use flexbox to provide some basic centering capabilities if needed,
-   but specific content alignment will be handled within each section. */
 .full-page-section {
   width: 100%;
   height: 100vh;
@@ -32,14 +22,9 @@
   flex-direction: column;
   justify-content: center;
   align-items: center;
-  overflow: hidden; /* Hide content that might overflow a section */
+  overflow: hidden;
 }
 
-/* --- Section-Specific Styles --- */
-
-/* Header (assuming it's positioned absolutely or fixed) */
-/* Note: The AppHeader in the TSX is outside the scroll wrapper,
-   so it will be fixed. We need to account for its height in the sections. */
 .full-page-section {
   padding-top: 80px; /* Adjust this based on actual header height */
 }
@@ -52,6 +37,9 @@
 }
 .hero-content {
   text-align: right;
+  gap: 20px;
+
+  padding-left: 500px;
 }
 .hero-title {
   font-family: "Pacifico", cursive;
@@ -246,19 +234,17 @@
   position: relative;
   width: 100%;
   max-width: 800px;
-  min-height: 180px;
-  padding: 65px 60px;
+  min-height: 220px; /* Increased min-height */
+  padding: 40px 60px; /* Adjusted padding */
   border-radius: 38px;
   background: linear-gradient(90deg, #4c995d 0%, #c9d85b 100%);
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
   margin-bottom: 40px;
+  display: flex; /* Use flexbox to layout messages */
+  flex-direction: column; /* Stack messages vertically */
 }
 .chat-bubbles {
-  position: relative;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 24px;
+  all: unset;
 }
 .chat-bubble {
   background: #fff;
@@ -269,6 +255,24 @@
   font-weight: 700;
   color: #0b7e63;
   box-shadow: 0 6px 14px rgba(0, 0, 0, 0.1);
+}
+
+.chat-message {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.chat-message.user2 {
+  justify-content: flex-end;
+}
+
+.chat-avatar {
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  object-fit: cover;
 }
 .cta-inline {
   text-align: center;

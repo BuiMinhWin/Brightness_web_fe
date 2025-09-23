@@ -36,7 +36,7 @@ const LandingPage: React.FC = () => {
       <motion.div className="scroll-wrapper" ref={wrapperRef}>
         {/* Hero Section */}
         <section className="hero-section full-page-section" ref={heroRef}>
-          <div className="hero-content relative z-20 max-w-[1200px] mx-auto flex flex-col items-end text-right pt-[calc(120px+var(--section-offset,0px)-var(--nudge-up,0px))] pr-10">
+          <div className="hero-content relative z-20 max-w-[1200px] mx-auto flex flex-col items-end text-right pt-[calc(120px+var(--section-offset,0px)-var(--nudge-up,0px))] ">
             <motion.h1
               className="hero-title"
               initial={{ opacity: 0, y: 24 }}
@@ -104,17 +104,17 @@ const LandingPage: React.FC = () => {
             </div>
           </div>
           <img
-            className="fox-illustration absolute bottom-[100px] left-[86px] w-[578px] h-[564px] -rotate-[-5deg] z-[3]"
+            className="fox-illustration absolute bottom-[50px] left-[86px] w-[578px] h-[564px] -rotate-[-5deg] z-[3]"
             src="https://api.builder.io/api/v1/image/assets/TEMP/9e48ea33ceadf9e90f946b17a07cc7729d8c8c34?width=1156"
             alt="Fox"
           />
           <img
-            className="leaf-decoration-1 absolute bottom-[150px] left-[180px] w-[217px] h-[133px] -rotate-[-18deg] z-[3]"
+            className="leaf-decoration-1 absolute bottom-[100px] left-[180px] w-[217px] h-[133px] -rotate-[-18deg] z-[3]"
             src="https://api.builder.io/api/v1/image/assets/TEMP/288871bc2234fd41595e2acaee689ebf87895367?width=433"
             alt="Leaf"
           />
           <img
-            className="leaf-decoration-2 absolute bottom-[240px] left-[479px] w-[217px] h-[133px] z-[3]"
+            className="leaf-decoration-2 absolute bottom-[190px] left-[479px] w-[217px] h-[133px] z-[3]"
             src="https://api.builder.io/api/v1/image/assets/TEMP/1bc954f19c70fdb4619ccc91981956a180bcad93?width=433"
             alt="Leaf"
           />
@@ -289,16 +289,18 @@ const LandingPage: React.FC = () => {
                 Personalized AI Health Assistant with integrated RAG3
               </p>
             </div>
-            <div className="chatbox-mockup ">
-              <div className="chat-dot left -translate-y-8" />
-              <div className="chat-dot right translate-y-9" />
-              <div className="chat-bubbles">
-                <div className="chat-bubble user1 -translate-y-8">
-                  Do you have any questions today?
-                </div>
-                <div className="chat-bubble user2 translate-y-9">
-                  What exercises are good for beginners?
-                </div>
+            <div className="chatbox-mockup">
+              <div className="chat-message user1">
+                <img src="/assets/brightnesslogo.png" alt="Bot Avatar" className="chat-avatar" />
+                <div className="chat-bubble">Do you have any questions today?</div>
+              </div>
+              <div className="chat-message user2">
+                <div className="chat-bubble">What exercises are good for beginners?</div>
+                <img
+                  src="src/assets/images/logo_color.png"
+                  alt="User Avatar"
+                  className="chat-avatar"
+                />
               </div>
             </div>
             <div className="cta-inline">
