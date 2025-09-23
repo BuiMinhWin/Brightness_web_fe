@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import "./SignUpPage.css";
 import yogaImg from "../../assets/images/yoga_register.png";
 import logoImg from "../../assets/images/logo_color.png";
+import { motion } from "framer-motion";
 
 interface SignUpPageProps {
   onNavigateToSignIn?: () => void;
@@ -38,7 +39,17 @@ const SignUpPage: React.FC = () => {
   return (
     <div className="signup-page">
       {/* Left: Yoga background image */}
-      <div className="signup-bg-image" style={{ backgroundImage: `url(${yogaImg})` }}></div>
+      <div className="signup-bg-image">
+        <motion.img
+          src={yogaImg}
+          alt="Yoga"
+          className="signup-img"
+          initial={{ x: -300, opacity: 0 }}
+          animate={{ x: 0, opacity: 1 }}
+          exit={{ x: 300, opacity: 0 }}
+          transition={{ duration: 0.4, ease: "easeInOut" }}
+        />
+      </div>
 
       {/* Right: Form content */}
       <div className="signup-content">
