@@ -1,123 +1,47 @@
-/* Optimized LandingPage CSS - duplicates removed, rules consolidated */
-
-/* Container */
-.landing-page {
+.landing-page-container {
+  position: relative;
   width: 100%;
-  min-height: 100vh;
   height: 100vh;
-  background: #fff;
-  overflow-x: hidden;
-  overflow-y: auto;
-  scroll-behavior: smooth;
-  -webkit-overflow-scrolling: touch;
-  --header-h: 0px;
-  /* Global vertical offset for section contents */
-  --section-offset: 60px;
-  /* Small upward nudge for selected elements */
-  --nudge-up: 20px;
-  /* Specific nudge just for chatbox mockup */
-  --chatbox-nudge-up: 40px;
-  /* Specific nudge for gamification row */
-  --gamification-nudge-up: 120px;
-  scroll-padding-top: var(--header-h);
-  /* JS-driven snapping; keep CSS snap disabled to avoid conflicts with JS */
-  /* scroll-snap-type: none; */
-  -ms-overflow-style: none;
-  scrollbar-width: none;
-}
-/* Base for sections: full viewport, box-sizing and optional top padding */
-.landing-page > section,
-.landing-page > .chatbox-content {
-  min-height: 100vh;
-  height: 100vh;
-  box-sizing: border-box;
-  padding-top: calc(var(--header-h) + var(--section-offset, 0px));
-  position: relative;
-  padding-bottom: 10px;
-}
-
-/* Header */
-.header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 27px 215px;
-  position: relative;
-  z-index: 10;
-}
-
-.logo-container {
-  display: flex;
-  align-items: center;
-  gap: 20px;
-}
-.logo-image {
-  width: 85px;
-  height: 85px;
-  flex-shrink: 0;
-}
-.brand-text {
-  font-family: "Lexend Tera", sans-serif;
-  font-size: 26px;
-  font-weight: 600;
-  letter-spacing: -2.34px;
-  text-transform: capitalize;
-}
-.brand-bright {
-  color: #fed700;
-}
-.brand-nest {
-  color: #095747;
-}
-
-.auth-buttons {
-  display: flex;
-  align-items: center;
-  gap: 36px;
-}
-.login-btn {
-  color: #0b3d33;
-  font-family: "DM Sans", sans-serif;
-  font-size: 16px;
-  font-weight: 700;
-  background: none;
-  border: none;
-  cursor: pointer;
-}
-.signup-btn {
-  padding: 8px 18px;
-  border-radius: 999px;
-  background: linear-gradient(90deg, #066555 0%, #dce642 100%);
-  color: #fff;
-  font-family: "DM Sans", sans-serif;
-  font-size: 14px;
-  font-weight: 800;
-  border: none;
-  cursor: pointer;
-  box-shadow: 0 6px 14px rgba(0, 0, 0, 0.15);
-}
-
-/* Hero */
-.hero-section {
-  position: relative;
-  min-height: 100vh;
-  background: linear-gradient(270deg, #e2f043 0%, #05644c 90%);
   overflow: hidden;
+  background-color: #fff;
+  outline: none;
 }
-.hero-content {
+
+.scroll-wrapper {
+  width: 100%;
+  height: 100%;
   position: relative;
-  z-index: 2;
-  max-width: 1200px;
-  margin: 0 auto;
+}
+
+.full-page-section {
+  width: 100%;
+  height: 100vh;
+  position: relative;
+  box-sizing: border-box;
   display: flex;
   flex-direction: column;
-  align-items: flex-end;
+  justify-content: center;
+  align-items: center;
+  overflow: hidden;
+}
+
+.full-page-section {
+  padding-top: 80px; /* Adjust this based on actual header height */
+}
+
+/* Hero Section */
+.hero-section {
+  background: linear-gradient(270deg, #e2f043 0%, #05644c 90%);
+  justify-content: flex-start; /* Align content to the top */
+  color: white;
+}
+.hero-content {
   text-align: right;
-  padding-top: calc(120px + var(--section-offset, 0px) - var(--nudge-up, 0px));
-  padding-right: 40px;
+  gap: 20px;
+
+  padding-left: 500px;
 }
 .hero-title {
-  color: #fff;
   font-family: "Pacifico", cursive;
   font-size: 80px;
   margin: 0 0 50px;
@@ -131,15 +55,7 @@
 .emoji-face {
   width: 113px;
   height: 113px;
-  border-radius: 50%;
-  background: #e5f249;
-  border: 2px solid #000;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  position: relative;
 }
-
 .fox-illustration {
   position: absolute;
   bottom: 100px;
@@ -167,30 +83,16 @@
   z-index: 3;
 }
 
-/* About */
+/* About Section */
 .about-section {
-  position: relative;
-  padding: calc(100px + var(--section-offset, 0px)) 0;
   background:
     url("/assets/brightnesslogo.png") center/540px auto no-repeat,
     linear-gradient(0deg, #d4d42f80 10%, #50bfa56c 100%);
-  min-height: 100vh;
-  display: grid;
-  place-items: center;
-}
-.about-overlay {
-  position: absolute;
-  inset: 0;
-  background: none;
-  pointer-events: none;
 }
 .about-content {
-  max-width: 1200px;
-  margin: 0 auto;
   text-align: center;
-  padding: 0 20px;
-  position: relative;
-  z-index: 1;
+  max-width: 920px;
+  padding: 20px;
 }
 .about-title {
   color: #046753;
@@ -206,9 +108,6 @@
   font-weight: 700;
   line-height: 50px;
   margin: 0 0 50px;
-  max-width: 919px;
-  margin-left: auto;
-  margin-right: auto;
 }
 .vietnamese-tagline {
   color: #066555;
@@ -216,13 +115,11 @@
   font-size: 40px;
 }
 
-/* Services */
+/* Services Section */
 .services-section {
-  padding: calc(100px + var(--section-offset, 0px)) 0;
   background: linear-gradient(113deg, rgba(208, 223, 0, 0.72) 23.72%, #ffaf72 87.59%);
-  min-height: 100vh;
-  display: grid;
-  align-content: start;
+  justify-content: flex-start;
+  padding-top: 120px;
 }
 .services-title {
   color: #046753;
@@ -230,7 +127,7 @@
   font-family: "DM Sans", sans-serif;
   font-size: 48px;
   font-weight: 700;
-  margin: 0 0 32px;
+  margin-bottom: 32px;
 }
 .service-item {
   margin: 0 auto;
@@ -241,44 +138,33 @@
   align-items: start;
   max-width: 1280px;
 }
-.service-item.reverse {
-  direction: rtl;
-}
-.service-item.reverse > * {
-  direction: ltr;
-}
 .service-image {
   width: 100%;
   height: auto;
   border-radius: 12px;
 }
-.service-title {
+.service-content .service-title {
   color: #046753;
   font-family: "DM Sans", sans-serif;
   font-size: 40px;
   font-weight: 700;
   margin: 0 0 20px;
+  text-align: left;
 }
 .service-description {
   color: #000;
   font-family: "DM Sans", sans-serif;
   font-size: 20px;
   line-height: 32px;
-  margin: 0;
 }
 
-/* Gamification */
+/* Gamification Section */
 .gamification-section {
-  padding: calc(100px + var(--section-offset, 0px)) 0;
   background: linear-gradient(113deg, rgba(208, 223, 0, 0.72) 23.72%, #ffaf72 87.59%);
-  min-height: 100vh;
-  display: grid;
-  place-items: center;
 }
 .gamification-row {
   max-width: 1280px;
   margin: 0 auto;
-  margin-top: calc(-1 * var(--gamification-nudge-up, 0px));
   padding: 0 96px;
   display: grid;
   grid-template-columns: auto 1fr;
@@ -290,8 +176,6 @@
   grid-template-columns: 180px 180px;
   grid-auto-rows: 180px;
   gap: 24px;
-  align-items: start;
-  justify-items: center;
 }
 .gami-card {
   position: relative;
@@ -324,33 +208,12 @@
   border-radius: 100px 0 100px 100px;
 }
 
-/* Chatbox (single consolidated definition) */
+/* Chatbox Section */
 .chatbox-content {
-  padding-top: 10px;
-  text-align: left;
-  display: grid;
-  place-content: start center;
-  height: 100vh;
-  box-sizing: border-box;
   background: linear-gradient(113deg, rgba(208, 223, 0, 0.72) 23.72%, #ffaf72 87.59%);
 }
 .chatbox-header {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
   text-align: center;
-  margin-bottom: 40px;
-}
-.chatbox-mockup {
-  position: relative;
-  width: 100%;
-  min-height: 180px;
-  padding: 65px 60px;
-  border-radius: 38px;
-  background: linear-gradient(90deg, #4c995d 0%, #c9d85b 100%);
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
-  margin-top: calc(-1 * var(--chatbox-nudge-up, 0px));
   margin-bottom: 40px;
 }
 .chatbox-title {
@@ -365,17 +228,23 @@
   font-size: 16px;
   font-weight: 700;
   line-height: 22px;
-  padding-bottom: 20px;
   margin-top: 20px;
 }
-.chat-bubbles {
+.chatbox-mockup {
   position: relative;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 24px;
-  flex-wrap: nowrap;
   width: 100%;
+  max-width: 800px;
+  min-height: 220px; /* Increased min-height */
+  padding: 40px 60px; /* Adjusted padding */
+  border-radius: 38px;
+  background: linear-gradient(90deg, #4c995d 0%, #c9d85b 100%);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+  margin-bottom: 40px;
+  display: flex; /* Use flexbox to layout messages */
+  flex-direction: column; /* Stack messages vertically */
+}
+.chat-bubbles {
+  all: unset;
 }
 .chat-bubble {
   background: #fff;
@@ -384,62 +253,35 @@
   font-family: "DM Sans", sans-serif;
   font-size: 16px;
   font-weight: 700;
-  line-height: 22px;
   color: #0b7e63;
   box-shadow: 0 6px 14px rgba(0, 0, 0, 0.1);
-  max-width: 460px;
-  display: inline-block;
-  white-space: nowrap;
-}
-.chat-bubble.user1,
-.chat-bubble.user2 {
-  align-self: center;
-}
-.chat-avatar {
-  width: 73px;
-  height: 73px;
-  border-radius: 50%;
-  background: #4b1414;
-  position: absolute;
-  top: 50%;
-  transform: translateY(-50%);
-}
-.chat-avatar.left {
-  left: -100px;
-}
-.chat-avatar.right {
-  right: -100px;
-}
-.chat-dot {
-  width: 56px;
-  height: 56px;
-  border-radius: 50%;
-  background: #4b1414;
-  position: absolute;
-  top: 50%;
-  transform: translateY(-50%);
-}
-.chat-dot.left {
-  left: 24px;
-  margin-left: -25px;
-}
-.chat-dot.right {
-  right: 24px;
-  margin-right: -25px;
 }
 
-/* CTA inside chatbox */
+.chat-message {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.chat-message.user2 {
+  justify-content: flex-end;
+}
+
+.chat-avatar {
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  object-fit: cover;
+}
 .cta-inline {
   text-align: center;
-  padding-top: 10px;
-  margin-top: 0;
 }
 .cta-title {
   color: #046753;
   font-family: "DM Sans", sans-serif;
   font-size: 38px;
   font-weight: 700;
-  line-height: 46px;
   max-width: 848px;
   margin: 0 auto 50px;
 }
@@ -455,20 +297,27 @@
   cursor: pointer;
 }
 
-/* Footer */
-.footer {
+/* Footer Section */
+.footer-section {
+  padding: 0; /* Footer handles its own padding */
   background: #05644c;
-  padding: 55px 0;
   color: #fff;
+}
+.footer {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
 }
 .footer-content {
   max-width: 1200px;
-  margin: 0 auto;
   padding: 0 20px;
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 60px;
   align-items: center;
+  width: 100%;
 }
 .footer-logo {
   display: flex;
@@ -480,19 +329,11 @@
   height: 81px;
 }
 .footer-brand {
-  color: #fff;
   font-family: "Lexend Tera", sans-serif;
   font-size: 26px;
   font-weight: 600;
-  letter-spacing: -2.34px;
-  text-transform: capitalize;
-}
-.footer-contact {
-  text-align: left;
 }
 .footer-contact-title {
-  color: #fff;
-  font-family: "DM Sans", sans-serif;
   font-size: 20px;
   font-weight: 700;
   margin: 0 0 20px;
@@ -504,333 +345,35 @@
   margin-bottom: 15px;
 }
 .footer-contact-text {
-  color: #fff;
-  font-family: "DM Sans", sans-serif;
   font-size: 16px;
   font-weight: 700;
 }
 
-/* Responsive adjustments (combined and simplified) */
-@media (max-width: 1200px) {
-  .header {
-    padding: 20px 40px;
-  }
-  .service-item {
-    padding: 0 60px;
-    grid-template-columns: 1fr;
-    text-align: center;
-    gap: 40px;
-  }
-  .hero-title {
-    font-size: 60px;
-  }
-  .about-logo {
-    width: 400px;
-    height: 400px;
-  }
-  .about-title {
-    font-size: 40px;
-  }
-  .about-description {
-    font-size: 28px;
-  }
-  .gamification-row {
-    padding: 0 60px;
-  }
-}
-
-@media (max-width: 991.98px) {
-  .chatbox-content {
-    padding: calc(24px + var(--section-offset, 0px)) 64px;
-    border-radius: 28px;
-  }
-  .chat-dot {
-    width: 44px;
-    height: 44px;
-  }
-  .chat-bubble {
-    font-size: 14px;
-    line-height: 20px;
-    padding: 12px 18px;
-    max-width: 380px;
-  }
-}
-
+/* Responsive adjustments can be added here if needed */
 @media (max-width: 768px) {
-  .header {
-    padding: 15px 20px;
-    flex-direction: column;
-    gap: 20px;
-  }
-  .logo-container {
-    flex-direction: column;
-    text-align: center;
-  }
-  .brand-text {
-    font-size: 20px;
-  }
   .hero-title {
     font-size: 40px;
-    padding: 0 20px;
-  }
-  .emoji-group {
-    gap: 20px;
-    flex-wrap: wrap;
-  }
-  .emoji-face {
-    width: 80px;
-    height: 80px;
   }
   .fox-illustration {
     width: 300px;
-    height: 300px;
+    height: auto;
+    bottom: 50px;
     left: 50%;
-    transform: translateX(-50%) rotate(-10.633deg);
+    transform: translateX(-50%);
   }
-  .about-logo {
-    width: 300px;
-    height: 300px;
+  .service-item {
+    grid-template-columns: 1fr;
+    text-align: center;
   }
-  .about-title {
-    font-size: 32px;
-  }
-  .about-description {
-    font-size: 20px;
-    line-height: 30px;
-  }
-  .vietnamese-tagline {
-    font-size: 24px;
-  }
-  .services-title {
-    font-size: 32px;
-  }
-  .service-title {
-    font-size: 28px;
-  }
-  .service-description {
-    font-size: 18px;
-    line-height: 28px;
+  .service-content .service-title {
+    text-align: center;
   }
   .gamification-row {
     grid-template-columns: 1fr;
     text-align: center;
-    gap: 32px;
-    padding: 0 24px;
-  }
-  .gamification-icons {
-    grid-template-columns: 1fr;
-    gap: 12px;
-    justify-items: center;
-  }
-  .chat-bubbles {
-    flex-direction: column;
-    gap: 40px;
-  }
-  .chat-avatar {
-    position: relative;
-    left: auto;
-    right: auto;
-    transform: none;
-    margin-bottom: 15px;
-  }
-  .cta-title {
-    font-size: 32px;
-    padding: 0 20px;
   }
   .footer-content {
     grid-template-columns: 1fr;
     text-align: center;
-    gap: 30px;
-  }
-}
-
-@media (max-width: 575.98px) {
-  .chatbox-content {
-    padding: calc(20px + var(--section-offset, 0px)) 48px;
-  }
-  .chat-bubbles {
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-  }
-  .chat-dot {
-    display: none;
-  }
-  .chat-bubble {
-    align-self: flex-start;
-    max-width: 100%;
-    white-space: normal;
-  }
-}
-
-@media (max-width: 480px) {
-  .hero-title {
-    font-size: 28px;
-  }
-  .about-title {
-    font-size: 24px;
-  }
-  .about-description {
-    font-size: 16px;
-    line-height: 24px;
-  }
-  .service-title {
-    font-size: 24px;
-  }
-  .service-description {
-    font-size: 16px;
-    line-height: 24px;
-  }
-  .cta-title {
-    font-size: 24px;
-  }
-  .cta-button {
-    font-size: 24px;
-    padding: 12px 24px;
-  }
-}
-
-/* ====================== */
-/* Hero + About (waves)  */
-/* ====================== */
-.hero-about {
-  position: relative;
-  min-height: 640px;
-  background: linear-gradient(120deg, #3f8f54 0%, #7fbe60 45%, #d7e872 100%);
-  overflow: hidden;
-}
-
-/* Layered SVG waves at the bottom edge */
-.hero-about::before,
-.hero-about::after {
-  content: "";
-  position: absolute;
-  left: 0;
-  right: 0;
-  height: 170px;
-  pointer-events: none;
-}
-.hero-about::after {
-  bottom: -2px;
-  background: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1440 170' preserveAspectRatio='none'%3E%3Cpath fill='%23C6EADF' d='M0 120c60 12 180 36 300 36s240-36 360-48 240-4 360-12 240-40 300-56v130H0z'/%3E%3C/svg%3E")
-    center bottom/100% 100% no-repeat;
-  z-index: 1;
-}
-.hero-about::before {
-  bottom: 30px;
-  background: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1440 170' preserveAspectRatio='none'%3E%3Cpath fill='%230A6A5B' d='M0 110c90-22 210-44 330-34s240 56 360 56 240-44 360-62 240-18 390 2v98H0z'/%3E%3C/svg%3E")
-    center bottom/100% 100% no-repeat;
-  z-index: 2;
-}
-
-.hero-about__content {
-  position: relative;
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 100px 40px 0;
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-}
-.hero-about__title {
-  color: #fff;
-  font-family: "Pacifico", cursive;
-  font-size: 72px;
-  margin: 0 0 20px;
-  text-shadow: 0 3px 0 rgba(0, 0, 0, 0.2);
-}
-.hero-about__emojis {
-  display: flex;
-  gap: 20px;
-}
-.hero-about__emojis .emoji-face {
-  width: 88px;
-  height: 88px;
-  background: #f1f458;
-  border: 3px solid #095747;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
-}
-
-.hero-about__fox {
-  position: absolute;
-  left: 24px;
-  bottom: -28px;
-  width: 580px;
-  height: auto;
-  z-index: 3;
-}
-
-@media (max-width: 991.98px) {
-  .hero-about__title {
-    font-size: 44px;
-    text-align: right;
-  }
-  .hero-about__emojis .emoji-face {
-    width: 72px;
-    height: 72px;
-  }
-  .hero-about__fox {
-    width: 380px;
-    left: 12px;
-    bottom: -18px;
-  }
-}
-
-/* About section background + overlay */
-.about-section {
-  position: relative;
-  background:
-    url("/assets/brightnesslogo.png") center/540px auto no-repeat,
-    linear-gradient(0deg, #d4d42f80 10%, #50bfa56c 100%);
-  min-height: 100vh;
-  scroll-snap-align: start;
-  scroll-snap-stop: always;
-  display: grid;
-  place-items: center;
-}
-.about-overlay {
-  position: absolute;
-  inset: 0;
-  background: none;
-  pointer-events: none;
-}
-.about-content {
-  position: relative;
-  z-index: 1;
-}
-
-/* === Standalone Gamification section === */
-.gamification-section {
-  padding: calc(100px + var(--section-offset, 0px)) 0;
-  background: linear-gradient(113deg, rgba(208, 223, 0, 0.72) 23.72%, #ffaf72 87.59%);
-  /* snap disabled; handled in JS */
-  min-height: 100vh; /* match About section height */
-  display: grid; /* center like About */
-  place-items: center;
-}
-
-.gamification-row {
-  max-width: 1280px;
-  margin: 0 auto;
-  margin-top: calc(-1 * var(--gamification-nudge-up, 0px));
-  padding: 0 96px;
-  display: grid;
-  grid-template-columns: auto 1fr;
-  gap: 48px;
-  align-items: center;
-}
-
-@media (max-width: 1200px) {
-  .gamification-row {
-    padding: 0 60px;
-  }
-}
-
-@media (max-width: 768px) {
-  .gamification-row {
-    grid-template-columns: 1fr;
-    text-align: center;
-    gap: 32px;
-    padding: 0 24px;
   }
 }
