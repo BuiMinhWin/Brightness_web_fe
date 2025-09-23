@@ -6,7 +6,7 @@ const AppHeader: React.FC = () => {
   const navigate = useNavigate();
 
   return (
-    <header className="fixed top-0 left-0 right-0 z-50 bg-gradient-to-l from-[#05644c] to-[#e2f043] px-6 py-2 flex justify-between items-center">
+    <header className="app-header fixed top-0 left-0 right-0 z-50  px-6 py-2 flex justify-between items-center">
       {/* Logo */}
       <div className="flex items-center gap-2 ml-[150px]">
         <img
