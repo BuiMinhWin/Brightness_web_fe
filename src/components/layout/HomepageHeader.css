@@ -13,7 +13,6 @@
 
 .homepage-header .brand-text {
   font-weight: 800;
-  letter-spacing: -0.5px;
 }
 
 .homepage-header .nav {
@@ -26,6 +25,7 @@
   position: relative;
   padding-bottom: 6px;
   transition: color 160ms ease;
+  text-decoration: none;
 }
 .homepage-header .nav-link:hover {
   color: #ffffff;
@@ -45,6 +45,11 @@
   width: 24px;
   height: 24px;
   color: rgba(255, 255, 255, 0.9);
+}
+.homepage-header .nav-link:hover,
+.homepage-header .nav-link:focus,
+.homepage-header .nav-link:visited {
+  text-decoration: none; /* <- đảm bảo các state khác cũng không gạch */
 }
 
 @media (max-width: 767.98px) {

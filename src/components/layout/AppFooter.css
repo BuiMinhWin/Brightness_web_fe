@@ -6,51 +6,69 @@
   bottom: 0;
   width: 100%;
   z-index: 1000;
-  background: linear-gradient(90deg, #e2f043 0%, #05644c 86%);
+  background-color: rgba(0, 0, 0, 0.25);
+
+  backdrop-filter: blur(10px); /* Hiệu ứng blur cho background */
+  -webkit-backdrop-filter: blur(10px); /* Safari support */
   color: #ffffff;
 }
 
-/* Compact overlay sizing */
+/* Compact overlay sizing - giống AppHeader */
 .app-footer.footer {
   /* same element has both classes */
-  padding: 10px 0 !important; /* override large landing footer padding */
+  padding: 10px 5px !important; /* Giống AppHeader: 10px 20px */
 }
 
 .app-footer .footer-content {
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 0 16px;
-  gap: 16px;
+  display: flex;
+  justify-content: center; /* Căn giữa toàn bộ nội dung */
   align-items: center;
+  gap: 60px; /* Khoảng cách giữa logo và contact */
+}
+
+.app-footer .footer-logo {
+  display: flex;
+  align-items: center;
+  transform: translateY(-25px); /* Kéo logo lên 3px */
 }
 
 .app-footer .footer-logo-image {
-  width: 44px;
-  height: 44px;
+  width: 42px; /* Giống AppHeader logo-image */
+  height: 42px; /* Giống AppHeader logo-image */
 }
 
 .app-footer .footer-brand {
-  font-size: 18px;
+  font-size: 16px; /* Tăng lên để nổi bật hơn */
+  font-weight: 700;
+  color: #ffffff;
+}
+
+.app-footer .footer-contact {
+  display: flex;
+  align-items: center;
 }
 
 .app-footer .footer-contact-title {
   font-size: 14px;
   margin: 0;
+  color: #ffffff;
+  font-weight: 600;
+  margin-right: 20px; /* Giảm margin để sát lại */
+}
+
+.app-footer .footer-contact-item {
+  display: flex;
+  align-items: center;
 }
 
 .app-footer .footer-contact-text {
   font-size: 12px;
+  color: #ffffff;
 }
 
-.app-footer .footer-brand {
-  color: #ffffff;
-}
-.app-footer .footer-contact-title {
-  color: #ffffff;
-}
-.app-footer .footer-contact-text {
-  color: #ffffff;
-}
 .app-footer .contact-icon {
-  border-color: #ffffff;
+  width: 16px;
+  height: 16px;
+  border: 1px solid #ffffff;
+  border-radius: 2px;
 }

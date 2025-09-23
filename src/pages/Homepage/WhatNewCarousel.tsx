@@ -105,16 +105,65 @@ const WhatNewCarousel: React.FC<WhatNewCarouselProps> = ({ initialIndex = 0 }) =
   const goPrev = () => setActive((a) => (a - 1 + n) % n);
   const goNext = () => setActive((a) => (a + 1) % n);
 
-  // Swipe
+  // Swipe and Drag
   const touchStartX = useRef<number | null>(null);
+  const dragStartX = useRef<number | null>(null);
+  const isDragging = useRef(false);
+  const wasDragged = useRef(false); // Flag to distinguish click from drag
+
   const onTouchStart = (e: React.TouchEvent) => {
     touchStartX.current = e.touches[0].clientX;
   };
+
   const onTouchEnd = (e: React.TouchEvent) => {
     if (touchStartX.current == null) return;
     const dx = e.changedTouches[0].clientX - touchStartX.current;
     if (Math.abs(dx) > 40) dx > 0 ? goPrev() : goNext();
     touchStartX.current = null;
+  };
+
+  const onMouseDown = (e: React.MouseEvent) => {
+    isDragging.current = true;
+    wasDragged.current = false; // Reset drag flag
+    dragStartX.current = e.clientX;
+    (e.currentTarget as HTMLElement).style.cursor = "grabbing";
+  };
+
+  const onMouseUp = (e: React.MouseEvent) => {
+    isDragging.current = false;
+    (e.currentTarget as HTMLElement).style.cursor = "grab";
+
+    if (dragStartX.current !== null) {
+      const dx = e.clientX - dragStartX.current;
+      // Only trigger slide change if it was a significant drag
+      if (Math.abs(dx) > 40) {
+        dx > 0 ? goPrev() : goNext();
+      }
+    }
+    dragStartX.current = null;
+  };
+
+  const onMouseMove = (e: React.MouseEvent) => {
+    if (!isDragging.current || dragStartX.current === null) return;
+    const dx = e.clientX - dragStartX.current;
+    // If moved more than a few pixels, consider it a drag
+    if (Math.abs(dx) > 10) {
+      wasDragged.current = true;
+    }
+  };
+
+  const onMouseLeave = (e: React.MouseEvent) => {
+    if (isDragging.current) {
+      isDragging.current = false;
+      (e.currentTarget as HTMLElement).style.cursor = "grab";
+      if (dragStartX.current !== null) {
+        const dx = e.clientX - dragStartX.current;
+        if (Math.abs(dx) > 40) {
+          dx > 0 ? goPrev() : goNext();
+        }
+        dragStartX.current = null;
+      }
+    }
   };
 
   // Arrow keys
@@ -191,19 +240,31 @@ const WhatNewCarousel: React.FC<WhatNewCarouselProps> = ({ initialIndex = 0 }) =
 
     const scale = isCenter ? "scale-100" : "scale-[0.92]";
 
+    const handleCardClick = (e: React.MouseEvent) => {
+      // Prevent click from firing if a drag occurred
+      if (wasDragged.current) {
+        e.preventDefault();
+        return;
+      }
+      if (!isCenter) {
+        setActive(idx);
+      }
+    };
+
     return (
       <div
         key={`${item.id}-${pos}`}
+        onClick={handleCardClick}
         className={[
-          "relative  rounded-[36px] shadow-xl snap-center shrink-0",
+          "relative  rounded-[36px] shadow-xl snap-center shrink-0 cursor-pointer",
           "transition-transform duration-300 ease-out will-change-transform",
           isCenter
-            ? "w-[300px] h-[300px] p-7 border-[6px] border-[#FF7B17] -translate-y-8 z-40" // <- raise center
-            : "w-[300px] h-[300px] p-6 translate-y-50 z-20", // sides remain lower
+            ? "w-[300px] h-[300px] p-7 border-[6px] border-[#FF7B17] -translate-y-12 z-40"
+            : "w-[300px] h-[300px] p-6 -translate-y-4 z-30",
           !isCenter ? `${sideTilt} ${scale}` : "rotate-0",
           !isCenter
-            ? "hover:rotate-0 hover:translate-y-0 hover:scale-[0.98]"
-            : "hover:scale-[1.02] hover:-translate-y-20", // small lift on hover for center
+            ? "hover:rotate-0 hover:-translate-y-6 hover:scale-[0.98]"
+            : "hover:scale-[1.02] hover:-translate-y-20",
         ].join(" ")}
         style={{
           transformOrigin: "center",
@@ -211,23 +272,20 @@ const WhatNewCarousel: React.FC<WhatNewCarouselProps> = ({ initialIndex = 0 }) =
           boxShadow: isCenter ? "0 12px 28px rgba(0,0,0,0.18)" : "0 16px 36px rgba(0,0,0,0.22)",
         }}
       >
-        {/* HÀNG NGANG: avatar trái — text phải (đúng class bạn yêu cầu) */}
+        {/* HÀNG NGANG: avatar trái — text phải */}
         <div className="flex items-center gap-4 mb-2">
-          {/* Avatar: giữ đúng class đã yêu cầu */}
           <div
             className="rounded-full w-[64px] h-[64px] mb-4 shrink-0"
             style={{ backgroundColor: item.bgColor }}
             aria-hidden
           />
           <div className="flex flex-col justify-center min-w-0">
-            {/* Tên: giữ đúng class đã yêu cầu */}
             <h4 className="text-black font-bold mb-1 text-[20px] truncate">{item.name}</h4>
-            {/* Sao: giữ đúng class đã yêu cầu */}
             <div className="flex gap-1 text-black text-[16px] mb-4">{renderStars(item.rating)}</div>
           </div>
         </div>
 
-        {/* Mô tả (clamp “…”) */}
+        {/* Mô tả */}
         <p
           className={
             isCenter
@@ -238,32 +296,27 @@ const WhatNewCarousel: React.FC<WhatNewCarouselProps> = ({ initialIndex = 0 }) =
           {item.description}
         </p>
 
-        {/* GIỮ NGUYÊN anchor Read more → và class */}
-        <a
-          href="#"
-          className="text-[#FF7B17] font-bold"
-          onClick={(e) => {
-            e.preventDefault();
-            setActive(idx); // click -> đưa vào giữa
-          }}
-        >
-          Read more →
-        </a>
+        {/* "Read more" giờ là một phần của thẻ có thể nhấp */}
+        <span className="text-[#FF7B17] font-bold">Read more →</span>
       </div>
     );
   });
 
   return (
     <section
-      className="whats-new-section relative py-[80px] max-w-[1200px] mx-auto px-4 overflow-hidden"
       onTouchStart={onTouchStart}
       onTouchEnd={onTouchEnd}
+      onMouseDown={onMouseDown}
+      onMouseUp={onMouseUp}
+      onMouseMove={onMouseMove}
+      onMouseLeave={onMouseLeave}
+      style={{ cursor: "grab" }}
       aria-label="What's new section"
     >
       {/* Nền gradient giống mẫu */}
       <div className="absolute inset-0 -z-10 bg-gradient-to-tr from-[#05644C] to-[#E2F043] opacity-60" />
 
-      <h2 className="whats-new-title text-white text-center font-bold text-[40px] mb-[36px]">
+      <h2 className="whats-new-title text-white text-center font-bold text-[40px] pb-[46px]">
         What new?
       </h2>
 
@@ -328,10 +381,7 @@ const WhatNewCarousel: React.FC<WhatNewCarouselProps> = ({ initialIndex = 0 }) =
       </div>
 
       <style>{`
-        .whats-new-section {
-          background: linear-gradient(135deg, #a8e6cf 0%, #dcedc1 50%, #f9e79f 100%);
-          border-radius: 100px 100px 0 0;
-        }
+        
         .scroll-rail {
           position: relative;
           width: 220px;

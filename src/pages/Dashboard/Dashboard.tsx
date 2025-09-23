@@ -40,13 +40,47 @@ const LineChart = () => (
   </svg>
 );
 
-const Gauge = () => (
-  <svg viewBox="0 0 200 120">
-    <path d="M20 100 A 80 80 0 0 1 180 100" fill="#eaf2ef" />
-    <path d="M20 100 A 80 80 0 0 1 160 60" fill="#0b7e63" />
-    <line x1="100" y1="100" x2="165" y2="65" stroke="#222" strokeWidth="6" strokeLinecap="round" />
-  </svg>
-);
+const Gauge = () => {
+  const value = 0.75; // Example value: 75%
+  const angle = -90 + value * 180;
+  const arcLength = Math.PI * 60; // Radius is 60
+
+  return (
+    <svg viewBox="0 0 200 100">
+      {/* Background arc */}
+      <path
+        d="M 40 100 A 60 60 0 0 1 160 100"
+        fill="none"
+        stroke="#eaf2ef"
+        strokeWidth="25" // A bit thicker to look more "square"
+        strokeLinecap="butt" // Flat ends
+      />
+      {/* Filled arc */}
+      <path
+        d="M 40 100 A 60 60 0 0 1 160 100"
+        fill="none"
+        stroke="#0b7e63" // Green color
+        strokeWidth="25"
+        strokeLinecap="butt"
+        strokeDasharray={arcLength}
+        strokeDashoffset={arcLength * (1 - value)}
+      />
+      {/* Needle */}
+      <g transform={`rotate(${angle} 100 100)`}>
+        <line
+          x1="100"
+          y1="100"
+          x2="100"
+          y2="35" // Adjusted needle length
+          stroke="black"
+          strokeWidth="3"
+          strokeLinecap="round" // Keep needle round
+        />
+        <circle cx="100" cy="100" r="5" fill="black" />
+      </g>
+    </svg>
+  );
+};
 
 const Dashboard: React.FC = () => {
   return (
@@ -86,87 +120,87 @@ const Dashboard: React.FC = () => {
 
         {/* Main */}
         <main className="db-main">
-          <div>
-            <h1 className="db-title">Own Your Journey</h1>
+          <div className="db-main-grid">
+            <div>
+              <h1 className="db-title">Own Your Journey</h1>
 
-            <div className="db-chart-card">
-              <div className="db-chart-head">
-                <div>Daily Walking</div>
-                <div className="db-chip">Weekly ▾</div>
-              </div>
-              <div className="db-chart">
-                <LineChart />
-              </div>
-              <div className="db-week">
-                {["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map((d) => (
-                  <span key={d}>{d}</span>
-                ))}
+              <div className="db-chart-card">
+                <div className="db-chart-head">
+                  <div>Daily Walking</div>
+                  <div className="db-chip">Weekly ▾</div>
+                </div>
+                <div className="db-chart">
+                  <LineChart />
+                </div>
+                <div className="db-week">
+                  {["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map((d) => (
+                    <span key={d}>{d}</span>
+                  ))}
+                </div>
               </div>
             </div>
-
-            <div className="db-cards">
-              <div className="db-card">
-                <div className="db-card-head">
-                  <div className="db-card-ico">🏃</div>
-                  <div>
-                    <div>Cyberling Hero</div>
-                    <small>10 km / week</small>
-                  </div>
-                </div>
-                <div className="db-progress">
-                  <div className="db-progress-bar">
-                    <div className="db-progress-fill" style={{ width: "55%" }} />
-                  </div>
-                </div>
-                <div className="db-target">Target: 10km</div>
+            <div className="db-mini-col">
+              <div className="db-mini green">
+                <div className="db-mini-title">15 / 07</div>
+                <div>Go to gym at 6pm</div>
               </div>
-              <div className="db-card">
-                <div className="db-card-head">
-                  <div className="db-card-ico">🏃‍♀️</div>
-                  <div>
-                    <div>Daily Running</div>
-                    <small>5 km / week</small>
-                  </div>
-                </div>
-                <div className="db-progress">
-                  <div className="db-progress-bar">
-                    <div className="db-progress-fill" style={{ width: "75%" }} />
-                  </div>
-                </div>
-                <div className="db-target">Target: 5km/ week</div>
+              <div className="db-mini lime">
+                <div className="db-mini-title">Calories</div>
+                <div className="db-mini-value">3200</div>
               </div>
-              <div className="db-card">
-                <div className="db-card-head">
-                  <div className="db-card-ico">👣</div>
-                  <div>
-                    <div>Daily Steps</div>
-                    <small>10000 steps / week</small>
-                  </div>
-                </div>
-                <div className="db-progress">
-                  <div className="db-progress-bar">
-                    <div className="db-progress-fill" style={{ width: "66%" }} />
-                  </div>
-                </div>
-                <div className="db-target">Target: 10000/week</div>
+              <div className="db-mini orange">
+                <div className="db-mini-title">Water</div>
+                <div>Total Glass</div>
+                <div className="db-mini-value">4</div>
+                <div className="db-curve" />
               </div>
             </div>
           </div>
-
-          <div className="db-mini-col">
-            <div className="db-mini green">
-              <div className="db-mini-title">15 / 07</div>
-              <div>Go to gym at 6pm</div>
+          <div className="db-cards">
+            <div className="db-card">
+              <div className="db-card-head">
+                <div className="db-card-ico">🏃</div>
+                <div>
+                  <div>Cyberling Hero</div>
+                  <small>10 km / week</small>
+                </div>
+              </div>
+              <div className="db-progress">
+                <div className="db-progress-bar">
+                  <div className="db-progress-fill" style={{ width: "55%" }} />
+                </div>
+              </div>
+              <div className="db-target">Target: 10km</div>
             </div>
-            <div className="db-mini lime">
-              <div className="db-mini-title">Calories</div>
-              <div className="db-mini-value">3200</div>
+            <div className="db-card">
+              <div className="db-card-head">
+                <div className="db-card-ico">🏃‍♀️</div>
+                <div>
+                  <div>Daily Running</div>
+                  <small>5 km / week</small>
+                </div>
+              </div>
+              <div className="db-progress">
+                <div className="db-progress-bar">
+                  <div className="db-progress-fill" style={{ width: "75%" }} />
+                </div>
+              </div>
+              <div className="db-target">Target: 5km/ week</div>
             </div>
-            <div className="db-mini orange">
-              <div className="db-mini-title">Water</div>
-              <div>Total Glass</div>
-              <div className="db-mini-value">4</div>
-              <div className="db-curve" />
+            <div className="db-card">
+              <div className="db-card-head">
+                <div className="db-card-ico">👣</div>
+                <div>
+                  <div>Daily Steps</div>
+                  <small>10000 steps / week</small>
+                </div>
+              </div>
+              <div className="db-progress">
+                <div className="db-progress-bar">
+                  <div className="db-progress-fill" style={{ width: "66%" }} />
+                </div>
+              </div>
+              <div className="db-target">Target: 10000/week</div>
             </div>
           </div>
         </main>
@@ -178,16 +212,20 @@ const Dashboard: React.FC = () => {
               <div className="db-avatar" />
               <button className="db-edit">Edit</button>
             </div>
-            <div className="db-user-name">Name</div>
-            <div className="db-user-meta">Joined 4 months ago</div>
-            <div className="db-user-meta">180 m · 82 kg · 30 yrs</div>
-          </div>
-          <div className="db-gauge">
-            <div className="db-gauge-title">Weight loss Goal</div>
-            <div>
-              <strong>Loss:</strong> 5kg / Month
+
+            <div className="db-user-info">
+              <div className="db-user-name">Name</div>
+              <div className="db-user-meta">Joined 4 months ago</div>
+              <div className="db-user-meta">180 m · 82 kg · 30 yrs</div>
             </div>
-            <Gauge />
+
+            <div className="db-gauge-section">
+              <div className="db-gauge-title">Weight loss Goal</div>
+              <div>
+                <strong>Loss:</strong> 5kg / Month
+              </div>
+              <Gauge />
+            </div>
           </div>
         </aside>
       </div>

@@ -16,12 +16,12 @@ const AppFooter: React.FC = () => {
         <div className="footer-contact">
           <h4 className="footer-contact-title">Contact us</h4>
           <div className="footer-contact-item">
-            <div className="contact-icon" />
-            <span className="footer-contact-text">Contact us:</span>
+            <div className="contact-icon">📞</div>
+            <span className="footer-contact-text">0xxxxxxxxxx</span>
           </div>
           <div className="footer-contact-item">
-            <div className="contact-icon" />
-            <span className="footer-contact-text">0xxxxxxxxxx</span>
+            <div className="contact-icon">✉️</div>
+            <span className="footer-contact-text">Contact us:</span>
           </div>
         </div>
       </div>

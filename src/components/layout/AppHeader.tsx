@@ -1,5 +1,6 @@
 import React from "react";
 import "./AppHeader.css";
+import { Link } from "react-router-dom";
 
 const AppHeader: React.FC = () => {
   return (
@@ -16,8 +17,12 @@ const AppHeader: React.FC = () => {
         </div>
       </div>
       <div className="auth-buttons">
-        <button className="login-btn">Log In</button>
-        <button className="signup-btn">Sign Up</button>
+        <Link to="/signin" className="login-btn">
+          Log In
+        </Link>
+        <Link to="/signup" className="signup-btn">
+          Sign Up
+        </Link>
       </div>
     </header>
   );

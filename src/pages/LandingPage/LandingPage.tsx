@@ -259,17 +259,17 @@ const LandingPage: React.FC = () => {
           </div>
         </div>
         <img
-          className="fox-illustration absolute bottom-[100px] left-[86px] w-[578px] h-[564px] -rotate-[10.633deg] z-[3]"
+          className="fox-illustration absolute bottom-[100px] left-[86px] w-[578px] h-[564px] -rotate-[-5deg] z-[3]"
           src="https://api.builder.io/api/v1/image/assets/TEMP/9e48ea33ceadf9e90f946b17a07cc7729d8c8c34?width=1156"
           alt="Fox"
         />
         <img
-          className="leaf-decoration-1 absolute bottom-[150px] left-[215px] w-[217px] h-[133px] -rotate-[61.321deg] z-[3]"
+          className="leaf-decoration-1 absolute bottom-[150px] left-[180px] w-[217px] h-[133px] -rotate-[-18deg] z-[3]"
           src="https://api.builder.io/api/v1/image/assets/TEMP/288871bc2234fd41595e2acaee689ebf87895367?width=433"
           alt="Leaf"
         />
         <img
-          className="leaf-decoration-2 absolute bottom-[200px] left-[479px] w-[217px] h-[133px] z-[3]"
+          className="leaf-decoration-2 absolute bottom-[240px] left-[479px] w-[217px] h-[133px] z-[3]"
           src="https://api.builder.io/api/v1/image/assets/TEMP/1bc954f19c70fdb4619ccc91981956a180bcad93?width=433"
           alt="Leaf"
         />
@@ -435,12 +435,16 @@ const LandingPage: React.FC = () => {
               Personalized AI Health Assistant with integrated RAG3
             </p>
           </div>
-          <div className="chatbox-mockup">
-            <div className="chat-dot left" />
-            <div className="chat-dot right" />
+          <div className="chatbox-mockup ">
+            <div className="chat-dot left -translate-y-8" />
+            <div className="chat-dot right translate-y-9" />
             <div className="chat-bubbles">
-              <div className="chat-bubble user1">Do you have any questions today?</div>
-              <div className="chat-bubble user2">What exercises are good for beginners?</div>
+              <div className="chat-bubble user1 -translate-y-8">
+                Do you have any questions today?
+              </div>
+              <div className="chat-bubble user2 translate-y-9">
+                What exercises are good for beginners?
+              </div>
             </div>
           </div>
           <div className="cta-inline">
@@ -448,9 +452,8 @@ const LandingPage: React.FC = () => {
             <button className="cta-button">TRY NOW</button>
           </div>
         </Reveal>
+        <AppFooter />
       </section>
-
-      {/* <AppFooter /> */}
     </div>
   );
 };

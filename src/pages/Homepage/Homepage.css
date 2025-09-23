@@ -198,6 +198,36 @@
   color: #046753 !important;
 }
 
+/* Q&A: left-align and staircase layout */
+.qa-questions {
+  position: relative;
+}
+.qa-questions .qa-question {
+  width: fit-content;
+}
+.qa-questions .qa-question:nth-child(1) {
+  margin-left: 200px;
+}
+.qa-questions .qa-question:nth-child(2) {
+  margin-left: 200px;
+}
+.qa-questions .qa-question:nth-child(3) {
+  margin-left: 200px;
+}
+.qa-questions .qa-question:nth-child(4) {
+  margin-left: 200px;
+}
+
+@media (max-width: 640px) {
+  /* On small screens, stack without offsets */
+  .qa-questions {
+    margin-left: 16px;
+  }
+  .qa-questions .qa-question {
+    margin-left: 0 !important;
+  }
+}
+
 /* Make stat texts black */
 .achievement .stat-label,
 .achievement .stat-sub {
@@ -207,4 +237,10 @@
 /* Ensure numbers keep the teal tone from the design */
 .achievement .stat-value {
   color: #046753 !important;
+}
+.qa-section {
+  background-image: url("/assets/qa-bg.svg");
+  background-repeat: no-repeat;
+  background-size: cover;
+  background-position: center 160px; /* 👈 dịch background xuống 50px */
 }

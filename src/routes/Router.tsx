@@ -32,11 +32,6 @@ const AppRouter: React.FC = () => {
         <Routes>
           <Route path="/" element={<LandingPage />} />
           {/* Section-deeplink routes mapping to the same LandingPage */}
-          <Route path="/about-content" element={<LandingPage />} />
-          <Route path="/services" element={<LandingPage />} />
-          <Route path="/gamification" element={<LandingPage />} />
-          <Route path="/chatbox" element={<LandingPage />} />
-          <Route path="/cta" element={<LandingPage />} />
           <Route path="/home" element={<Homepage />} />
           <Route path="/fitness" element={<FitnessProfile />} />
           <Route path="/about" element={<AboutPage />} />

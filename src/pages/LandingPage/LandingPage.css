@@ -346,13 +346,12 @@
   position: relative;
   width: 100%;
   min-height: 180px;
-  padding: 55px 50px;
-  border-radius: 48px;
-  border: 3px solid #1ea7ff;
+  padding: 65px 60px;
+  border-radius: 38px;
   background: linear-gradient(90deg, #4c995d 0%, #c9d85b 100%);
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
   margin-top: calc(-1 * var(--chatbox-nudge-up, 0px));
-  margin-bottom: 50px;
+  margin-bottom: 80px;
 }
 .chatbox-title {
   color: #046753;
@@ -422,21 +421,23 @@
 }
 .chat-dot.left {
   left: 24px;
+  margin-left: -25px;
 }
 .chat-dot.right {
   right: 24px;
+  margin-right: -25px;
 }
 
 /* CTA inside chatbox */
 .cta-inline {
   text-align: center;
-  padding-top: 60px;
+  padding-top: 10px;
   margin-top: -60px;
 }
 .cta-title {
   color: #046753;
   font-family: "DM Sans", sans-serif;
-  font-size: 48px;
+  font-size: 38px;
   font-weight: 700;
   line-height: 46px;
   max-width: 848px;

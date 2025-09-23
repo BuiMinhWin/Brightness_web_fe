@@ -149,12 +149,22 @@ const Homepage: React.FC = () => {
       </section>
 
       {/* Q&A Section */}
-      <section className="qa-section relative py-[100px]">
-        <div className="qa-bubble absolute top-0 right-[100px] bg-[#095747] rounded-[50px] py-[20px] px-[40px] text-[#FED700] font-bold text-[40px] z-20">
-          What you wonder?
+      <section className="  qa-section relative py-[100px]   ">
+        <div
+          className="qa-bubble absolute top-20 right-[250px] text-[#FED700] font-bold text-[40px] z-20 flex items-center justify-center text-center"
+          style={{
+            backgroundImage: "url('/assets/Vector.png')",
+            backgroundSize: "100% 100%",
+            backgroundRepeat: "no-repeat",
+            backgroundPosition: "center",
+            width: "450px",
+            height: "100px",
+          }}
+        >
+          <h5 className="qa-bubble-text  absolute -bottom-2.25">What you wonder?</h5>
         </div>
 
-        <div className="qa-questions max-w-[800px] mx-auto px-5 flex flex-col gap-5 mt-[100px]">
+        <div className="qa-questions max-w-[800px] ml-[91px] px-5 flex flex-col gap-5 mt-[100px] items-start">
           <button className="qa-question bg-[#AEFFC4] rounded-[102px] py-[17px] px-[30px] font-bold text-[#007E85]">
             When will I see results?
           </button>
@@ -174,8 +184,10 @@ const Homepage: React.FC = () => {
       <section
         className="top-performance-section relative py-[100px] rounded-[100px] my-[50px]"
         style={{
-          background:
-            "linear-gradient(73deg, rgba(254,215,0,0.5) -12.82%, rgba(0,147,185,0.5) 108.79%)",
+          backgroundImage: "url('/assets/Ellipse.svg')",
+          backgroundSize: "cover",
+          backgroundPosition: "center",
+          backgroundRepeat: "no-repeat",
         }}
       >
         <h2 className="top-performance-title text-white text-center font-bold text-[48px] mb-[50px]">
