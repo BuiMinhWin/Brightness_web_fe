@@ -12,7 +12,7 @@
     "format:css": "prettier --write \"**/*.css\"",
     "check": "prettier --check \"**/*.{css,ts,tsx,html,json,md}\"",
     "check:css": "prettier --check \"**/*.css\"",
-    "prepare": "husky install"
+    "prepare": "husky"
   },
   "dependencies": {
     "@emotion/react": "^11.14.0",
