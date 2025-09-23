@@ -1,0 +1,86 @@
+.profile-bg {
+  min-height: 100vh;
+  background: linear-gradient(
+    352deg,
+    rgba(91, 193, 127, 0.3) 10.49%,
+    rgba(174, 255, 196, 0.3) 46.54%,
+    rgba(0, 126, 133, 0.3) 80.3%
+  );
+}
+.profile-header {
+  height: 120px;
+  width: 100%;
+  background: linear-gradient(90deg, #05644c 0%, #e2f043 100%);
+}
+.profile-label {
+  color: #000;
+  opacity: 0.8;
+}
+.profile-field {
+  background: #f9f9f9;
+  border-radius: 8px;
+}
+.profile-input-text {
+  color: rgba(0, 0, 0, 0.5);
+  font-family: "DM Sans";
+  font-size: 16px;
+  font-weight: 400;
+}
+.profile-avatar {
+  background: #4b1414;
+}
+.profile-edit-btn {
+  width: 40px;
+  height: 40px;
+  background: #fff;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+.profile-edit-btn::before {
+  content: "";
+  position: absolute;
+  inset: 2px;
+  background: #040415;
+  border-radius: 50%;
+}
+.profile-edit-btn svg {
+  position: relative;
+  z-index: 1;
+}
+.profile-email-label {
+  color: #000;
+}
+.profile-email-icon {
+  width: 48px;
+  height: 48px;
+  background: rgba(0, 176, 185, 0.1);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.profile-save-btn {
+  background: #05644c;
+  color: #fff;
+  border-radius: 8px;
+  padding: 10px 25px;
+  border: none;
+  cursor: pointer;
+}
+.profile-save-btn:hover {
+  filter: brightness(0.95);
+}
+.profile-add-email-btn {
+  background: rgba(0, 176, 185, 0.1);
+  color: #00b0b9;
+  border-radius: 8px;
+  padding: 10px 24px;
+  border: none;
+  cursor: pointer;
+}
+.profile-add-email-btn:hover {
+  background: rgba(0, 176, 185, 0.15);
+}

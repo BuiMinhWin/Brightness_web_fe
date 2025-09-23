@@ -24,6 +24,8 @@ import Blogs from "../pages/Blogs/Blog";
 import FirstAidPage from "@/pages/FirstAid/FirstAidPage";
 import VideoPage from "@/pages/FirstAid/VideoPage";
 import AdminMain from "@/pages/admin/AdminMain";
+import Goal from "@/pages/Goal/YourGoal";
+import UserProfile from "@/pages/UserProfile/UserProfile";
 
 const AppRouter: React.FC = () => {
   return (
@@ -39,7 +41,9 @@ const AppRouter: React.FC = () => {
           <Route path="/connect" element={<Connect />} />
           <Route path="/schedule" element={<Schedule />} />
           <Route path="/profile" element={<Profile />} />
+          <Route path="/goal" element={<Goal />} />
           <Route path="/blogs" element={<Blogs />} />
+          <Route path="/edit-profile" element={<UserProfile />} />
           <Route path="/first-aid" element={<FirstAidPage />} />
           <Route path="/video/:id" element={<VideoPage />} />
           <Route path="/admin/*" element={<AdminMain />} />

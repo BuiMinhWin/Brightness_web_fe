@@ -1,26 +1,14 @@
 import React from "react";
 import "./Profile.css";
+import HomepageHeader from "@/components/layout/HomepageHeader";
+import Navbar from "@/components/layout/Navbar";
 
 const Profile: React.FC = () => {
   return (
     <div className="pf-page">
       {/* Topbar */}
       <div className="pf-topbar">
-        <div className="pf-brand">
-          <div className="pf-logo" />
-          <div className="pf-brand-name">BRIGHTNEST</div>
-        </div>
-        <nav className="pf-nav">
-          <a href="#">Home</a>
-          <a href="#">Blogs</a>
-          <a href="#">Gamification</a>
-          <a href="#">First aid</a>
-          <a href="#">About</a>
-        </nav>
-        <div className="pf-actions">
-          <div className="pf-circle" />
-          <div className="pf-circle" />
-        </div>
+        <Navbar />
       </div>
 
       <div className="pf-wrap">

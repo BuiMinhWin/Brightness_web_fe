@@ -1,5 +1,7 @@
 import React from "react";
 import "./Schedule.css";
+import HomepageHeader from "@/components/layout/HomepageHeader";
+import Navbar from "@/components/layout/Navbar";
 
 const Schedule: React.FC = () => {
   const weekdays = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
@@ -16,21 +18,7 @@ const Schedule: React.FC = () => {
     <div className="sch-page">
       {/* Topbar */}
       <div className="sch-topbar">
-        <div className="sch-brand">
-          <div className="sch-logo" />
-          <div className="sch-brand-name">BRIGHTNEST</div>
-        </div>
-        <nav className="sch-nav">
-          <a href="#">Home</a>
-          <a href="#">Blogs</a>
-          <a href="#">Gamification</a>
-          <a href="#">First aid</a>
-          <a href="#">About</a>
-        </nav>
-        <div className="sch-actions">
-          <div className="sch-circle" />
-          <div className="sch-circle" />
-        </div>
+        <Navbar />
       </div>
 
       <div className="sch-wrap">

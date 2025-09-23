@@ -1,26 +1,14 @@
 import React from "react";
 import "./Connect.css";
+import HomepageHeader from "@/components/layout/HomepageHeader";
+import Navbar from "@/components/layout/Navbar";
 
 const Connect: React.FC = () => {
   return (
     <div className="connect-page">
       {/* Topbar */}
       <div className="connect-topbar">
-        <div className="connect-brand">
-          <div className="connect-logo" />
-          <div className="connect-brand-name">BRIGHTNEST</div>
-        </div>
-        <nav className="connect-nav">
-          <a href="#">Home</a>
-          <a href="#">Blogs</a>
-          <a href="#">Gamification</a>
-          <a href="#">First aid</a>
-          <a href="#">About</a>
-        </nav>
-        <div className="connect-actions">
-          <div className="connect-circle" />
-          <div className="connect-circle" />
-        </div>
+        <Navbar />
       </div>
 
       <div className="connect-wrap">

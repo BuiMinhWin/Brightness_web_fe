@@ -1,9 +1,7 @@
-﻿// ...existing code...
-import React, { useMemo, useRef, useEffect, useState } from "react";
+﻿import React, { useMemo, useRef, useEffect, useState } from "react";
 import "./LandingPage.css";
-import { motion } from "framer-motion";
+import { motion, animate } from "framer-motion";
 import AppHeader from "../../components/layout/AppHeader";
-import AppFooter from "../../components/layout/AppFooter";
 import Reveal from "../../components/utils/Reveal";
 import { useFullpageScroll } from "../../components/utils/useFullpageScroll";
 
@@ -14,18 +12,22 @@ const LandingPage: React.FC = () => {
   const servicesRef = useRef<HTMLElement | null>(null);
   const gamificationRef = useRef<HTMLElement | null>(null);
   const chatboxRef = useRef<HTMLElement | null>(null);
+  const footerRef = useRef<HTMLElement | null>(null);
 
   // container ref to attach native listeners
   const containerRef = useRef<HTMLDivElement | null>(null);
 
   // Snap order (down): hero -> about -> service -> gamification
-  const sections = useMemo(() => [heroRef, aboutRef, servicesRef, gamificationRef, chatboxRef], []);
-  // Map each section to a route for deep-linking and back/forward support
-  const routes = useMemo(
-    () => ["/", "/about-content", "/services", "/gamification", "/chatbox"],
+  const sections = useMemo(
+    () => [heroRef, aboutRef, servicesRef, gamificationRef, chatboxRef, footerRef],
     []
   );
-  const { handlers } = useFullpageScroll(sections as any, routes);
+  // Map each section to a route for deep-linking and back/forward support
+  // const routes = useMemo(
+  //   () => ["/", "/about-content", "/services", "/gamification", "/chatbox", "/footer"],
+  //   []
+  // );
+  // const { handlers } = useFullpageScroll(sections as any, routes);
 
   // Controlled scrolling state
   const [activeIndex, setActiveIndex] = useState(0);
@@ -43,16 +45,29 @@ const LandingPage: React.FC = () => {
     if (isScrollingRef.current) return;
     const bounded = Math.max(0, Math.min(index, sections.length - 1));
     if (bounded === activeIndex) return;
+
     isScrollingRef.current = true;
     setActiveIndex(bounded);
-    const el = sections[bounded]?.current as HTMLElement | null;
-    if (el) {
-      el.scrollIntoView({ behavior: "smooth", block: "start" });
-    }
-    // Thời gian chờ để tránh trigger liên tiếp (tùy chỉnh theo animation)
-    window.setTimeout(() => {
+
+    const targetElement = sections[bounded]?.current;
+    const container = containerRef.current;
+
+    if (targetElement && container) {
+      const targetScrollTop = targetElement.offsetTop;
+      animate(container.scrollTop, targetScrollTop, {
+        type: "tween",
+        duration: 1,
+        ease: "easeInOut",
+        onUpdate: (latest) => {
+          container.scrollTop = latest;
+        },
+        onComplete: () => {
+          isScrollingRef.current = false;
+        },
+      });
+    } else {
       isScrollingRef.current = false;
-    }, 700);
+    }
   };
 
   // Native listeners — đảm bảo preventDefault và passive:false để ngăn cuộn mặc định
@@ -63,6 +78,7 @@ const LandingPage: React.FC = () => {
     let touchStartY: number | null = null;
 
     const onWheel = (ev: WheelEvent) => {
+      console.log("User scrolled, deltaY:", ev.deltaY);
       ev.preventDefault();
       if (isScrollingRef.current) return;
       if (ev.deltaY > 0) scrollToIndex(activeIndex + 1);
@@ -156,31 +172,31 @@ const LandingPage: React.FC = () => {
 
   // Combine external handlers (from useFullpageScroll) with our controlled handlers.
   // Our handlers intentionally prevent default wheel/touch to enforce full-section snapping.
-  const combinedHandlers = {
-    ...handlers,
-    onWheel: (e: React.WheelEvent) => {
-      handlers?.onWheel?.(e);
-      handleWheel(e);
-    },
-    onTouchStart: (e: React.TouchEvent) => {
-      handlers?.onTouchStart?.(e);
-      handleTouchStart(e);
-    },
-    onTouchEnd: (e: React.TouchEvent) => {
-      handlers?.onTouchEnd?.(e);
-      handleTouchEnd(e);
-    },
-    onKeyDown: (e: React.KeyboardEvent) => {
-      handlers?.onKeyDown?.(e);
-      handleKeyDown(e);
-    },
-  };
+  // const combinedHandlers = {
+  //   ...handlers,
+  //   onWheel: (e: React.WheelEvent) => {
+  //     handlers?.onWheel?.(e);
+  //     handleWheel(e);
+  //   },
+  //   onTouchStart: (e: React.TouchEvent) => {
+  //     handlers?.onTouchStart?.(e);
+  //     handleTouchStart(e);
+  //   },
+  //   onTouchEnd: (e: React.TouchEvent) => {
+  //     handlers?.onTouchEnd?.(e);
+  //     handleTouchEnd(e);
+  //   },
+  //   onKeyDown: (e: React.KeyboardEvent) => {
+  //     handlers?.onKeyDown?.(e);
+  //     handleKeyDown(e);
+  //   },
+  // };
 
   return (
     <div
       className="landing-page w-full h-screen overflow-x-hidden overflow-y-auto"
       ref={containerRef}
-      {...(combinedHandlers as any)}
+      // {...(combinedHandlers as any)}
       tabIndex={0} // enable keyboard capture
     >
       <AppHeader />
@@ -452,11 +468,34 @@ const LandingPage: React.FC = () => {
             <button className="cta-button">TRY NOW</button>
           </div>
         </Reveal>
-        <AppFooter />
+      </section>
+      <section id="footer" className="services-section" ref={footerRef as any}>
+        <footer className="footer app-footer">
+          <div className="footer-content">
+            <div className="footer-logo">
+              <img
+                className="footer-logo-image"
+                src="https://api.builder.io/api/v1/image/assets/TEMP/de986a7279fe24b5c6a9695fbf1915b1da6131e9?width=162"
+                alt="BRIGHTNEST Logo"
+              />
+              <div className="footer-brand">BRIGHTNEST</div>
+            </div>
+            <div className="footer-contact">
+              <h4 className="footer-contact-title">Contact us</h4>
+              <div className="footer-contact-item">
+                <div className="contact-icon">📞</div>
+                <span className="footer-contact-text">0xxxxxxxxxx</span>
+              </div>
+              <div className="footer-contact-item">
+                <div className="contact-icon">✉️</div>
+                <span className="footer-contact-text">Contact us:</span>
+              </div>
+            </div>
+          </div>
+        </footer>
       </section>
     </div>
   );
 };
 
 export default LandingPage;
-// ...existing code...

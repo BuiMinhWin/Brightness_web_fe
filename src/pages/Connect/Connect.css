@@ -3,6 +3,7 @@
   min-height: 100vh;
   background: linear-gradient(180deg, #bfe8d6 0%, #dff4e9 50%, #f1f8d6 100%);
   color: #022c3c;
+  margin-top: 50px;
 }
 
 /* Topbar (reuse style from Dashboard for consistency) */

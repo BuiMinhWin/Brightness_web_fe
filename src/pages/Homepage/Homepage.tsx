@@ -1,9 +1,8 @@
 import React, { useRef } from "react";
 import "./Homepage.css";
-
-import AppHeader from "../../components/layout/AppHeader";
 import HomepageHeader from "../../components/layout/HomepageHeader";
 import WhatNewCarousel from "./WhatNewCarousel";
+import Navbar from "@/components/layout/Navbar";
 
 const Homepage: React.FC = () => {
   const whatRef = useRef<HTMLDivElement | null>(null);
@@ -11,7 +10,7 @@ const Homepage: React.FC = () => {
     <div className="homepage min-h-screen w-full overflow-x-hidden">
       {/* Hero (Header + Achievement + Mood) */}
       <section className="mood-section relative py-20 text-center">
-        <HomepageHeader />
+        <Navbar />
         <svg
           className="mood-bg"
           width="1440"
