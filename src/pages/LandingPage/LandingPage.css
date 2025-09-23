@@ -351,7 +351,7 @@
   background: linear-gradient(90deg, #4c995d 0%, #c9d85b 100%);
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
   margin-top: calc(-1 * var(--chatbox-nudge-up, 0px));
-  margin-bottom: 80px;
+  margin-bottom: 40px;
 }
 .chatbox-title {
   color: #046753;
@@ -366,7 +366,7 @@
   font-weight: 700;
   line-height: 22px;
   padding-bottom: 20px;
-  margin-top: -36px;
+  margin-top: 20px;
 }
 .chat-bubbles {
   position: relative;
@@ -432,7 +432,7 @@
 .cta-inline {
   text-align: center;
   padding-top: 10px;
-  margin-top: -60px;
+  margin-top: 0;
 }
 .cta-title {
   color: #046753;

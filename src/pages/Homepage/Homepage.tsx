@@ -10,7 +10,7 @@ const Homepage: React.FC = () => {
   return (
     <div className="homepage min-h-screen w-full overflow-x-hidden">
       {/* Hero (Header + Achievement + Mood) */}
-      <section className="mood-section relative py-10 text-center">
+      <section className="mood-section relative py-20 text-center">
         <HomepageHeader />
         <svg
           className="mood-bg"
@@ -161,7 +161,7 @@ const Homepage: React.FC = () => {
             height: "100px",
           }}
         >
-          <h5 className="qa-bubble-text  absolute -bottom-2.25">What you wonder?</h5>
+          <h5 className="qa-bubble-text  absolute bottom-10">What you wonder?</h5>
         </div>
 
         <div className="qa-questions max-w-[800px] ml-[91px] px-5 flex flex-col gap-5 mt-[100px] items-start">
