@@ -20,6 +20,13 @@
   overflow: hidden; /* Thêm để ẩn phần ảnh thừa */
 }
 
+.signup-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover; /* Giữ tỷ lệ ảnh và cắt phần thừa */
+  object-position: center; /* Căn giữa ảnh */
+}
+
 /* Right: Form */
 .signup-content {
   flex: 1; /* Thay đổi từ 65% thành flex: 1 */
@@ -330,21 +337,27 @@
 
 @media (max-width: 768px) {
   .signup-page {
-    flex-direction: column;
+    flex-direction: column !important;
   }
 
   .signup-bg-image {
-    flex: none;
-    width: 100%;
+    flex: none !important;
+    width: 100% !important;
     min-height: 200px;
     max-height: 250px;
-    order: 2;
+    order: 1 !important; /* CHANGED: Image appears first (above form) */
+  }
+
+  .signup-img {
+    width: 100%;
+    height: 220px; /* Cố định chiều cao cho mobile */
+    object-fit: cover;
   }
 
   .signup-content {
-    flex: none;
-    width: 100%;
-    order: 1;
+    flex: none !important;
+    width: 100% !important;
+    order: 2 !important; /* CHANGED: Form appears second (below image) */
     padding: 20px;
   }
 
