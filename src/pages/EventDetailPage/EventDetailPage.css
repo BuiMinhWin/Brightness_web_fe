@@ -16,7 +16,8 @@
 .event-header-content {
   max-width: 1200px;
   /* margin: 0 auto; */
-  margin-top: 75px;
+  margin-top: -10px;
+  margin-bottom: -10px;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -114,8 +115,11 @@
 .hero-title {
   font-size: 80px;
   font-weight: 700;
+  margin-top: 30px;
   margin-bottom: 8px;
   line-height: 1;
+  text-align: center;
+  color: #16a34a;
 }
 
 .hero-subtitle {
@@ -170,6 +174,14 @@
   margin-bottom: 24px;
   text-align: left; 
 } */
+.card-header {
+  display: flex;
+  align-items: center; /* cho icon + chữ căn giữa theo chiều dọc */
+  gap: 12px; /* reduced from 8px to bring text closer */
+  margin-bottom: 24px;
+  text-align: left;
+  justify-content: flex-start !important;
+}
 
 .icon-wrapper {
   width: 40px;
@@ -179,6 +191,17 @@
   align-items: center;
   justify-content: center;
   color: white;
+  flex-shrink: 0; /* giữ nguyên kích thước icon */
+  padding-right: 0px;
+}
+
+.section-title {
+  font-size: 32px;
+  font-weight: 700;
+  color: #1f2937;
+  margin: 0; /* ensure no default margins */
+  text-align: left;
+  line-height: 1.2; /* tighter line height */
 }
 
 .icon-wrapper.blue {
@@ -195,21 +218,6 @@
 
 .icon-wrapper.yellow {
   background: #eab308;
-}
-
-.card-header {
-  display: flex;
-  align-items: center; /* icon và chữ nằm cùng hàng giữa */
-  gap: 100px; /* khoảng cách giữa icon và chữ */
-  margin-bottom: 24px;
-}
-
-.section-title {
-  font-size: 32px;
-  font-weight: 700;
-  color: #1f2937;
-  margin: 0; /* bỏ margin thừa */
-  text-align: left; /* chữ luôn căn trái */
 }
 
 .description-text {
@@ -374,7 +382,7 @@
 }
 
 .grand-prize {
-  background: linear-gradient(135deg, #fbbf24, #f97316);
+  background: linear-gradient(135deg, #e9c058, #f18e47);
 }
 
 .top-finishers {
@@ -382,7 +390,7 @@
 }
 
 .all-competitors {
-  background: linear-gradient(135deg, #60a5fa, #8b5cf6);
+  background: linear-gradient(135deg, #5a7799, #846bbe);
 }
 
 .reward-icon {

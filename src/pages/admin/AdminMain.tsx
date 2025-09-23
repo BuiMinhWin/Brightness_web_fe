@@ -5,6 +5,8 @@ import SummarizeStats from "@/components/admin/SummarizeStats";
 import UserList from "@/components/admin/UserList";
 import AddUser from "@/components/admin/AddUser";
 import ViewEditUser from "@/components/admin/ViewEditUser";
+import ReviewPostPage from "../../pages/AdminReviewPostPage/ReviewPostPage";
+import EventManagementPage from "../../pages/EventManagementPage/EventManagementPage";
 
 const AdminMain: React.FC = () => {
   return (
@@ -15,8 +17,8 @@ const AdminMain: React.FC = () => {
         <Route path="user-controls" element={<UserList />} />
         <Route path="add-user" element={<AddUser />} />
         <Route path="view-edit-user" element={<ViewEditUser />} />
-        <Route path="post-management" element={<div>Post Management - Coming Soon</div>} />
-        <Route path="event-management" element={<div>Event Management - Coming Soon</div>} />
+        <Route path="post-management" element={<ReviewPostPage />} />
+        <Route path="event-management" element={<EventManagementPage />} />
         <Route path="settings" element={<div>Settings - Coming Soon</div>} />
       </Route>
     </Routes>

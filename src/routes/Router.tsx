@@ -47,13 +47,13 @@ const AppRouter: React.FC = () => {
           <Route path="/" element={<SignInPage />} />
           <Route path="/signin" element={<SignInPage />} />
           <Route path="/signup" element={<SignUpPage />} />
-          <Route path="/gamification" element={<GamificationPage />} />
+          <Route path="/gamification-feature" element={<GamificationPage />} />
           <Route path="/your-missions" element={<YourGamificationPage />} />
           <Route path="/your-detail/:missionId" element={<YourDetailPage />} />
           <Route path="/event-detail/:eventId" element={<EventDetailPage />} />
           <Route path="/leaderboard/:missionId" element={<LeaderboardPage />} />
           <Route path="/pricing" element={<PricingPage />} />
-          <Route path="/review-posts" element={<ReviewPostPage />} />
+          <Route path="/post-management" element={<ReviewPostPage />} />
           <Route path="/event-management" element={<EventManagementPage />} />
         </Routes>
       </ScrollProvider>

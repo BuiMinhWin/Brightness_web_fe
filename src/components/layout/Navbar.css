@@ -17,7 +17,7 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 100px;
+  padding: 0 80px;
 }
 
 /* Logo */
@@ -35,8 +35,8 @@
 }
 
 .navbar-logo-icon {
-  width: 100px;
-  height: 80px;
+  width: 90px;
+  height: 70px;
   background-image: url("../assets/images/logo_color.png");
   background-size: contain;
   background-repeat: no-repeat;
@@ -52,7 +52,7 @@
 .navbar-nav {
   display: flex;
   align-items: center;
-  gap: 32px;
+  gap: 0px;
 }
 
 .navbar-link {

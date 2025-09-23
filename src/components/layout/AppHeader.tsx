@@ -1,8 +1,11 @@
 import React from "react";
+import { useNavigate } from "react-router-dom";
 import "./AppHeader.css";
 import { Link } from "react-router-dom";
 
 const AppHeader: React.FC = () => {
+  const navigate = useNavigate();
+
   return (
     <header className="header app-header">
       <div className="logo-container">
@@ -17,12 +20,12 @@ const AppHeader: React.FC = () => {
         </div>
       </div>
       <div className="auth-buttons">
-        <Link to="/signin" className="login-btn">
+        <button className="login-btn" onClick={() => navigate("/signin")}>
           Log In
-        </Link>
-        <Link to="/signup" className="signup-btn">
+        </button>
+        <button className="signup-btn" onClick={() => navigate("/signup")}>
           Sign Up
-        </Link>
+        </button>
       </div>
     </header>
   );

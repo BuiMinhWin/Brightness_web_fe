@@ -385,20 +385,6 @@ const EventManagementPage: React.FC = () => {
     const firstDay = getFirstDayOfMonth(currentDate);
     const today = new Date();
     const days = [];
-    const monthNames = [
-      "January",
-      "February",
-      "March",
-      "April",
-      "May",
-      "June",
-      "July",
-      "August",
-      "September",
-      "October",
-      "November",
-      "December",
-    ];
 
     // Previous month's last days
     const prevMonth = new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 0);
@@ -478,7 +464,7 @@ const EventManagementPage: React.FC = () => {
       <div className="event-management-content">
         {/* Hero Section */}
         <div className="event-management-hero">
-          <h1 className="event-management-title">Calender</h1>
+          <h1 className="event-management-title">Calendar</h1>
         </div>
 
         {/* Main Layout */}
@@ -498,7 +484,7 @@ const EventManagementPage: React.FC = () => {
             <div className="events-coming-soon">Event coming soon</div>
 
             <div className="events-list">
-              {events.map((event, index) => (
+              {events.map((event) => (
                 <div key={event.id} className="event-item" onClick={() => handleEditEvent(event)}>
                   <div className="event-avatar">{event.title.charAt(0)}</div>
                   <div className="event-info">
@@ -524,24 +510,30 @@ const EventManagementPage: React.FC = () => {
           {/* Right Side - Calendar */}
           <div className="calendar-section">
             <div className="calendar-header">
-              <div className="today-info">{formatTodayDate()}</div>
               <div className="calendar-controls">
-                <button className="calendar-nav-btn" onClick={() => navigateMonth("prev")}>
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-                    <polyline points="15,18 9,12 15,6" stroke="currentColor" strokeWidth="2" />
-                  </svg>
-                </button>
-                <h3 className="calendar-title">
-                  {new Date(currentDate).toLocaleDateString("en-US", {
-                    month: "long",
-                    year: "numeric",
-                  })}
-                </h3>
-                <button className="calendar-nav-btn" onClick={() => navigateMonth("next")}>
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-                    <polyline points="9,18 15,12 9,6" stroke="currentColor" strokeWidth="2" />
-                  </svg>
-                </button>
+                <div className="today-info">{formatTodayDate()}</div>
+
+                <div className="calendar-nav-wrapper">
+                  <button className="calendar-nav-btn prev" onClick={() => navigateMonth("prev")}>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                      <polyline points="15,18 9,12 15,6" stroke="currentColor" strokeWidth="2" />
+                    </svg>
+                  </button>
+
+                  <h3 className="calendar-title">
+                    {new Date(currentDate).toLocaleDateString("en-US", {
+                      month: "long",
+                      year: "numeric",
+                    })}
+                  </h3>
+
+                  <button className="calendar-nav-btn next" onClick={() => navigateMonth("next")}>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                      <polyline points="9,18 15,12 9,6" stroke="currentColor" strokeWidth="2" />
+                    </svg>
+                  </button>
+                </div>
+
                 <div className="view-toggles">
                   {["Day", "Week", "Month"].map((view) => (
                     <button
@@ -557,7 +549,7 @@ const EventManagementPage: React.FC = () => {
             </div>
 
             <div className="calendar-grid">
-              {["MON", "TUE", "WED", "THE", "FRI", "SAT", "SUN"].map((day) => (
+              {["MON", "TUE", "WED", "THU", "FRI", "SAT", "SUN"].map((day) => (
                 <div key={day} className="calendar-day-header">
                   {day}
                 </div>
@@ -896,9 +888,6 @@ const EventManagementPage: React.FC = () => {
           </div>
         </div>
       )}
-
-      {/* Footer */}
-      <GameFooter />
     </div>
   );
 };

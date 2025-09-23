@@ -8,7 +8,7 @@
 .gamification-content {
   max-width: 1200px;
   margin: 0 auto;
-  padding: 20px 20px;
+  padding: 40px 20px;
 }
 
 /* Hero Section */
@@ -79,7 +79,7 @@
   padding: 12px 32px;
   border: none;
   border-radius: 25px;
-  background: #84cc16;
+  background: linear-gradient(135deg, #047857 0%, #16a34a 40%, #dbe28b 80%);
   color: white;
   font-size: 14px;
   font-weight: 600;
@@ -89,7 +89,7 @@
 }
 
 .yours-btn:hover {
-  background: #65a30d;
+  background: linear-gradient(135deg, #dbe28b 20%, #16a34a 40%, #047857 80%);
   transform: translateY(-2px);
   box-shadow: 0 6px 16px rgba(132, 204, 22, 0.4);
 }
