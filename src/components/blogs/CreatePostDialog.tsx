@@ -95,7 +95,7 @@ const CreatePostDialog: React.FC<CreatePostDialogProps> = ({ isOpen, onClose }) 
         <div
           className="create-post-dialog"
           style={{
-            background: "linear-gradient(0deg, #5BC17F 0%, #007E85 100%)",
+            background: "#D1F5D4",
             borderRadius: "16px",
             maxWidth: "500px",
             width: "100%",
@@ -103,7 +103,7 @@ const CreatePostDialog: React.FC<CreatePostDialogProps> = ({ isOpen, onClose }) 
             position: "relative",
             scrollbarWidth: "none",
             msOverflowStyle: "none",
-            color: "white",
+            color: "#000000",
             boxShadow: "0 8px 32px rgba(0, 0, 0, 0.3)",
           }}
         >
@@ -127,7 +127,7 @@ const CreatePostDialog: React.FC<CreatePostDialogProps> = ({ isOpen, onClose }) 
               backdropFilter: "blur(10px)",
             }}
           >
-            <Cross2Icon width={16} height={16} color="white" />
+            <Cross2Icon width={16} height={16} color="#1a1a1a" />
           </button>
 
           {/* Header */}
@@ -135,9 +135,9 @@ const CreatePostDialog: React.FC<CreatePostDialogProps> = ({ isOpen, onClose }) 
             <h2
               style={{
                 margin: 0,
-                fontSize: "20px",
+                fontSize: "25px",
                 fontWeight: "600",
-                color: "white",
+                color: "#1a1a1a",
               }}
             >
               What's you wanna share?
@@ -157,12 +157,11 @@ const CreatePostDialog: React.FC<CreatePostDialogProps> = ({ isOpen, onClose }) 
                 minHeight: "100px",
                 padding: "16px",
                 border: "1px solid #186620",
-                borderBottom: "1px solid rgba(255, 255, 255, 0.3)",
                 borderRadius: "8px",
                 fontSize: "16px",
                 fontFamily: "inherit",
                 backgroundColor: "transparent",
-                color: "white",
+                color: "#1a1a1a",
                 resize: "none",
                 boxSizing: "border-box",
                 outline: "none",
@@ -173,21 +172,29 @@ const CreatePostDialog: React.FC<CreatePostDialogProps> = ({ isOpen, onClose }) 
 
             {/* Tags Section */}
             <div>
-              <Menubar style={{ background: "transparent", border: "none", padding: 0 }}>
+              <Menubar
+                style={{
+                  background: "transparent",
+                  border: "none",
+                  padding: 0,
+                  outline: "none",
+                  boxShadow: "none",
+                }}
+              >
                 <MenubarMenu>
                   <MenubarTrigger
                     style={{
-                      background: "rgba(255, 255, 255, 0.2)",
-                      border: "1px solid rgba(255, 255, 255, 0.3)",
-                      borderRadius: "4px",
-                      padding: "4px 8px",
-                      color: "white",
-                      backdropFilter: "blur(10px)",
+                      background: "transparent",
+                      border: "1px solid #186620",
+                      borderRadius: "6px",
+                      padding: "6px 12px",
+                      color: "#1a1a1a",
                       display: "flex",
                       alignItems: "center",
-                      gap: "4px",
+                      gap: "6px",
                       transition: "all 0.2s ease",
-                      fontSize: "12px",
+                      fontSize: "14px",
+                      cursor: "pointer",
                     }}
                   >
                     <LabelIcon style={{ fontSize: "12px" }} />
@@ -195,9 +202,13 @@ const CreatePostDialog: React.FC<CreatePostDialogProps> = ({ isOpen, onClose }) 
                   </MenubarTrigger>
                   <MenubarContent
                     style={{
-                      background: "linear-gradient(0deg, #5BC17F 0%, #007E85 100%)",
-                      minWidth: "180px",
+                      background: "#D1F5D4",
+                      border: "1px solid #e5e5e5",
+                      borderRadius: "8px",
+                      minWidth: "200px",
                       zIndex: 1002,
+                      boxShadow: "0 4px 12px rgba(0, 0, 0, 0.15)",
+                      padding: "8px",
                     }}
                   >
                     {tagOptions.slice(0, 3).map((tag) => (
@@ -205,25 +216,22 @@ const CreatePostDialog: React.FC<CreatePostDialogProps> = ({ isOpen, onClose }) 
                         key={tag}
                         onClick={() => handleTagToggle(tag)}
                         style={{
-                          background: selectedTags.includes(tag)
-                            ? "rgba(255, 255, 255, 0.3)"
-                            : "rgba(255, 255, 255, 0.1)",
+                          background: selectedTags.includes(tag) ? "#D1F5D4" : "transparent",
                           padding: "8px 12px",
-                          color: "white",
+                          color: "#1a1a1a",
                           fontSize: "14px",
                           cursor: "pointer",
                           transition: "all 0.2s ease",
-                          textAlign: "center",
-                          width: "100%",
-                          margin: "2px",
+                          borderRadius: "6px",
+                          margin: "2px 0",
                         }}
                         onMouseEnter={(e) => {
-                          e.currentTarget.style.background = "rgba(255, 255, 255, 0.2)";
+                          e.currentTarget.style.background = "#f0f0f0";
                         }}
                         onMouseLeave={(e) => {
                           e.currentTarget.style.background = selectedTags.includes(tag)
-                            ? "rgba(255, 255, 255, 0.3)"
-                            : "rgba(255, 255, 255, 0.1)";
+                            ? "#D1F5D4"
+                            : "transparent";
                         }}
                       >
                         {tag}
@@ -248,11 +256,11 @@ const CreatePostDialog: React.FC<CreatePostDialogProps> = ({ isOpen, onClose }) 
                       key={tag}
                       style={{
                         background: "rgba(255, 255, 255, 0.3)",
-                        border: "1px solid rgba(255, 255, 255, 0.4)",
+                        border: "1px solid grey",
                         borderRadius: "16px",
                         padding: "6px 12px",
                         fontSize: "14px",
-                        color: "white",
+                        color: "#1a1a1a",
                         cursor: "pointer",
                       }}
                       onClick={() => handleTagToggle(tag)}
@@ -268,8 +276,9 @@ const CreatePostDialog: React.FC<CreatePostDialogProps> = ({ isOpen, onClose }) 
           {/* Footer */}
           <div
             style={{
-              borderTop: "1px solid #ffff",
+              borderTop: "1px solid grey",
               margin: "0 24px",
+              paddingTop: "10px",
               display: "flex",
               justifyContent: "space-between",
               alignItems: "center",
@@ -284,7 +293,7 @@ const CreatePostDialog: React.FC<CreatePostDialogProps> = ({ isOpen, onClose }) 
                   gap: "8px",
                   background: "transparent",
                   border: "none",
-                  color: "rgba(255, 255, 255, 0.8)",
+                  color: "#1a1a1a",
                   fontSize: "14px",
                   cursor: "pointer",
                   padding: "8px",
@@ -299,7 +308,7 @@ const CreatePostDialog: React.FC<CreatePostDialogProps> = ({ isOpen, onClose }) 
                   gap: "8px",
                   background: "transparent",
                   border: "none",
-                  color: "rgba(255, 255, 255, 0.8)",
+                  color: "#1a1a1a",
                   fontSize: "14px",
                   cursor: "pointer",
                   padding: "8px",
@@ -314,7 +323,7 @@ const CreatePostDialog: React.FC<CreatePostDialogProps> = ({ isOpen, onClose }) 
                   gap: "8px",
                   background: "transparent",
                   border: "none",
-                  color: "rgba(255, 255, 255, 0.8)",
+                  color: "#1a1a1a",
                   fontSize: "14px",
                   cursor: "pointer",
                   padding: "8px",
@@ -329,11 +338,11 @@ const CreatePostDialog: React.FC<CreatePostDialogProps> = ({ isOpen, onClose }) 
               onClick={handlePostSubmit}
               disabled={!postText.trim()}
               style={{
-                background: postText.trim() ? "white" : "rgba(255, 255, 255, 0.3)",
+                background: postText.trim() ? "#007E85" : "rgba(255, 255, 255, 0.3)",
                 border: "none",
                 borderRadius: "24px",
-                padding: "4px 10px",
-                color: postText.trim() ? "#FF7B17" : "rgba(255, 255, 255, 0.6)",
+                padding: "8px 14px",
+                color: postText.trim() ? "white" : "grey",
                 fontSize: "16px",
                 fontWeight: "600",
                 cursor: postText.trim() ? "pointer" : "not-allowed",

@@ -42,16 +42,24 @@ const VideoPage: React.FC = () => {
             background: "linear-gradient(to bottom right, #50BFA5, #D3D42F)",
             margin: 0,
             display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            paddingLeft: "24px",
-            paddingRight: "24px",
+            flexDirection: "column",
             paddingTop: "80px", // Account for fixed navbar
           }}
         >
-          <div style={{ color: "white", fontSize: "18px" }}>Video not found</div>
+          <div
+            style={{
+              flex: 1,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+            }}
+          >
+            <div style={{ color: "white", fontSize: "18px" }}>Video not found</div>
+          </div>
+          <div style={{ width: "100%" }}>
+            <GameFooter />
+          </div>
         </div>
-        <GameFooter />
       </>
     );
   }
@@ -65,16 +73,22 @@ const VideoPage: React.FC = () => {
           minHeight: "100vh",
           background: "linear-gradient(to bottom right, #50BFA5, #D3D42F)",
           margin: 0,
-          padding: "104px 24px 24px", // Top padding for navbar + original padding
+          paddingTop: "104px", // Top padding for navbar
+          display: "flex",
+          flexDirection: "column",
         }}
       >
         <div
           style={{
+            flex: 1,
             maxWidth: "1400px",
             margin: "0 auto",
             display: "flex",
             gap: "24px",
             alignItems: "flex-start",
+            paddingLeft: "24px",
+            paddingRight: "24px",
+            paddingBottom: "24px",
           }}
         >
           {/* Left Column - Video Player and Details */}
@@ -119,8 +133,10 @@ const VideoPage: React.FC = () => {
             <RelatedVideos videos={relatedVideos} onVideoClick={handleRelatedVideoClick} />
           </div>
         </div>
+        <div style={{ width: "100%" }}>
+          <GameFooter />
+        </div>
       </div>
-      <GameFooter />
     </>
   );
 };

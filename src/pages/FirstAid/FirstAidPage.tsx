@@ -38,12 +38,12 @@ const FirstAidPage: React.FC = () => {
           margin: 0,
           display: "flex",
           flexDirection: "column",
-          paddingLeft: "24px",
-          paddingRight: "24px",
           paddingTop: "80px", // Account for fixed navbar
         }}
       >
-        <FirstAidHeader />
+        <div style={{ paddingLeft: "24px", paddingRight: "24px" }}>
+          <FirstAidHeader />
+        </div>
 
         {/* Search Bar */}
         <div
@@ -51,6 +51,8 @@ const FirstAidPage: React.FC = () => {
             display: "flex",
             justifyContent: "center",
             marginBottom: "32px",
+            paddingLeft: "24px",
+            paddingRight: "24px",
           }}
         >
           <FirstAidSearchBar />
@@ -64,6 +66,8 @@ const FirstAidPage: React.FC = () => {
             flexDirection: "column",
             alignItems: "center",
             gap: "24px",
+            paddingLeft: "24px",
+            paddingRight: "24px",
           }}
         >
           {/* Video Cards Grid */}
@@ -101,8 +105,10 @@ const FirstAidPage: React.FC = () => {
             onPageChange={handlePageChange}
           />
         </div>
+        <div style={{ width: "100%" }}>
+          <GameFooter />
+        </div>
       </div>
-      <GameFooter />
     </>
   );
 };

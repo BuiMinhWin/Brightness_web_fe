@@ -17,17 +17,32 @@ import {
   IconButton,
   Box,
   Typography,
+  TextField,
+  Menu,
+  ListItemText,
 } from "@mui/material";
-import { Refresh, Add, ArrowBackIos, ArrowForwardIos } from "@mui/icons-material";
+import {
+  Refresh,
+  Add,
+  ArrowBackIos,
+  ArrowForwardIos,
+  Search,
+  FilterListAlt,
+  Clear,
+  KeyboardArrowDown,
+} from "@mui/icons-material";
 
 import { Funnel } from "lucide-react";
 
 const UserList: React.FC = () => {
   const navigate = useNavigate();
+  const [searchTerm, setSearchTerm] = useState("");
   const [filterBy, setFilterBy] = useState("");
   const [joinFilter, setJoinFilter] = useState("");
   const [classFilter, setClassFilter] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
+  const [filterMenuAnchor, setFilterMenuAnchor] = useState<null | HTMLElement>(null);
+  const [searchFilterAnchor, setSearchFilterAnchor] = useState<null | HTMLElement>(null);
 
   // Sample user data
   const users = [
@@ -83,6 +98,7 @@ const UserList: React.FC = () => {
   ];
 
   const handleResetFilters = () => {
+    setSearchTerm("");
     setFilterBy("");
     setJoinFilter("");
     setClassFilter("");
@@ -90,12 +106,61 @@ const UserList: React.FC = () => {
   };
 
   const handleAddUser = () => {
-    navigate("/admin/add-user");
+    navigate("/admin/user-controls/add-user");
   };
 
   const handleViewEditUser = () => {
-    navigate("/admin/view-edit-user");
+    navigate("/admin/user-controls/view-edit-user");
   };
+
+  const handleFilterMenuOpen = (event: React.MouseEvent<HTMLElement>) => {
+    setFilterMenuAnchor(event.currentTarget);
+  };
+
+  const handleFilterMenuClose = () => {
+    setFilterMenuAnchor(null);
+  };
+
+  const handleSearchFilterOpen = (event: React.MouseEvent<HTMLElement>) => {
+    setSearchFilterAnchor(event.currentTarget);
+  };
+
+  const handleSearchFilterClose = () => {
+    setSearchFilterAnchor(null);
+  };
+
+  const handleClearSearch = () => {
+    setSearchTerm("");
+  };
+
+  // Filter users based on search term and other filters
+  const filteredUsers = users.filter((user) => {
+    const matchesSearch =
+      searchTerm === "" ||
+      user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      user.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      user.type.toLowerCase().includes(searchTerm.toLowerCase());
+
+    const matchesFilterBy =
+      filterBy === "" ||
+      (filterBy === "name" && user.name.toLowerCase().includes(searchTerm.toLowerCase())) ||
+      (filterBy === "type" && user.type.toLowerCase().includes(searchTerm.toLowerCase())) ||
+      (filterBy === "status" && user.status.toLowerCase().includes(searchTerm.toLowerCase()));
+
+    const matchesJoinFilter = joinFilter === "" || true; // Add join date filtering logic if needed
+    const matchesClassFilter =
+      classFilter === "" || user.type.toLowerCase() === classFilter.toLowerCase();
+    const matchesStatusFilter =
+      statusFilter === "" || user.status.toLowerCase() === statusFilter.toLowerCase();
+
+    return (
+      matchesSearch &&
+      matchesFilterBy &&
+      matchesJoinFilter &&
+      matchesClassFilter &&
+      matchesStatusFilter
+    );
+  });
 
   const getStatusChip = (status: string) => {
     return (
@@ -135,7 +200,7 @@ const UserList: React.FC = () => {
         </Typography>
       </div>
 
-      {/* Filter and Action Bar */}
+      {/* Split Layout Search + Filter + Action Bar */}
       <Box
         sx={{
           display: "flex",
@@ -148,95 +213,174 @@ const UserList: React.FC = () => {
           boxShadow: "0 4px 6px rgba(0, 0, 0, 0.1)",
         }}
       >
-        {/* Filter Icon */}
-        <Funnel color="#666" />
+        {/* Search Input */}
+        <TextField
+          size="small"
+          placeholder="Search ..."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          slotProps={{
+            input: {
+              startAdornment: <Search sx={{ color: "#666", mr: 1 }} />,
+            },
+          }}
+          sx={{
+            minWidth: 250,
+            "& .MuiOutlinedInput-root": {
+              borderRadius: "8px",
+              "& fieldset": {
+                borderColor: "#E0E0E0",
+              },
+              "&:hover fieldset": {
+                borderColor: "#076553",
+              },
+              "&.Mui-focused fieldset": {
+                borderColor: "#076553",
+              },
+            },
+          }}
+        />
 
-        {/* Filter Dropdowns */}
-        <FormControl size="small" sx={{ minWidth: 120 }}>
-          <InputLabel>Filter By</InputLabel>
-          <Select value={filterBy} onChange={(e) => setFilterBy(e.target.value)} label="Filter By">
-            <MenuItem value="">All</MenuItem>
-            <MenuItem value="name">Name</MenuItem>
-            <MenuItem value="type">Type</MenuItem>
-            <MenuItem value="status">Status</MenuItem>
-          </Select>
-        </FormControl>
-
-        <FormControl size="small" sx={{ minWidth: 120 }}>
-          <InputLabel>Join</InputLabel>
-          <Select value={joinFilter} onChange={(e) => setJoinFilter(e.target.value)} label="Join">
-            <MenuItem value="">All</MenuItem>
-            <MenuItem value="recent">Recent</MenuItem>
-            <MenuItem value="last-month">Last Month</MenuItem>
-            <MenuItem value="last-year">Last Year</MenuItem>
-          </Select>
-        </FormControl>
-
-        <FormControl size="small" sx={{ minWidth: 120 }}>
-          <InputLabel>Class</InputLabel>
-          <Select
-            value={classFilter}
-            onChange={(e) => setClassFilter(e.target.value)}
-            label="Class"
-          >
-            <MenuItem value="">All</MenuItem>
-            <MenuItem value="user">User</MenuItem>
-            <MenuItem value="trainer">Trainer</MenuItem>
-            <MenuItem value="admin">Admin</MenuItem>
-          </Select>
-        </FormControl>
-
-        <FormControl size="small" sx={{ minWidth: 120 }}>
-          <InputLabel>Status</InputLabel>
-          <Select
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
-            label="Status"
-          >
-            <MenuItem value="">All</MenuItem>
-            <MenuItem value="active">Active</MenuItem>
-            <MenuItem value="inactive">Inactive</MenuItem>
-          </Select>
-        </FormControl>
-
-        {/* Reset Filter Button */}
+        {/* Filter Dropdown Button */}
         <Button
           variant="outlined"
-          startIcon={<Refresh />}
-          onClick={handleResetFilters}
+          startIcon={<FilterListAlt />}
+          endIcon={<KeyboardArrowDown />}
+          onClick={handleSearchFilterOpen}
           sx={{
-            borderColor: "#076553",
-            color: "red",
+            borderColor: "#E0E0E0",
+            color: "#666",
+            borderRadius: "8px",
+            textTransform: "none",
+            fontWeight: 500,
             "&:hover": {
-              borderColor: "red",
-              backgroundColor: "rgba(5, 100, 76, 0.04)",
+              borderColor: "#076553",
+              backgroundColor: "rgba(7, 101, 83, 0.04)",
             },
           }}
         >
-          Reset Filter
+          Filter
         </Button>
 
         {/* Spacer */}
         <Box sx={{ flexGrow: 1 }} />
 
         {/* Add User Button */}
-        <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-          <Typography sx={{ color: "#076553", fontWeight: 500 }}>Add user</Typography>
-          <IconButton
-            onClick={handleAddUser}
-            sx={{
-              backgroundColor: "#05644C",
-              color: "white",
-              width: "48px",
-              height: "48px",
-              "&:hover": {
-                backgroundColor: "#076553",
-              },
-            }}
-          >
-            <Add />
-          </IconButton>
-        </Box>
+        <Button
+          variant="contained"
+          startIcon={<Add />}
+          onClick={handleAddUser}
+          sx={{
+            backgroundColor: "#05644C",
+            color: "white",
+            borderRadius: "8px",
+            textTransform: "none",
+            fontWeight: 500,
+            "&:hover": {
+              backgroundColor: "#076553",
+            },
+          }}
+        >
+          Add user
+        </Button>
+
+        {/* Search + Filter Menu */}
+        <Menu
+          anchorEl={searchFilterAnchor}
+          open={Boolean(searchFilterAnchor)}
+          onClose={handleSearchFilterClose}
+          PaperProps={{
+            sx: {
+              minWidth: 250,
+              mt: 1,
+              borderRadius: "8px",
+              boxShadow: "0 4px 12px rgba(0, 0, 0, 0.15)",
+            },
+          }}
+        >
+          <Box sx={{ p: 2 }}>
+            <Typography variant="subtitle2" sx={{ mb: 2, fontWeight: 600, color: "#076553" }}>
+              Search & Filter Options
+            </Typography>
+
+            {/* Filter By */}
+            <FormControl size="small" fullWidth sx={{ mb: 2 }}>
+              <InputLabel>Filter By</InputLabel>
+              <Select
+                value={filterBy}
+                onChange={(e) => setFilterBy(e.target.value)}
+                label="Filter By"
+              >
+                <MenuItem value="">All</MenuItem>
+                <MenuItem value="name">Name</MenuItem>
+                <MenuItem value="type">Type</MenuItem>
+                <MenuItem value="status">Status</MenuItem>
+              </Select>
+            </FormControl>
+
+            {/* Join Filter */}
+            <FormControl size="small" fullWidth sx={{ mb: 2 }}>
+              <InputLabel>Join</InputLabel>
+              <Select
+                value={joinFilter}
+                onChange={(e) => setJoinFilter(e.target.value)}
+                label="Join"
+              >
+                <MenuItem value="">All</MenuItem>
+                <MenuItem value="recent">Recent</MenuItem>
+                <MenuItem value="last-month">Last Month</MenuItem>
+                <MenuItem value="last-year">Last Year</MenuItem>
+              </Select>
+            </FormControl>
+
+            {/* Class Filter */}
+            <FormControl size="small" fullWidth sx={{ mb: 2 }}>
+              <InputLabel>Class</InputLabel>
+              <Select
+                value={classFilter}
+                onChange={(e) => setClassFilter(e.target.value)}
+                label="Class"
+              >
+                <MenuItem value="">All</MenuItem>
+                <MenuItem value="user">User</MenuItem>
+                <MenuItem value="trainer">Trainer</MenuItem>
+                <MenuItem value="admin">Admin</MenuItem>
+              </Select>
+            </FormControl>
+
+            {/* Status Filter */}
+            <FormControl size="small" fullWidth sx={{ mb: 2 }}>
+              <InputLabel>Status</InputLabel>
+              <Select
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value)}
+                label="Status"
+              >
+                <MenuItem value="">All</MenuItem>
+                <MenuItem value="active">Active</MenuItem>
+                <MenuItem value="inactive">Inactive</MenuItem>
+              </Select>
+            </FormControl>
+
+            {/* Reset Filter Button */}
+            <Button
+              variant="outlined"
+              startIcon={<Refresh />}
+              onClick={handleResetFilters}
+              fullWidth
+              sx={{
+                borderColor: "#076553",
+                color: "#076553",
+                "&:hover": {
+                  borderColor: "#05644C",
+                  backgroundColor: "rgba(5, 100, 76, 0.04)",
+                },
+              }}
+            >
+              Reset Filters
+            </Button>
+          </Box>
+        </Menu>
       </Box>
 
       {/* User Data Table */}
@@ -262,7 +406,7 @@ const UserList: React.FC = () => {
             </TableRow>
           </TableHead>
           <TableBody>
-            {users.map((user) => (
+            {filteredUsers.map((user) => (
               <TableRow key={user.id} hover>
                 <TableCell sx={{ color: "#076553", fontWeight: 500 }}>{user.id}</TableCell>
                 <TableCell sx={{ color: "#076553", fontWeight: 500 }}>{user.name}</TableCell>

@@ -78,7 +78,7 @@ const ViewEditUser: React.FC = () => {
           borderRadius: "16px",
           backgroundColor: "white",
           boxShadow: "0 8px 32px rgba(0, 0, 0, 0.1)",
-          maxHeight: "85vh",
+          maxHeight: "auto",
           overflowY: "auto",
         }}
       >

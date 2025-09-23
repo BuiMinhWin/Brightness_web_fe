@@ -15,8 +15,8 @@ const AdminMain: React.FC = () => {
         <Route index element={<Navigate to="/admin/summary-stats" replace />} />
         <Route path="summary-stats" element={<SummarizeStats />} />
         <Route path="user-controls" element={<UserList />} />
-        <Route path="add-user" element={<AddUser />} />
-        <Route path="view-edit-user" element={<ViewEditUser />} />
+        <Route path="user-controls/add-user" element={<AddUser />} />
+        <Route path="user-controls/view-edit-user" element={<ViewEditUser />} />
         <Route path="post-management" element={<ReviewPostPage />} />
         <Route path="event-management" element={<EventManagementPage />} />
         <Route path="settings" element={<div>Settings - Coming Soon</div>} />
