@@ -1,173 +1,163 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { animate } from "framer-motion";
 
 type SectionRef = React.RefObject<HTMLElement | HTMLDivElement>;
 
-export function useFullpageScroll(sections: SectionRef[], routes: string[]) {
-  const navigate = useNavigate();
-  const location = useLocation();
-
-  const routeToIndex = useMemo(() => {
-    const map = new Map<string, number>();
-    routes.forEach((r, i) => map.set(r, i));
-    return map;
-  }, [routes]);
-
-  const [index, setIndex] = useState<number>(() => routeToIndex.get(location.pathname) ?? 0);
-  const isAnimating = useRef(false);
-  const touchStartY = useRef<number | null>(null);
+// A more robust wheel handler to deal with trackpads
+// This hook is now simplified and no longer manages the enabled state.
+const useWheelScroll = (onScroll: (direction: "up" | "down") => void) => {
   const wheelAccumulator = useRef(0);
-  const lastWheelTs = useRef<number>(0);
+  const lastWheelTs = useRef(0);
+  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  const clamp = (val: number, min: number, max: number) => Math.max(min, Math.min(max, val));
+  return useCallback(
+    (ev: WheelEvent) => {
+      // The check for whether scrolling is enabled is now handled by the caller.
+      ev.preventDefault();
 
-  const navIntentRef = useRef<"none" | "push" | "replace">("none");
+      const now = performance.now();
+      // Reset accumulator if there's a pause in scrolling
+      if (now - lastWheelTs.current > 300) {
+        wheelAccumulator.current = 0;
+      }
+      lastWheelTs.current = now;
+      wheelAccumulator.current += ev.deltaY;
+
+      // Clear any existing timeout
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+      }
+
+      const threshold = 40; // Lower threshold for responsiveness
+      if (Math.abs(wheelAccumulator.current) >= threshold) {
+        const direction = wheelAccumulator.current > 0 ? "down" : "up";
+        onScroll(direction);
+        wheelAccumulator.current = 0; // Reset after firing
+      } else {
+        // If we don't cross threshold, set a timeout to eventually fire
+        // This handles very slow/fine scrolling on trackpads
+        timeoutRef.current = setTimeout(() => {
+          if (Math.abs(wheelAccumulator.current) > 5) {
+            const direction = wheelAccumulator.current > 0 ? "down" : "up";
+            onScroll(direction);
+          }
+          wheelAccumulator.current = 0;
+        }, 150);
+      }
+    },
+    [onScroll] // Dependency is now only on the onScroll callback
+  );
+};
+
+export function useFullpageScroll(
+  sections: SectionRef[],
+  containerRef: React.RefObject<HTMLDivElement>,
+  wrapperRef: React.RefObject<HTMLDivElement>
+) {
+  const [activeIndex, setActiveIndex] = useState<number>(0);
+  const isAnimating = useRef(false);
+
+  const clamp = (val: number) => Math.max(0, Math.min(val, sections.length - 1));
 
   const scrollToIndex = useCallback(
-    (next: number, behavior: ScrollBehavior = "smooth", intent: "push" | "replace" = "push") => {
-      const target = sections[next]?.current;
-      if (!target) return;
-      setIndex(next);
-      // Smooth scroll within scrollable container
-      target.scrollIntoView({ behavior, block: "start" });
-      // Defer URL update to IntersectionObserver to reflect actual visible section
-      navIntentRef.current = intent;
+    (index: number) => {
+      const newIndex = clamp(index);
+      // The guard against scrolling to the same index or during animation remains.
+      if (newIndex === activeIndex || isAnimating.current) return;
 
       isAnimating.current = true;
-      // Reset wheel accumulator when we trigger a snap
-      wheelAccumulator.current = 0;
-      lastWheelTs.current = performance.now();
-      // Fall back timer; modern browsers also dispatch 'scrollend'
-      window.setTimeout(
-        () => {
-          isAnimating.current = false;
-        },
-        behavior === "smooth" ? 700 : 60
-      );
+      setActiveIndex(newIndex);
+
+      const wrapper = wrapperRef.current;
+      if (wrapper) {
+        animate(
+          wrapper,
+          { y: `-${newIndex * 100}vh` },
+          {
+            type: "tween",
+            duration: 0.8,
+            ease: [0.4, 0, 0.2, 1],
+            onComplete: () => {
+              isAnimating.current = false;
+            },
+          }
+        );
+      } else {
+        isAnimating.current = false;
+      }
     },
-    [sections]
+    [activeIndex, wrapperRef, sections.length]
   );
 
-  // Sync on initial mount and whenever URL changes
-  const didInit = useRef(false);
-  useEffect(() => {
-    const fromRoute = routeToIndex.get(location.pathname);
-    if (fromRoute != null) {
-      // Defer to ensure sections are mounted
-      const behavior: ScrollBehavior = didInit.current ? "smooth" : "auto";
-      window.requestAnimationFrame(() => scrollToIndex(fromRoute, behavior, "replace"));
-    }
-    didInit.current = true;
-  }, [location.pathname, routeToIndex, scrollToIndex]);
+  // --- Event Listeners ---
 
-  const onWheel: React.WheelEventHandler = (e) => {
-    // Prevent zoom/pinch gestures from triggering
-    if (e.ctrlKey) return;
-    // Always prevent default scrolling to avoid CSS snap conflicts
-    e.preventDefault();
-    // Lock to one section per gesture
+  // 1. Wheel
+  // The check for `isAnimating` is now inside this callback.
+  const handleWheel = useWheelScroll((direction) => {
     if (isAnimating.current) {
       return;
     }
+    scrollToIndex(activeIndex + (direction === "down" ? 1 : -1));
+  });
 
-    const now = performance.now();
-    // If it's been a while since last wheel, reset accumulation
-    if (now - lastWheelTs.current > 450) {
-      wheelAccumulator.current = 0;
-    }
-    lastWheelTs.current = now;
-
-    // Accumulate deltaY; trackpads emit many small deltas
-    wheelAccumulator.current += e.deltaY;
-
-    const threshold = 90; // more sensitive to user intent
-    if (Math.abs(wheelAccumulator.current) < threshold) return;
-
-    const dir = wheelAccumulator.current > 0 ? 1 : -1;
-    const next = clamp(index + dir, 0, sections.length - 1);
-    if (next !== index) {
-      scrollToIndex(next, "smooth", "push");
-    } else {
-      // If at edges, consume and reset to avoid jitter
-      wheelAccumulator.current = 0;
-    }
-  };
-
-  const onKeyDown: React.KeyboardEventHandler = (e) => {
-    if (isAnimating.current) {
-      e.preventDefault();
-      return;
-    }
-    if (["PageDown", "ArrowDown", "Space"].includes(e.key)) {
-      e.preventDefault();
-      scrollToIndex(clamp(index + 1, 0, sections.length - 1), "smooth", "push");
-    } else if (["PageUp", "ArrowUp"].includes(e.key)) {
-      e.preventDefault();
-      scrollToIndex(clamp(index - 1, 0, sections.length - 1), "smooth", "push");
-    }
-  };
-
-  const onTouchStart: React.TouchEventHandler = (e) => {
-    touchStartY.current = e.touches[0]?.clientY ?? null;
-  };
-  const onTouchEnd: React.TouchEventHandler = (e) => {
+  // 2. Touch
+  const handleTouchStart = useCallback((ev: TouchEvent) => {
     if (isAnimating.current) return;
-    const start = touchStartY.current;
-    touchStartY.current = null;
-    if (start == null) return;
-    const end = e.changedTouches[0]?.clientY ?? start;
-    const delta = start - end; // positive means swipe up (next)
-    const threshold = 50; // px - more sensitive
-    if (Math.abs(delta) < threshold) return;
-    const dir = delta > 0 ? 1 : -1;
-    scrollToIndex(clamp(index + dir, 0, sections.length - 1), "smooth", "push");
-  };
+    touchStartY.current = ev.touches[0]?.clientY ?? null;
+  }, []);
 
-  // Keep URL in sync with the section most visible on screen
-  useEffect(() => {
-    const obs = new IntersectionObserver(
-      (entries) => {
-        let bestIdx = -1;
-        let bestRatio = 0;
-        for (const entry of entries) {
-          if (!entry.isIntersecting) continue;
-          const idx = sections.findIndex((r) => r.current === entry.target);
-          if (idx >= 0 && entry.intersectionRatio > bestRatio) {
-            bestRatio = entry.intersectionRatio;
-            bestIdx = idx;
-          }
-        }
-        if (bestIdx >= 0 && bestIdx !== index) {
-          setIndex(bestIdx);
-          const path = routes[bestIdx] ?? "/";
-          if (location.pathname !== path) {
-            const mode = navIntentRef.current;
-            if (mode === "push") navigate(path);
-            else navigate(path, { replace: true });
-          }
-          // Reset intent after applying navigation decision
-          navIntentRef.current = "none";
-        }
-      },
-      { threshold: [0.51, 0.75] }
-    );
+  const handleTouchEnd = useCallback(
+    (ev: TouchEvent) => {
+      if (isAnimating.current || touchStartY.current === null) return;
+      const endY = ev.changedTouches[0]?.clientY ?? 0;
+      const delta = touchStartY.current - endY;
+      const threshold = 50; // 50px swipe is a clear gesture
 
-    sections.forEach((ref) => {
-      if (ref.current) obs.observe(ref.current);
-    });
-    return () => obs.disconnect();
-  }, [sections, routes, index, navigate, location.pathname]);
-
-  return {
-    activeIndex: index,
-    handlers: {
-      onWheel,
-      onKeyDown,
-      onTouchStart,
-      onTouchEnd,
-      tabIndex: 0 as 0, // allow container to receive key events
+      if (Math.abs(delta) > threshold) {
+        scrollToIndex(activeIndex + (delta > 0 ? 1 : -1));
+      }
+      touchStartY.current = null;
     },
-  };
-}
+    [activeIndex, scrollToIndex]
+  );
 
-export default useFullpageScroll;
+  // 3. Keyboard
+  const handleKeyDown = useCallback(
+    (e: KeyboardEvent) => {
+      if (isAnimating.current) return;
+      if (e.key === "ArrowDown" || e.key === "PageDown") {
+        e.preventDefault();
+        scrollToIndex(activeIndex + 1);
+      } else if (e.key === "ArrowUp" || e.key === "PageUp") {
+        e.preventDefault();
+        scrollToIndex(activeIndex - 1);
+      } else if (e.key === "Home") {
+        e.preventDefault();
+        scrollToIndex(0);
+      } else if (e.key === "End") {
+        e.preventDefault();
+        scrollToIndex(sections.length - 1);
+      }
+    },
+    [activeIndex, scrollToIndex, sections.length]
+  );
+
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+
+    container.addEventListener("wheel", handleWheel, { passive: false });
+    container.addEventListener("touchstart", handleTouchStart, { passive: true });
+    container.addEventListener("touchend", handleTouchEnd, { passive: true });
+    window.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      container.removeEventListener("wheel", handleWheel);
+      container.removeEventListener("touchstart", handleTouchStart);
+      container.removeEventListener("touchend", handleTouchEnd);
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [containerRef, handleWheel, handleTouchStart, handleTouchEnd, handleKeyDown]);
+
+  return { activeIndex };
+}
