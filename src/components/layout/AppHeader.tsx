@@ -14,6 +14,10 @@ const AppHeader: React.FC = () => {
           src="https://api.builder.io/api/v1/image/assets/TEMP/6baac292ed20ef5d5c64b4c24038dc8d93be59a6?width=170"
           alt="BRIGHTNEST Logo"
         />
+        <div className="text-sm font-bold">
+          <span className="text-[#0b3d33]">BRIGHT</span>
+          <span className="text-white">NEST</span>
+        </div>
       </div>
 
       {/* Auth buttons */}
