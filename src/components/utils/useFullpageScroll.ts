@@ -56,6 +56,7 @@ export function useFullpageScroll(
 ) {
   const [activeIndex, setActiveIndex] = useState<number>(0);
   const isAnimating = useRef(false);
+  const touchStartY = useRef<number | null>(null);
 
   const clamp = (val: number) => Math.max(0, Math.min(val, sections.length - 1));
 
