@@ -160,5 +160,5 @@ export function useFullpageScroll(
     };
   }, [containerRef, handleWheel, handleTouchStart, handleTouchEnd, handleKeyDown]);
 
-  return { activeIndex };
+  return { activeIndex, scrollToIndex };
 }

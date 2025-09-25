@@ -58,43 +58,69 @@
 /* Hero section */
 .about-hero {
   position: relative;
-  display: grid;
-  grid-template-columns: 1.1fr 1fr;
+  min-height: 500px;
+  overflow: hidden;
+  display: flex;
   align-items: center;
-  gap: 16px;
-  padding: 40px 24px 60px;
 }
-.about-hero:before {
-  content: "";
+
+.about-hero-background {
   position: absolute;
-  inset: 0;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 0;
   background: linear-gradient(90deg, #0e7f66, #9be0c7 70%);
-  z-index: -1;
 }
-.about-hero-text {
+
+.about-hero-background .about-hero-visual {
+  position: absolute;
+  top: 50%;
+  right: 0;
+  transform: translateY(-50%);
+  width: 50%;
+}
+
+.about-hero-background .ellipse-svg {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 600px;
+  height: auto;
+}
+
+.about-hero-content {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  padding: 0 24px;
+}
+
+.about-hero .navbar-container {
+  background: transparent;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 18px 0;
+}
+
+.about-hero .about-hero-text {
+  padding: 40px 0 60px;
   color: #fff;
-  max-width: 640px;
+  max-width: 520px;
 }
+
 .about-hero-title {
   font-family: "Pacifico", cursive;
   font-size: 44px;
   margin: 0 0 10px;
 }
+
 .about-hero-sub {
   font-size: 16px;
   opacity: 0.95;
-}
-.about-hero-visual {
-  display: flex;
-  justify-content: center;
-}
-.about-hero-circle {
-  width: 420px;
-  height: 420px;
-  background: url("https://images.unsplash.com/photo-1558611848-73f7eb4001a1?q=80&w=1200&auto=format&fit=crop")
-    center/cover no-repeat;
-  border-radius: 50%;
-  box-shadow: -24px 18px 0 0 rgba(6, 100, 85, 0.35);
 }
 
 /* Quote section */
@@ -111,14 +137,6 @@
   display: flex;
   align-items: center;
   justify-content: center;
-}
-.about-quote-circle {
-  width: 240px;
-  height: 240px;
-  border-radius: 50%;
-  background: url("https://images.unsplash.com/photo-1583454110551-21f2fa2a5d79?q=80&w=1080&auto=format&fit=crop")
-    center/cover no-repeat;
-  box-shadow: 0 10px 0 0 #f08941;
 }
 .about-quote-blob {
   position: absolute;
@@ -251,8 +269,14 @@
 
 @media (max-width: 900px) {
   .about-hero {
-    grid-template-columns: 1fr;
     text-align: center;
+  }
+  .about-hero .navbar-container {
+    flex-direction: column;
+    gap: 16px;
+  }
+  .about-hero-background .about-hero-visual {
+    display: none; /* Hide background on mobile for readability */
   }
   .about-quote {
     grid-template-columns: 1fr;
