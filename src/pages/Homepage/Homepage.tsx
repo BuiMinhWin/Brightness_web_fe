@@ -1,11 +1,17 @@
-import React, { useRef } from "react";
+import React, { useRef, useState } from "react";
 import "./Homepage.css";
 import HomepageHeader from "../../components/layout/HomepageHeader";
 import WhatNewCarousel from "./WhatNewCarousel";
 import Navbar from "@/components/layout/Navbar";
+import ChatDialog from "@/components/ChatDialog/ChatDialog";
+
+// Chat dialog (simple placeholder, swap with real chat logic later)
+// Chat dialog moved to a separate component: src/components/ChatDialog/ChatDialog.tsx\n
 
 const Homepage: React.FC = () => {
   const whatRef = useRef<HTMLDivElement | null>(null);
+  const [chatOpen, setChatOpen] = useState(false);
+
   return (
     <div className="homepage min-h-screen w-full overflow-x-hidden">
       {/* Hero (Header + Achievement + Mood) */}
@@ -189,6 +195,19 @@ const Homepage: React.FC = () => {
           backgroundRepeat: "no-repeat",
         }}
       >
+        <img
+          src="/assets/Asset 10.svg"
+          alt="mask"
+          className="absolute right-[100px] top-[1px] object-contain z-10 cursor-pointer"
+          onClick={() => setChatOpen(true)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" || e.key === " ") setChatOpen(true);
+          }}
+          role="button"
+          tabIndex={0}
+          aria-haspopup="dialog"
+          aria-expanded={chatOpen}
+        />
         <h2 className="top-performance-title text-white text-center font-bold text-[48px] mb-[50px]">
           Top performance
         </h2>
@@ -294,25 +313,27 @@ const Homepage: React.FC = () => {
                 Contact us:
               </span>
             </div>
-            <div className="homepage-footer-contact-item flex items-center gap-[15px] mb-[15px]">
-              <div className="homepage-contact-icon w-[25px] h-[25px] border-2 border-white rounded-[8px] flex items-center justify-center">
-                <svg
-                  width="7"
-                  height="6"
-                  viewBox="0 0 7 6"
-                  fill="none"
-                  xmlns="http://www.w3.org/2000/svg"
-                >
-                  <circle cx="3.4625" cy="3.18748" r="1.7125" stroke="white" strokeWidth="2" />
-                </svg>
-              </div>
-              <span className="homepage-footer-contact-text font-bold text-[16px] leading-[18px]">
-                0xxxxxxxxxx
-              </span>
+            <div className="homepage-footer-contact-item flex items-center gap-[15px] mb-[15px]"></div>
+            <div className="homepage-contact-icon w-[25px] h-[25px] border-2 border-white rounded-[8px] flex items-center justify-center">
+              <svg
+                width="7"
+                height="6"
+                viewBox="0 0 7 6"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <circle cx="3.4625" cy="3.18748" r="1.7125" stroke="white" strokeWidth="2" />
+              </svg>
             </div>
+            <span className="homepage-footer-contact-text font-bold text-[16px] leading-[18px]">
+              0xxxxxxxxxx
+            </span>
           </div>
         </div>
       </footer>
+
+      {/* Chat dialog render */}
+      <ChatDialog open={chatOpen} onClose={() => setChatOpen(false)} />
     </div>
   );
 };
