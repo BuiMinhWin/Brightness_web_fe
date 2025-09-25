@@ -29,6 +29,7 @@ import VideoPage from "@/pages/FirstAid/VideoPage";
 import AdminMain from "@/pages/admin/AdminMain";
 import Goal from "@/pages/Goal/YourGoal";
 import UserProfile from "@/pages/UserProfile/UserProfile";
+import LoginAdmin from "@/pages/admin/LoginAdmin";
 
 const AnimatedRoutes: React.FC = () => {
   const location = useLocation();
@@ -50,6 +51,7 @@ const AnimatedRoutes: React.FC = () => {
         <Route path="/first-aid" element={<FirstAidPage />} />
         <Route path="/video/:id" element={<VideoPage />} />
         <Route path="/admin/*" element={<AdminMain />} />
+        <Route path="/admin/login" element={<LoginAdmin />} />
         <Route path="/signin" element={<SignInPage />} />
         <Route path="/signup" element={<SignUpPage />} />
         <Route path="/gamification-feature" element={<GamificationPage />} />
