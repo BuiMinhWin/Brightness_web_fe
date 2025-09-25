@@ -4,6 +4,7 @@ import { motion } from "framer-motion";
 import AppHeader from "../../components/layout/AppHeader";
 import Reveal from "../../components/utils/Reveal";
 import { useFullpageScroll } from "../../components/utils/useFullpageScroll";
+import ScrollDots from "@/components/ScrollDots/ScrollDots";
 
 const LandingPage: React.FC = () => {
   // Refs for sections
@@ -24,7 +25,7 @@ const LandingPage: React.FC = () => {
   );
 
   // Use the optimized full-page scroll hook without routes
-  useFullpageScroll(sections, containerRef, wrapperRef);
+  const { activeIndex, scrollToIndex } = useFullpageScroll(sections, containerRef, wrapperRef);
 
   return (
     <div
@@ -35,7 +36,7 @@ const LandingPage: React.FC = () => {
       <AppHeader />
       <motion.div className="scroll-wrapper" ref={wrapperRef}>
         {/* Hero Section */}
-        <section className="hero-section full-page-section" ref={heroRef}>
+        <section id="hero" className="hero-section full-page-section" ref={heroRef}>
           <div className="hero-content relative z-20 max-w-[1200px] mx-auto flex flex-col items-end text-right pt-[calc(120px+var(--section-offset,0px)-var(--nudge-up,0px))] ">
             <motion.h1
               className="hero-title"
@@ -121,7 +122,7 @@ const LandingPage: React.FC = () => {
         </section>
 
         {/* About Section */}
-        <section className="about-section full-page-section" ref={aboutRef}>
+        <section id="about" className="about-section full-page-section" ref={aboutRef}>
           <Reveal sectionId="about" variant="fade-up" className="about-content">
             <h2 className="about-title">We are BRIGHTNEST</h2>
             <p className="about-description">
@@ -133,7 +134,7 @@ const LandingPage: React.FC = () => {
         </section>
 
         {/* Services Section */}
-        <section className="services-section full-page-section" ref={servicesRef}>
+        <section id="services" className="services-section full-page-section" ref={servicesRef}>
           <Reveal sectionId="services" variant="fade-up">
             <h2 className="services-title">Our services</h2>
             <div className="service-item">
@@ -157,7 +158,11 @@ const LandingPage: React.FC = () => {
         </section>
 
         {/* Gamification Section */}
-        <section className="gamification-section full-page-section" ref={gamificationRef}>
+        <section
+          id="gamification"
+          className="gamification-section full-page-section"
+          ref={gamificationRef}
+        >
           <Reveal sectionId="gamification" variant="slide-right">
             <div className="gamification-row">
               <div className="gamification-icons">
@@ -281,7 +286,7 @@ const LandingPage: React.FC = () => {
         </section>
 
         {/* AI Chatbox Section */}
-        <section className="chatbox-content full-page-section" ref={chatboxRef}>
+        <section id="chatbox" className="chatbox-content full-page-section" ref={chatboxRef}>
           <Reveal sectionId="chatbox" variant="scale">
             <div className="chatbox-header">
               <h3 className="chatbox-title">AI Chatbox</h3>
@@ -311,7 +316,7 @@ const LandingPage: React.FC = () => {
         </section>
 
         {/* Footer Section */}
-        <section className="footer-section full-page-section" ref={footerRef}>
+        <section id="footer" className="footer-section full-page-section" ref={footerRef}>
           <footer className="footer app-footer">
             <div className="footer-content">
               <div className="footer-logo">
@@ -337,6 +342,20 @@ const LandingPage: React.FC = () => {
           </footer>
         </section>
       </motion.div>
+
+      {/* Right-side scroll dots for Landing sections */}
+      <ScrollDots
+        items={[
+          { id: "dot-hero", targetId: "hero", label: "Hero" },
+          { id: "dot-about", targetId: "about", label: "About" },
+          { id: "dot-services", targetId: "services", label: "Services" },
+          { id: "dot-gamification", targetId: "gamification", label: "Gamification" },
+          { id: "dot-chatbox", targetId: "chatbox", label: "AI Chatbox" },
+          { id: "dot-footer", targetId: "footer", label: "Footer" },
+        ]}
+        onSelect={(targetId, index) => scrollToIndex(index)}
+        activeIndex={activeIndex}
+      />
     </div>
   );
 };

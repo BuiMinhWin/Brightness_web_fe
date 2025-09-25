@@ -1,6 +1,6 @@
 import React from "react";
 import "./GameFooter.css";
-import logo from "../../assets/images/LogoWhite.png";
+import logo from "/assets/LogoWhite.png";
 
 const GameFooter: React.FC = () => {
   return (

@@ -20,7 +20,7 @@ const AppHeader: React.FC = () => {
         </div>
       </div>
 
-      {/* Auth buttons */}
+      {/* Auth buttons
       <div className="flex items-center gap-3">
         <button
           onClick={() => navigate("/signin")}
@@ -30,6 +30,22 @@ const AppHeader: React.FC = () => {
         </button>
         <button
           onClick={() => navigate("/signup")}
+          className="px-4 py-1 text-sm font-bold text-white rounded-full bg-gradient-to-r from-[#066555] to-[#0a8d6c] shadow-md hover:opacity-90 transition"
+        >
+          Sign Up
+        </button>
+      </div> */}
+
+      {/* Auth buttons */}
+      <div className="flex items-center gap-3">
+        <button
+          onClick={() => navigate("/auth?mode=signin")}
+          className="px-4 py-1 text-sm font-semibold text-[#0b3d33] border border-[#0b3d33] rounded-full hover:bg-[#0b3d33] hover:text-white transition"
+        >
+          Log In
+        </button>
+        <button
+          onClick={() => navigate("/auth?mode=signup")}
           className="px-4 py-1 text-sm font-bold text-white rounded-full bg-gradient-to-r from-[#066555] to-[#0a8d6c] shadow-md hover:opacity-90 transition"
         >
           Sign Up

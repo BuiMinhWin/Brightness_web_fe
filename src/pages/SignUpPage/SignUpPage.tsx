@@ -1,8 +1,8 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import "./SignUpPage.css";
-import yogaImg from "../../assets/images/yoga_register.png";
-import logoImg from "../../assets/images/logo_color.png";
+import yogaImg from "/assets/yoga_register.png";
+import logoImg from "/assets/logo_color.png";
 import { motion } from "framer-motion";
 
 interface SignUpPageProps {

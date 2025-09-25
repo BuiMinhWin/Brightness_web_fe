@@ -245,3 +245,47 @@
   background-size: cover;
   background-position: center 160px; /* 👈 dịch background xuống 50px */
 }
+
+/* Chat dialog animations & tweaks */
+.dialog-overlay {
+  animation: overlayFade 220ms ease forwards;
+}
+
+.dialog-panel {
+  animation: dialogPop 320ms cubic-bezier(0.2, 0.9, 0.2, 1) forwards;
+  transform-origin: center bottom;
+}
+
+/* subtle pop + slide up */
+@keyframes dialogPop {
+  0% {
+    opacity: 0;
+    transform: translateY(18px) scale(0.96) rotate(-1deg);
+  }
+  60% {
+    opacity: 1;
+    transform: translateY(-6px) scale(1.02) rotate(1deg);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1) rotate(0.5deg);
+  }
+}
+
+@keyframes overlayFade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 0.5;
+  }
+}
+
+/* small responsive tweak so dialog is comfortable on narrow screens */
+@media (max-width: 420px) {
+  .dialog-panel {
+    width: calc(100% - 32px);
+    height: auto;
+    max-height: 80vh;
+  }
+}

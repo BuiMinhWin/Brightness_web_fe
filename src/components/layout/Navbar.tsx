@@ -1,6 +1,6 @@
 import React from "react";
 import "./Navbar.css";
-import logo from "../../assets/images/LogoWhite.png";
+import logo from "/assets/LogoWhite.png";
 import { NavLink, useNavigate } from "react-router-dom";
 
 interface NavbarProps {

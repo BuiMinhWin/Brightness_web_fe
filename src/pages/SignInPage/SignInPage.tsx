@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import "./SignInPage.css";
 import { useNavigate } from "react-router-dom";
-import yogaImg from "../../assets/images/yoga.png";
+import yogaImg from "/assets/yoga_register.png";
 import { motion } from "framer-motion";
 
 interface SignInPageProps {

@@ -13,8 +13,7 @@ import Dashboard from "../pages/Dashboard/Dashboard";
 import Connect from "../pages/Connect/Connect";
 import Schedule from "../pages/Schedule/Schedule";
 import Profile from "../pages/Profile/Profile";
-import SignInPage from "../pages/SignInPage/SignInPage";
-import SignUpPage from "../pages/SignUpPage/SignUpPage";
+import CombinedAuthPage from "../pages/CombinedAuthPage/CombinedAuthPage"; // New combined auth page
 import GamificationPage from "../pages/GamificationPage/GamificationPage";
 import YourGamificationPage from "../pages/YourGamificationPage/YourGamificationPage";
 import YourDetailPage from "../pages/YourDetailPage/YourDetailPage";
@@ -29,6 +28,8 @@ import VideoPage from "@/pages/FirstAid/VideoPage";
 import AdminMain from "@/pages/admin/AdminMain";
 import Goal from "@/pages/Goal/YourGoal";
 import UserProfile from "@/pages/UserProfile/UserProfile";
+import SignInPage from "@/pages/SignInPage/SignInPage";
+import SignUpPage from "@/pages/SignUpPage/SignUpPage";
 
 const AnimatedRoutes: React.FC = () => {
   const location = useLocation();
@@ -50,8 +51,11 @@ const AnimatedRoutes: React.FC = () => {
         <Route path="/first-aid" element={<FirstAidPage />} />
         <Route path="/video/:id" element={<VideoPage />} />
         <Route path="/admin/*" element={<AdminMain />} />
-        <Route path="/signin" element={<SignInPage />} />
-        <Route path="/signup" element={<SignUpPage />} />
+        <Route path="/auth" element={<CombinedAuthPage />} />
+        <Route path="/signin" element={<Navigate to="/auth?mode=signin" replace />} />
+        <Route path="/signup" element={<Navigate to="/auth?mode=signup" replace />} />
+        <Route path="/signin1" element={<SignInPage />} />
+        <Route path="/signup2" element={<SignUpPage />} />
         <Route path="/gamification-feature" element={<GamificationPage />} />
         <Route path="/your-missions" element={<YourGamificationPage />} />
         <Route path="/your-detail/:missionId" element={<YourDetailPage />} />
