@@ -175,7 +175,10 @@ const AuthPage: React.FC = () => {
                 disabled={!isSignUpFormValid}
               />
 
-              <p className="social-text">Or Sign up with social platforms</p>
+              <div className="signin-divider">
+                <span>OR</span>
+              </div>
+
               <div className="social-media">
                 <button type="button" className="social-icon" onClick={handleGoogleAuth}>
                   <svg width="20" height="20" viewBox="0 0 24 24">

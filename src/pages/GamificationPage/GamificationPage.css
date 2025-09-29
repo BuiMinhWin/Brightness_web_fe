@@ -19,11 +19,10 @@
 
 .gamification-title {
   font-size: 48px;
-  font-weight: 700;
-  font-style: italic;
+  font-weight: 500;
   color: #047857;
   margin-bottom: 16px;
-  font-family: "Lobster", cursive;
+  font-family: "Pacifico", cursive;
   text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
 }
 

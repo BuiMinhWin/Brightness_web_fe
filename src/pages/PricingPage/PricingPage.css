@@ -49,10 +49,11 @@
 
 .pricing-title {
   font-size: 48px;
-  font-weight: 800;
-  color: #1f2937;
+  font-weight: 500;
+  color: #047857;
   margin: 0 0 16px 0;
   letter-spacing: -1px;
+  font-family: "Pacifico", cursive;
 }
 
 .pricing-subtitle {

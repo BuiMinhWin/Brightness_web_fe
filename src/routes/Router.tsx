@@ -13,7 +13,6 @@ import Dashboard from "../pages/Dashboard/Dashboard";
 import Connect from "../pages/Connect/Connect";
 import Schedule from "../pages/Schedule/Schedule";
 import Profile from "../pages/Profile/Profile";
-// import CombinedAuthPage from "../pages/CombinedAuthPage/CombinedAuthPage"; // Old combined auth page
 import GamificationPage from "../pages/GamificationPage/GamificationPage";
 import YourGamificationPage from "../pages/YourGamificationPage/YourGamificationPage";
 import YourDetailPage from "../pages/YourDetailPage/YourDetailPage";
