@@ -4,41 +4,64 @@ import "./SignUpPage.css";
 import yogaImg from "/assets/yoga_register.png";
 import logoImg from "/assets/logo_color.png";
 import { motion } from "framer-motion";
-
-interface SignUpPageProps {
-  onNavigateToSignIn?: () => void;
-}
+import { authService } from "../../services";
+import type { RegisterRequest } from "../../models";
 
 const SignUpPage: React.FC = () => {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+  const [formValues, setFormValues] = useState<RegisterRequest>({
+    email: "",
+    userName: "",
+    password: "",
+    role: "user",
+    status: "active",
+  });
   const [showPassword, setShowPassword] = useState(false);
   const [agreeTerms, setAgreeTerms] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const navigate = useNavigate();
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (agreeTerms && email && password) {
-      console.log("Sign up attempt:", { email, password });
-      // TODO: Handle sign up logic
+  const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value, type, checked } = event.target;
+    const newValue = type === "checkbox" ? checked : value;
+    setFormValues((prev) => ({ ...prev, [name]: newValue }));
+  };
+
+  const handleSubmit = async (event: React.FormEvent) => {
+    event.preventDefault();
+    if (!agreeTerms) {
+      alert("You must agree to the terms to continue");
+      return;
+    }
+
+    try {
+      setIsSubmitting(true);
+      const payload: RegisterRequest = {
+        ...formValues,
+        email: formValues.email.trim(),
+        userName: formValues.userName.trim(),
+      };
+
+      const response = await authService.register(payload);
+      if (response.flag) {
+        alert("Registration successful. Please sign in.");
+        navigate("/signin");
+      } else {
+        alert(response.message || "Registration failed.");
+      }
+    } catch (error) {
+      console.error("Registration error", error);
+      alert((error as Error).message || "Unable to sign up");
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
-  const handleGoogleSignUp = () => {
-    console.log("Google sign up clicked");
-    // TODO: Handle Google OAuth
-  };
-
-  const handleFacebookSignUp = () => {
-    console.log("Facebook sign up clicked");
-    // TODO: Handle Facebook OAuth
-  };
-
-  const isFormValid = email && password && agreeTerms;
+  const isFormValid = Boolean(
+    formValues.email && formValues.userName && formValues.password && agreeTerms
+  );
 
   return (
     <div className="signup-page">
-      {/* Left: Yoga background image */}
       <div className="signup-bg-image">
         <motion.img
           src={yogaImg}
@@ -51,9 +74,7 @@ const SignUpPage: React.FC = () => {
         />
       </div>
 
-      {/* Right: Form content */}
       <div className="signup-content">
-        {/* Top navigation */}
         <div className="signup-top-nav">
           <span className="signup-nav-text">Already have an account?</span>
           <button className="signup-signin-btn" onClick={() => navigate("/signin")}>
@@ -61,29 +82,38 @@ const SignUpPage: React.FC = () => {
           </button>
         </div>
 
-        {/* Sign up form */}
         <div className="signup-form-container">
           <div className="signup-form-card">
-            {/* Header with Logo and Title */}
             <div className="signup-header">
-              <div className="signup-logo" style={{ backgroundImage: `url(${logoImg})` }}></div>
+              <div className="signup-logo" style={{ backgroundImage: `url(${logoImg})` }} />
               <h1 className="signup-title">Create an account</h1>
             </div>
 
-            <p className="signup-subtitle">
-              Lorem ipsum dolor sit amet, consectetur
-              <br />
-            </p>
+            <p className="signup-subtitle">Join Brightness to track your wellness journey.</p>
 
             <form onSubmit={handleSubmit}>
               <div className="signup-field">
                 <label className="signup-label">Email</label>
                 <input
+                  name="email"
                   type="email"
                   className="signup-input"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder=""
+                  value={formValues.email}
+                  onChange={handleChange}
+                  autoComplete="email"
+                  required
+                />
+              </div>
+
+              <div className="signup-field">
+                <label className="signup-label">Username</label>
+                <input
+                  name="userName"
+                  type="text"
+                  className="signup-input"
+                  value={formValues.userName}
+                  onChange={handleChange}
+                  autoComplete="username"
                   required
                 />
               </div>
@@ -92,17 +122,18 @@ const SignUpPage: React.FC = () => {
                 <label className="signup-label">Password</label>
                 <div className="signup-password-container">
                   <input
+                    name="password"
                     type={showPassword ? "text" : "password"}
                     className="signup-input"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    placeholder=""
+                    value={formValues.password}
+                    onChange={handleChange}
+                    autoComplete="new-password"
                     required
                   />
                   <button
                     type="button"
                     className="signup-password-toggle"
-                    onClick={() => setShowPassword(!showPassword)}
+                    onClick={() => setShowPassword((prev) => !prev)}
                   >
                     <span>{showPassword ? "Hide" : "Show"}</span>
                   </button>
@@ -115,17 +146,20 @@ const SignUpPage: React.FC = () => {
                   id="terms"
                   className="signup-checkbox"
                   checked={agreeTerms}
-                  onChange={(e) => setAgreeTerms(e.target.checked)}
+                  onChange={() => setAgreeTerms((prev) => !prev)}
                 />
                 <label htmlFor="terms" className="signup-terms-text">
-                  By creating an account, I agree to our{" "}
+                  By creating an account, I agree to the
                   <a href="#" className="signup-terms-link">
-                    terms of use
-                  </a>{" "}
-                  and{" "}
-                  <a href="#" className="signup-terms-link">
-                    Privacy Policy
+                    {" "}
+                    terms of use{" "}
                   </a>
+                  and
+                  <a href="#" className="signup-terms-link">
+                    {" "}
+                    privacy policy
+                  </a>
+                  .
                 </label>
               </div>
 
@@ -134,7 +168,7 @@ const SignUpPage: React.FC = () => {
                 className={`signup-btn ${isFormValid ? "enabled" : ""}`}
                 disabled={!isFormValid}
               >
-                Sign up
+                {isSubmitting ? "Signing up..." : "Sign up"}
               </button>
             </form>
 
@@ -146,43 +180,16 @@ const SignUpPage: React.FC = () => {
               <button
                 type="button"
                 className="signup-social-btn signup-google"
-                onClick={handleGoogleSignUp}
-                title="Sign up with Google"
+                onClick={() => alert("Google sign-up not implemented")}
               >
-                <svg width="20" height="20" viewBox="0 0 24 24">
-                  <path
-                    fill="#4285F4"
-                    d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
-                  />
-                  <path
-                    fill="#34A853"
-                    d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
-                  />
-                  <path
-                    fill="#FBBC05"
-                    d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"
-                  />
-                  <path
-                    fill="#EA4335"
-                    d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
-                  />
-                </svg>
-                <span className="signup-social-text">Google</span>
+                Google
               </button>
-
               <button
                 type="button"
                 className="signup-social-btn signup-facebook"
-                onClick={handleFacebookSignUp}
-                title="Sign up with Facebook"
+                onClick={() => alert("Facebook sign-up not implemented")}
               >
-                <svg width="20" height="20" viewBox="0 0 24 24">
-                  <path
-                    fill="#1877F2"
-                    d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"
-                  />
-                </svg>
-                <span className="signup-social-text">Facebook</span>
+                Facebook
               </button>
             </div>
           </div>
