@@ -20,6 +20,16 @@ export async function httpRequest<T>(path: string, options: RequestOptions = {})
   const { skipContentType, headers, ...rest } = options;
 
   const requestHeaders = new Headers(headers);
+
+  const apiGatewayKey = import.meta.env.VITE_API_GATEWAY_KEY;
+  const apiGatewayKeyHeaderEnv = import.meta.env.VITE_API_GATEWAY_KEY_HEADER;
+  if (apiGatewayKey) {
+    const headerName =
+      apiGatewayKeyHeaderEnv && apiGatewayKeyHeaderEnv.trim().length > 0
+        ? apiGatewayKeyHeaderEnv.trim()
+        : "Ocp-Apim-Subscription-Key";
+    requestHeaders.set(headerName, apiGatewayKey);
+  }
   if (!skipContentType && !requestHeaders.has("Content-Type")) {
     requestHeaders.set("Content-Type", "application/json");
   }

@@ -7,9 +7,9 @@ export interface LoginRequest {
   email: string;
   password: string;
 }
+export type LoginResponse = ApiResponse<string>; // backend trả message + flag
 
-export type LoginResponse = ApiResponse<string>;
-
+/** Register / Update / User */
 export interface RegisterRequest {
   id?: string;
   email: string;
