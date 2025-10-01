@@ -301,11 +301,7 @@ const LandingPage: React.FC = () => {
               </div>
               <div className="chat-message user2">
                 <div className="chat-bubble">What exercises are good for beginners?</div>
-                <img
-                  src="src/assets/images/logo_color.png"
-                  alt="User Avatar"
-                  className="chat-avatar"
-                />
+                <img src="/assets/brightnesslogo.png" alt="User Avatar" className="chat-avatar" />
               </div>
             </div>
             <div className="cta-inline">
