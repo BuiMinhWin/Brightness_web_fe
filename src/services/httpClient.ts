@@ -1,4 +1,81 @@
+import { jwtDecode } from "jwt-decode";
+import type { AuthData } from "../models";
+import { authService } from "./authService";
+
 const API_BASE_URL = import.meta.env.VITE_API_URL;
+const AUTH_STORAGE_KEY = "auth";
+
+// --- Helper functions for Auth --- //
+
+const getAuthData = (): AuthData | null => {
+  const authJson = localStorage.getItem(AUTH_STORAGE_KEY);
+  if (!authJson) return null;
+  try {
+    return JSON.parse(authJson) as AuthData;
+  } catch {
+    return null;
+  }
+};
+
+const setAuthData = (authData: AuthData) => {
+  localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(authData));
+};
+
+const clearAuthData = () => {
+  localStorage.removeItem(AUTH_STORAGE_KEY);
+};
+
+const isTokenExpired = (token: string): boolean => {
+  if (!token) return true;
+  try {
+    const decoded = jwtDecode(token);
+    const currentTime = Date.now() / 1000;
+    return (decoded.exp ?? 0) < currentTime;
+  } catch {
+    return true;
+  }
+};
+
+// --- Refresh Token Logic --- //
+
+let isRefreshing = false;
+let refreshPromise: Promise<AuthData | null> | null = null;
+
+const handleRefreshToken = async (): Promise<AuthData | null> => {
+  const auth = getAuthData();
+  if (!auth?.refreshToken) {
+    clearAuthData();
+    window.location.href = "/auth?mode=signin"; // Redirect to login
+    return Promise.reject(new Error("No refresh token available."));
+  }
+
+  if (!isRefreshing) {
+    isRefreshing = true;
+    refreshPromise = authService
+      .refreshToken(auth.refreshToken)
+      .then((response) => {
+        if (!response.flag || !response.data) {
+          throw new Error("Failed to refresh token");
+        }
+        setAuthData(response.data);
+        return response.data;
+      })
+      .catch((error) => {
+        console.error("Refresh token failed, logging out:", error);
+        clearAuthData();
+        window.location.href = "/auth?mode=signin"; // Redirect to login
+        return null;
+      })
+      .finally(() => {
+        isRefreshing = false;
+        refreshPromise = null;
+      });
+  }
+
+  return refreshPromise;
+};
+
+// --- Core HTTP Request Function --- //
 
 export class ApiError extends Error {
   public readonly status?: number;
@@ -14,40 +91,49 @@ export class ApiError extends Error {
 
 interface RequestOptions extends RequestInit {
   skipContentType?: boolean;
+  skipAuth?: boolean; // Option to skip sending Authorization header
 }
 
 export async function httpRequest<T>(path: string, options: RequestOptions = {}): Promise<T> {
-  const { skipContentType, headers, ...rest } = options;
+  let auth = getAuthData();
+  const { skipContentType, skipAuth, headers, ...rest } = options;
+
+  // If token is expired, refresh it
+  if (auth?.accessToken && isTokenExpired(auth.accessToken) && !skipAuth) {
+    const newAuth = await handleRefreshToken();
+    if (newAuth) {
+      auth = newAuth;
+    } else {
+      // Refresh failed, stop the request
+      return Promise.reject(new ApiError("Session expired. Please log in again.", 401));
+    }
+  }
 
   const requestHeaders = new Headers(headers);
 
+  // Attach Access Token if available and not skipped
+  if (auth?.accessToken && !skipAuth) {
+    requestHeaders.set("Authorization", `Bearer ${auth.accessToken}`);
+  }
+
+  // Attach API Gateway Key
   const apiGatewayKey = import.meta.env.VITE_API_GATEWAY_KEY;
   const apiGatewayKeyHeaderEnv = import.meta.env.VITE_API_GATEWAY_KEY_HEADER;
   if (apiGatewayKey) {
-    const headerName =
-      apiGatewayKeyHeaderEnv && apiGatewayKeyHeaderEnv.trim().length > 0
-        ? apiGatewayKeyHeaderEnv.trim()
-        : "Ocp-Apim-Subscription-Key";
+    const headerName = apiGatewayKeyHeaderEnv?.trim() || "Ocp-Apim-Subscription-Key";
     requestHeaders.set(headerName, apiGatewayKey);
   }
+
   if (!skipContentType && !requestHeaders.has("Content-Type")) {
     requestHeaders.set("Content-Type", "application/json");
   }
 
-  // build full URL safely (handle leading/trailing slashes)
-  const base = API_BASE_URL.replace(/\/+$/, "");
-  const route = String(path ?? "").replace(/^\/+/, "");
+  const base = (API_BASE_URL || "").replace(/\/+$/, "");
+  const route = (path || "").replace(/^\/+/, "");
   const url = route ? `${base}/${route}` : base;
 
-  // prepare body: stringify JSON when appropriate
   let body: BodyInit | undefined = (rest as any).body;
-  const contentType = requestHeaders.get("Content-Type") ?? "";
-  if (
-    body != null &&
-    contentType.includes("application/json") &&
-    typeof body !== "string" &&
-    !(body instanceof FormData)
-  ) {
+  if (body != null && typeof body !== "string" && !(body instanceof FormData)) {
     try {
       body = JSON.stringify(body);
     } catch (err) {
@@ -65,19 +151,17 @@ export async function httpRequest<T>(path: string, options: RequestOptions = {})
 
   const response = await fetch(url, fetchOptions);
 
-  const respContentType = response.headers.get("content-type");
-  const isJson = respContentType?.includes("application/json");
-
-  // handle no content
-  if (response.status === 204 || respContentType == null) {
+  if (response.status === 204) {
     return undefined as unknown as T;
   }
 
+  const respContentType = response.headers.get("content-type");
+  const isJson = respContentType?.includes("application/json");
   let payload: unknown;
+
   try {
     payload = isJson ? await response.json() : await response.text();
-  } catch (err) {
-    // fallback for invalid/empty JSON
+  } catch {
     payload = undefined;
   }
 
@@ -88,6 +172,14 @@ export async function httpRequest<T>(path: string, options: RequestOptions = {})
         : undefined) ||
       response.statusText ||
       "Request failed";
+
+    // Special case for 401 Unauthorized, maybe the token expired just now
+    // This is a simple implementation; a more robust one might retry the request
+    if (response.status === 401 && !skipAuth) {
+      console.error("Unauthorized access. Logging out.");
+      clearAuthData();
+      window.location.href = "/auth?mode=signin";
+    }
 
     throw new ApiError(message, response.status, payload);
   }

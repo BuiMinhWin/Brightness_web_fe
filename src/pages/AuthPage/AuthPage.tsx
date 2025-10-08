@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
+import { jwtDecode } from "jwt-decode";
 import "./AuthPage.css";
 // import yogaImg from "/assets/yoga_register.png";
 import logoImg from "/assets/logo_color.png";
 import { authService } from "../../services";
-import type { LoginRequest, RegisterRequest } from "../../models";
+import type { LoginRequest, RegisterRequest, LoginResponse } from "../../models";
 
 type AuthMode = "signin" | "signup";
 
@@ -13,6 +14,10 @@ type AuthFormValues = {
   userName: string;
   password: string;
 };
+
+interface DecodedToken {
+  "http://schemas.microsoft.com/ws/2008/06/identity/claims/role": string;
+}
 
 const DEFAULT_ROLE = "user";
 const DEFAULT_STATUS = "active";
@@ -53,6 +58,29 @@ const AuthPage: React.FC = () => {
     setFormValues((prev) => ({ ...prev, [name]: value }));
   };
 
+  const handleLoginSuccess = (loginRes: LoginResponse) => {
+    if (!loginRes.data) {
+      throw new Error("Login response did not contain auth data.");
+    }
+
+    const { accessToken } = loginRes.data;
+    console.log("Access Token:", accessToken);
+
+    const decodedToken = jwtDecode<DecodedToken>(accessToken);
+    const role = decodedToken["http://schemas.microsoft.com/ws/2008/06/identity/claims/role"];
+
+    localStorage.setItem("auth", JSON.stringify(loginRes.data));
+
+    if (role === "admin") {
+      navigate("/admin", { replace: true });
+    } else if (role === "user") {
+      navigate("/home", { replace: true });
+    } else {
+      alert("You do not have permission to log in.");
+      localStorage.removeItem("auth");
+    }
+  };
+
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
 
@@ -90,21 +118,18 @@ const AuthPage: React.FC = () => {
           throw new Error(loginResponse.message || "Auto-login failed after registration");
         }
 
-        localStorage.setItem("auth", JSON.stringify(loginResponse));
-        navigate("/", { replace: true });
+        handleLoginSuccess(loginResponse);
       } else {
         const loginPayload: LoginRequest = {
           email: trimmedEmail,
           password: formValues.password,
         };
         const loginResponse = await authService.login(loginPayload);
-        console.log("loginResponse", loginResponse.message);
         if (!loginResponse.flag) {
           throw new Error(loginResponse.message || "Login failed");
         }
 
-        localStorage.setItem("auth", JSON.stringify(loginResponse));
-        navigate("/home", { replace: true });
+        handleLoginSuccess(loginResponse);
       }
     } catch (error) {
       console.error("Authentication error", error);

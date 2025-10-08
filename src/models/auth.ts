@@ -7,7 +7,18 @@ export interface LoginRequest {
   email: string;
   password: string;
 }
-export type LoginResponse = ApiResponse<string>; // backend trả message + flag
+export interface AuthData {
+  accessToken: string;
+  refreshToken: string;
+  accessTokenExpiresAt: string;
+  refreshTokenExpiresAt: string;
+}
+
+export interface LoginResponse {
+  flag: boolean;
+  message: string;
+  data?: AuthData;
+}
 
 /** Register / Update / User */
 export interface RegisterRequest {

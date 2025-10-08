@@ -1,0 +1,194 @@
+{
+  "lichTapTuan": [
+    {
+      "ngay": "Thứ Hai",
+      "baiTap": "Ngày đẩy (Ngực, Vai, Tay sau)",
+      "cacBaiTap": [
+        {
+          "ten": "Đẩy ngực (Bench Press)",
+          "soHiep": 4,
+          "soLan": "8-12",
+          "nghi": "60-90 giây"
+        },
+        {
+          "ten": "Đẩy vai (Overhead Press)",
+          "soHiep": 3,
+          "soLan": "10-15",
+          "nghi": "60 giây"
+        },
+        {
+          "ten": "Đẩy ngực tạ đơn ghế dốc lên (Incline Dumbbell Press)",
+          "soHiep": 3,
+          "soLan": "10-15",
+          "nghi": "60 giây"
+        },
+        {
+          "ten": "Kéo cáp tay sau (Tricep Pushdowns)",
+          "soHiep": 3,
+          "soLan": "12-15",
+          "nghi": "45-60 giây"
+        },
+        {
+          "ten": "Nâng tạ sang hai bên (Lateral Raises)",
+          "soHiep": 4,
+          "soLan": "15-20",
+          "nghi": "45 giây"
+        }
+      ]
+    },
+    {
+      "ngay": "Thứ Ba",
+      "baiTap": "Ngày kéo (Lưng, Tay trước)",
+      "cacBaiTap": [
+        {
+          "ten": "Hít xà (Pull-ups)",
+          "soHiep": 4,
+          "soLan": "Nhiều nhất có thể",
+          "nghi": "90 giây"
+        },
+        {
+          "ten": "Gập người kéo tạ (Bent-over Rows)",
+          "soHiep": 3,
+          "soLan": "8-12",
+          "nghi": "60-90 giây"
+        },
+        {
+          "ten": "Kéo xô (Lat Pulldowns)",
+          "soHiep": 3,
+          "soLan": "10-15",
+          "nghi": "60 giây"
+        },
+        {
+          "ten": "Cuốn tạ tay trước (Bicep Curls)",
+          "soHiep": 3,
+          "soLan": "12-15",
+          "nghi": "45-60 giây"
+        },
+        {
+          "ten": "Kéo cáp tập vai sau (Face Pulls)",
+          "soHiep": 4,
+          "soLan": "15-20",
+          "nghi": "45 giây"
+        }
+      ]
+    },
+    {
+      "ngay": "Thứ Tư",
+      "baiTap": "Ngày chân (Đùi trước, Đùi sau, Bắp chân)",
+      "cacBaiTap": [
+        {
+          "ten": "Gánh tạ (Squats)",
+          "soHiep": 4,
+          "soLan": "8-12",
+          "nghi": "90-120 giây"
+        },
+        {
+          "ten": "Deadlift Rumani (Romanian Deadlifts)",
+          "soHiep": 3,
+          "soLan": "10-15",
+          "nghi": "60-90 giây"
+        },
+        {
+          "ten": "Đạp đùi (Leg Press)",
+          "soHiep": 3,
+          "soLan": "12-15",
+          "nghi": "60 giây"
+        },
+        {
+          "ten": "Cuốn đùi sau (Leg Curls)",
+          "soHiep": 3,
+          "soLan": "12-15",
+          "nghi": "45-60 giây"
+        },
+        {
+          "ten": "Nhón bắp chân (Calf Raises)",
+          "soHiep": 5,
+          "soLan": "15-20",
+          "nghi": "30 giây"
+        }
+      ]
+    },
+    {
+      "ngay": "Thứ Năm",
+      "baiTap": "Nghỉ hoặc Cardio nhẹ",
+      "cacBaiTap": []
+    },
+    {
+      "ngay": "Thứ Sáu",
+      "baiTap": "Ngày đẩy 2 (Tập trung vào Vai)",
+      "cacBaiTap": [
+        {
+          "ten": "Đẩy vai (Overhead Press)",
+          "soHiep": 4,
+          "soLan": "8-12",
+          "nghi": "60-90 giây"
+        },
+        {
+          "ten": "Đẩy ngực (Bench Press)",
+          "soHiep": 3,
+          "soLan": "10-15",
+          "nghi": "60 giây"
+        },
+        {
+          "ten": "Đẩy vai Arnold (Arnold Press)",
+          "soHiep": 3,
+          "soLan": "10-15",
+          "nghi": "60 giây"
+        },
+        {
+          "ten": "Nằm đẩy tạ đòn tập tay sau (Skull Crushers)",
+          "soHiep": 3,
+          "soLan": "12-15",
+          "nghi": "45-60 giây"
+        },
+        {
+          "ten": "Nâng tạ phía trước (Front Raises)",
+          "soHiep": 4,
+          "soLan": "15-20",
+          "nghi": "45 giây"
+        }
+      ]
+    },
+    {
+      "ngay": "Thứ Bảy",
+      "baiTap": "Ngày kéo 2 (Tập trung vào độ rộng của lưng)",
+      "cacBaiTap": [
+        {
+          "ten": "Kéo xô (Lat Pulldowns)",
+          "soHiep": 4,
+          "soLan": "10-15",
+          "nghi": "60-90 giây"
+        },
+        {
+          "ten": "Kéo tạ T-bar (T-Bar Rows)",
+          "soHiep": 3,
+          "soLan": "8-12",
+          "nghi": "60-90 giây"
+        },
+        {
+          "ten": "Ngồi kéo cáp (Seated Cable Rows)",
+          "soHiep": 3,
+          "soLan": "10-15",
+          "nghi": "60 giây"
+        },
+        {
+          "ten": "Cuốn tạ búa (Hammer Curls)",
+          "soHiep": 3,
+          "soLan": "12-15",
+          "nghi": "45-60 giây"
+        },
+        {
+          "ten": "Ép ngực vai sau (Reverse Pec-Deck)",
+          "soHiep": 4,
+          "soLan": "15-20",
+          "nghi": "45 giây"
+        }
+      ]
+    },
+    {
+      "ngay": "Chủ Nhật",
+      "baiTap": "Nghỉ hoặc Phục hồi tích cực",
+      "cacBaiTap": []
+    }
+  ]
+}

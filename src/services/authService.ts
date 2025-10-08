@@ -18,8 +18,17 @@ export const authService = {
     return httpRequest<LoginResponse>("/Authentication/login", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      
+
       body: JSON.stringify(credentials),
+    });
+  },
+
+  /** Làm mới token */
+  async refreshToken(refreshToken: string): Promise<LoginResponse> {
+    return httpRequest<LoginResponse>("/Authentication/refresh", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ refreshToken }),
     });
   },
 

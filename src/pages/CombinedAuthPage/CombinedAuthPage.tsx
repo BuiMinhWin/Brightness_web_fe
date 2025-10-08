@@ -1,15 +1,20 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
+import { jwtDecode } from "jwt-decode";
 import "./CombinedAuthPage.css";
 import yogaSignInImg from "/assets/yoga.png";
 import yogaSignUpImg from "/assets/yoga_register.png";
 import logoImg from "/assets/logo_color.png";
 import { authService } from "../../services";
-import type { LoginRequest, RegisterRequest } from "../../models";
+import type { LoginRequest, RegisterRequest, LoginResponse } from "../../models";
 
 const DEFAULT_ROLE = "user";
 const DEFAULT_STATUS = "active";
+
+interface DecodedToken {
+  "http://schemas.microsoft.com/ws/2008/06/identity/claims/role": string;
+}
 
 const CombinedAuthPage: React.FC = () => {
   const [searchParams] = useSearchParams();
@@ -52,6 +57,30 @@ const CombinedAuthPage: React.FC = () => {
     setTimeout(() => setIsAnimating(false), 600);
   };
 
+  const handleLoginSuccess = (loginRes: LoginResponse) => {
+    if (!loginRes.data) {
+      throw new Error("Login response did not contain auth data.");
+    }
+
+    const { accessToken } = loginRes.data;
+    console.log("Access Token:", accessToken);
+
+    const decodedToken = jwtDecode<DecodedToken>(accessToken);
+    const role = decodedToken["http://schemas.microsoft.com/ws/2008/06/identity/claims/role"];
+    console.log("User Role from Token:", role);
+    localStorage.setItem("auth", JSON.stringify(loginRes.data));
+
+    if (role === "admin") {
+      navigate("/admin", { replace: true });
+    } else if (role === "user") {
+      navigate("/home", { replace: true });
+    } else {
+      alert("You do not have permission to log in.");
+      // Optional: Clear stored auth data if login is rejected
+      localStorage.removeItem("auth");
+    }
+  };
+
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
     if (!isFormValid) return;
@@ -81,8 +110,7 @@ const CombinedAuthPage: React.FC = () => {
           throw new Error(loginRes.message || "Auto-login failed after registration");
         }
 
-        localStorage.setItem("auth", JSON.stringify(loginRes));
-        navigate("/", { replace: true });
+        handleLoginSuccess(loginRes);
       } else {
         const loginPayload: LoginRequest = { email: trimmedEmail, password };
         const loginRes = await authService.login(loginPayload);
@@ -90,8 +118,7 @@ const CombinedAuthPage: React.FC = () => {
           throw new Error(loginRes.message || "Login failed");
         }
 
-        localStorage.setItem("auth", JSON.stringify(loginRes));
-        navigate("/", { replace: true });
+        handleLoginSuccess(loginRes);
       }
     } catch (error) {
       console.error("Auth error:", error);
