@@ -15,7 +15,7 @@ type RegisterResponse = ApiResponse<string>;
 export const authService = {
   /** Đăng nhập: backend trả { flag: boolean, message: string } */
   async login(credentials: LoginRequest): Promise<LoginResponse> {
-    return httpRequest<LoginResponse>("/Authentication/login", {
+    return httpRequest<LoginResponse>("/auth/api/Authentication/login", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
 
@@ -25,7 +25,7 @@ export const authService = {
 
   /** Làm mới token */
   async refreshToken(refreshToken: string): Promise<LoginResponse> {
-    return httpRequest<LoginResponse>("/Authentication/refresh", {
+    return httpRequest<LoginResponse>("/auth/api/Authentication/refresh", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ refreshToken }),
@@ -34,7 +34,7 @@ export const authService = {
 
   /** Đăng ký: backend trả { flag, message } */
   async register(data: RegisterRequest): Promise<RegisterResponse> {
-    return httpRequest<RegisterResponse>("/Authentication/register", {
+    return httpRequest<RegisterResponse>("/auth/api/Authentication/register", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(data),
@@ -43,21 +43,21 @@ export const authService = {
 
   /** Lấy 1 user theo id */
   async getUser(id: string): Promise<UserModel> {
-    return httpRequest<UserModel>(`/Authentication/${id}`, {
+    return httpRequest<UserModel>(`/auth/api/Authentication/${id}`, {
       method: "GET",
     });
   },
 
   /** Lấy danh sách user */
   async getUsers(): Promise<UserModel[]> {
-    return httpRequest<UserModel[]>("/Authentication", {
+    return httpRequest<UserModel[]>("/auth/api/Authentication", {
       method: "GET",
     });
   },
 
   /** Cập nhật user: backend trả { flag, message } */
   async updateUser(id: string, payload: UpdateUserRequest): Promise<ApiResponse<string>> {
-    return httpRequest<ApiResponse<string>>(`/Authentication/${id}`, {
+    return httpRequest<ApiResponse<string>>(`/auth/api/Authentication/${id}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),
@@ -66,7 +66,7 @@ export const authService = {
 
   /** Xoá user: backend trả { flag, message } */
   async deleteUser(id: string): Promise<ApiResponse<string>> {
-    return httpRequest<ApiResponse<string>>(`/Authentication/${id}`, {
+    return httpRequest<ApiResponse<string>>(`/auth/api/Authentication/${id}`, {
       method: "DELETE",
     });
   },
