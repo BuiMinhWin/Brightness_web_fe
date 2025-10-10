@@ -17,6 +17,7 @@ type AuthFormValues = {
 
 interface DecodedToken {
   "http://schemas.microsoft.com/ws/2008/06/identity/claims/role": string;
+  "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier": string;
 }
 
 const DEFAULT_ROLE = "user";
@@ -68,6 +69,8 @@ const AuthPage: React.FC = () => {
 
     const decodedToken = jwtDecode<DecodedToken>(accessToken);
     const role = decodedToken["http://schemas.microsoft.com/ws/2008/06/identity/claims/role"];
+    const id = decodedToken["http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier"];
+    console.log("Decoded Token:", id, role);
 
     localStorage.setItem("auth", JSON.stringify(loginRes.data));
 

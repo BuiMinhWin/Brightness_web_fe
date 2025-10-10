@@ -3,21 +3,11 @@ import Navbar from "../../components/layout/Navbar";
 import GameFooter from "../../components/layout/GameFooter";
 import "./PricingPage.css";
 import { useNavigate } from "react-router-dom";
+import { billingService } from "@/services/billingService";
+import type { CreateInvoicePayload, InitiatePaymentPayload, PricingPlan } from "@/models/billing";
 
 interface PricingPageProps {
   onNavigateBack: () => void;
-}
-
-interface PricingPlan {
-  id: string;
-  title: string;
-  price: string;
-  subtitle: string;
-  features: string[];
-  buttonText: string;
-  isCurrentPlan: boolean;
-  isBestValue?: boolean;
-  isPremiumTrial?: boolean;
 }
 
 const PricingPage: React.FC = () => {
@@ -42,7 +32,7 @@ const PricingPage: React.FC = () => {
       isCurrentPlan: true,
     },
     {
-      id: "premium-monthly",
+      id: "73f57e29-bee0-47ba-863f-4277baa7dff5",
       title: "79.000",
       price: "79.000",
       subtitle: "/month",
@@ -58,7 +48,7 @@ const PricingPage: React.FC = () => {
       isCurrentPlan: false,
     },
     {
-      id: "premium-annual",
+      id: "267d1366-44a8-46b9-875e-879f2443f452",
       title: "599.000",
       price: "599.000",
       subtitle: "/month",
@@ -87,13 +77,43 @@ const PricingPage: React.FC = () => {
     }
   };
 
-  const handleConfirmPurchase = () => {
+  const handleConfirmPurchase = async () => {
+    console.log("User confirmed purchase for plan:", pendingPlan?.id);
     if (pendingPlan) {
-      console.log("Confirmed purchase of plan:", pendingPlan.id);
-      // Here you would integrate with payment system
-      setShowConfirmModal(false);
-      setPendingPlan(null);
-      // You could show a success message or redirect to payment
+      try {
+        const invoice = await billingService.createInvoice({
+          planId: pendingPlan.id,
+        });
+
+        // Kiểm tra xem có nhận được invoice và invoice.id không
+        if (!invoice?.id) {
+          throw new Error("Failed to create an invoice.");
+        }
+
+        // Bước 2: Khởi tạo thanh toán với invoiceId vừa nhận được.
+        const paymentSession = await billingService.initiatePayment({
+          invoiceId: invoice.id,
+          gateway: 0, // 0 = PayOs
+          returnUrl: `${window.location.origin}/payment-success`,
+          cancelUrl: `${window.location.origin}/pricing`,
+        });
+
+        // Bước 3: Kiểm tra và chuyển hướng người dùng.
+        if (paymentSession?.checkoutUrl) {
+          window.location.href = paymentSession.checkoutUrl;
+        } else {
+          throw new Error("Checkout URL not found.");
+        }
+      } catch (error) {
+        console.error("Payment process failed:", error);
+        const errorMessage =
+          error instanceof Error ? error.message : "An error occurred. Please try again.";
+        alert(errorMessage);
+
+        // Đóng modal và reset state
+        setShowConfirmModal(false);
+        setPendingPlan(null);
+      }
     }
   };
 
