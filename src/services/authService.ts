@@ -7,7 +7,7 @@ import type {
   UpdateUserRequest,
   UserModel,
 } from "../models";
-import { httpRequest } from "./httpClient";
+import { httpRequest } from "./httpClientRedux";
 
 // Có thể tái dùng alias nếu bạn thích, không bắt buộc:
 type RegisterResponse = ApiResponse<string>;

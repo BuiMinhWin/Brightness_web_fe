@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { jwtDecode } from "jwt-decode";
 import "./AuthPage.css";
 // import yogaImg from "/assets/yoga_register.png";
 import logoImg from "/assets/logo_color.png";
+import { useAppDispatch, useAppSelector } from "../../store/hooks";
+import { loginUser } from "../../store/slices/authSlice";
 import { authService } from "../../services";
-import type { LoginRequest, RegisterRequest, LoginResponse } from "../../models";
+import type { LoginRequest, RegisterRequest } from "../../models";
 
 type AuthMode = "signin" | "signup";
 
@@ -15,15 +16,12 @@ type AuthFormValues = {
   password: string;
 };
 
-interface DecodedToken {
-  "http://schemas.microsoft.com/ws/2008/06/identity/claims/role": string;
-  "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier": string;
-}
-
 const DEFAULT_ROLE = "user";
 const DEFAULT_STATUS = "active";
 
 const AuthPage: React.FC = () => {
+  const dispatch = useAppDispatch();
+  const { isAuthenticated, userRole, isLoading, error } = useAppSelector((state) => state.auth);
   const [searchParams, setSearchParams] = useSearchParams();
   const [authMode, setAuthMode] = useState<AuthMode>(
     (searchParams.get("mode") as AuthMode) || "signin"
@@ -35,7 +33,6 @@ const AuthPage: React.FC = () => {
   });
   const [showPassword, setShowPassword] = useState(false);
   const [agreeTerms, setAgreeTerms] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -44,6 +41,19 @@ const AuthPage: React.FC = () => {
       setAuthMode(mode);
     }
   }, [searchParams]);
+
+  // Handle navigation after successful login
+  useEffect(() => {
+    console.log("🔐 Auth state changed:", { isAuthenticated, userRole, isLoading, error });
+    if (isAuthenticated && userRole && !isLoading) {
+      console.log("✅ Navigating to:", userRole === "admin" ? "/admin" : "/home");
+      if (userRole === "admin") {
+        navigate("/admin", { replace: true });
+      } else if (userRole === "user") {
+        navigate("/home", { replace: true });
+      }
+    }
+  }, [isAuthenticated, userRole, isLoading, navigate, error]);
 
   const switchMode = (mode: AuthMode) => {
     if (mode === authMode) return;
@@ -59,88 +69,49 @@ const AuthPage: React.FC = () => {
     setFormValues((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleLoginSuccess = (loginRes: LoginResponse) => {
-    if (!loginRes.data) {
-      throw new Error("Login response did not contain auth data.");
-    }
-
-    const { accessToken } = loginRes.data;
-    console.log("Access Token:", accessToken);
-
-    const decodedToken = jwtDecode<DecodedToken>(accessToken);
-    const role = decodedToken["http://schemas.microsoft.com/ws/2008/06/identity/claims/role"];
-    const id = decodedToken["http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier"];
-    console.log("Decoded Token:", id, role);
-
-    localStorage.setItem("auth", JSON.stringify(loginRes.data));
-    localStorage.setItem("userId", id);
-
-    if (role === "admin") {
-      navigate("/admin", { replace: true });
-    } else if (role === "user") {
-      navigate("/home", { replace: true });
-    } else {
-      alert("You do not have permission to log in.");
-      localStorage.removeItem("auth");
-    }
-  };
-
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
 
-    try {
-      setIsSubmitting(true);
+    const trimmedEmail = formValues.email.trim();
+    const trimmedUserName = formValues.userName.trim();
 
-      const trimmedEmail = formValues.email.trim();
-      const trimmedUserName = formValues.userName.trim();
+    if (authMode === "signup") {
+      if (!agreeTerms) {
+        alert("Please accept the terms to create an account");
+        return;
+      }
 
-      if (authMode === "signup") {
-        if (!agreeTerms) {
-          alert("Please accept the terms to create an account");
-          return;
-        }
+      const registerPayload: RegisterRequest = {
+        email: trimmedEmail,
+        userName: trimmedUserName || trimmedEmail,
+        password: formValues.password,
+        role: DEFAULT_ROLE,
+        status: DEFAULT_STATUS,
+      };
 
-        const registerPayload: RegisterRequest = {
-          email: trimmedEmail,
-          userName: trimmedUserName || trimmedEmail,
-          password: formValues.password,
-          role: DEFAULT_ROLE,
-          status: DEFAULT_STATUS,
-        };
-
+      try {
         const registerResponse = await authService.register(registerPayload);
         if (!registerResponse.flag) {
           throw new Error(registerResponse.message || "Registration failed");
         }
 
+        // After successful registration, auto-login
         const loginPayload: LoginRequest = {
           email: registerPayload.email,
           password: registerPayload.password,
         };
-        const loginResponse = await authService.login(loginPayload);
-        if (!loginResponse.flag) {
-          throw new Error(loginResponse.message || "Auto-login failed after registration");
-        }
-
-        handleLoginSuccess(loginResponse);
-      } else {
-        const loginPayload: LoginRequest = {
-          email: trimmedEmail,
-          password: formValues.password,
-        };
-        const loginResponse = await authService.login(loginPayload);
-        if (!loginResponse.flag) {
-          throw new Error(loginResponse.message || "Login failed");
-        }
-
-        handleLoginSuccess(loginResponse);
+        dispatch(loginUser(loginPayload));
+      } catch (error) {
+        console.error("Registration error:", error);
+        alert((error as Error).message || "Registration failed");
       }
-    } catch (error) {
-      console.error("Authentication error", error);
-      const message = error instanceof Error ? error.message : "Authentication failed";
-      alert(message);
-    } finally {
-      setIsSubmitting(false);
+    } else {
+      // Sign in
+      const loginPayload: LoginRequest = {
+        email: trimmedEmail,
+        password: formValues.password,
+      };
+      dispatch(loginUser(loginPayload));
     }
   };
 
@@ -160,6 +131,22 @@ const AuthPage: React.FC = () => {
   return (
     <div className="auth-page">
       <div className={`auth-container ${authMode === "signup" ? "signup-mode" : ""}`}>
+        {error && (
+          <div
+            className="error-message"
+            style={{
+              color: "red",
+              textAlign: "center",
+              padding: "10px",
+              marginBottom: "20px",
+              backgroundColor: "#ffe6e6",
+              border: "1px solid #ffcccc",
+              borderRadius: "4px",
+            }}
+          >
+            {error}
+          </div>
+        )}
         <div className="forms-container">
           <div className="signin-signup">
             <form className="sign-in-form" onSubmit={handleSubmit}>
@@ -198,9 +185,9 @@ const AuthPage: React.FC = () => {
               </a>
               <input
                 type="submit"
-                value={isSubmitting ? "Signing in..." : "Login"}
-                className={`btn solid ${isSubmitting ? "disabled" : ""}`}
-                disabled={!isFormValid || isSubmitting}
+                value={isLoading ? "Signing in..." : "Login"}
+                className={`btn solid ${isLoading ? "disabled" : ""}`}
+                disabled={!isFormValid || isLoading}
               />
 
               <p className="social-text">Or Sign in with social platforms</p>
@@ -276,9 +263,9 @@ const AuthPage: React.FC = () => {
 
               <input
                 type="submit"
-                value={isSubmitting ? "Signing up..." : "Sign up"}
+                value={isLoading ? "Signing up..." : "Sign up"}
                 className={`btn ${isFormValid ? "solid" : "disabled"}`}
-                disabled={!isFormValid || isSubmitting}
+                disabled={!isFormValid || isLoading}
               />
 
               <div className="signin-divider">
