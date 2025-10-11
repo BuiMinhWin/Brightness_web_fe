@@ -1,6 +1,15 @@
 // File: src/models/billing.ts
 
 /**
+ * Định nghĩa cấu trúc response wrapper từ backend
+ */
+export interface ApiResponse<T> {
+  flag: boolean;
+  message: string;
+  data: T | null;
+}
+
+/**
  * Định nghĩa cấu trúc của một gói giá (pricing plan) được hiển thị trên giao diện.
  */
 export interface PricingPlan {
@@ -21,13 +30,18 @@ export interface PricingPlan {
  */
 export interface InvoiceResponse {
   id: string;
+  userExternalId?: string;
+  subscriptionPlanId: string;
   invoiceCode: string;
   amount: number;
   currency: string;
   status: string;
-  userExternalId: string;
   createdAt: string;
-  // Bổ sung các trường khác nếu API của bạn trả về thêm thông tin.
+  dueDate: string;
+  paidAt?: string | null;
+  cancelledAt?: string | null;
+  updatedAt?: string | null;
+  notes?: string | null;
 }
 
 /**
@@ -47,8 +61,10 @@ export interface PaymentSessionResponse {
  * Định nghĩa cấu trúc payload (dữ liệu gửi đi) để tạo một hóa đơn.
  */
 export interface CreateInvoicePayload {
-  planId: string;
-  // Backend sẽ tự lấy userId từ token, nên không cần gửi từ frontend.
+  userExternalId: string;
+  subscriptionPlanId: string;
+  dueDate: string;
+  notes?: string;
 }
 
 export interface InitiatePaymentPayload {

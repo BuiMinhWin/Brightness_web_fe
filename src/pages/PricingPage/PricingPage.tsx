@@ -15,7 +15,12 @@ const PricingPage: React.FC = () => {
   const [showConfirmModal, setShowConfirmModal] = useState<boolean>(false);
   const [pendingPlan, setPendingPlan] = useState<PricingPlan | null>(null);
   const navigate = useNavigate();
+  const userId = localStorage.getItem("userId");
 
+  if (!userId) {
+    console.error("User ID not found in localStorage.");
+    // Optionally, redirect to login or show an error message
+  }
   const pricingPlans: PricingPlan[] = [
     {
       id: "free",
@@ -79,21 +84,35 @@ const PricingPage: React.FC = () => {
 
   const handleConfirmPurchase = async () => {
     console.log("User confirmed purchase for plan:", pendingPlan?.id);
-    if (pendingPlan) {
+    if (pendingPlan && userId) {
       try {
-        const invoice = await billingService.createInvoice({
-          planId: pendingPlan.id,
-        });
+        // Bước 1: Tạo hóa đơn với payload mới.
+        const today = new Date();
+        const dueDate = today.toISOString().split("T")[0]; // Format: YYYY-MM-DD
 
-        // Kiểm tra xem có nhận được invoice và invoice.id không
+        const invoicePayload: CreateInvoicePayload = {
+          userExternalId: userId,
+          subscriptionPlanId: pendingPlan.id,
+          dueDate: dueDate,
+          notes: `Invoice for plan ${pendingPlan.id}`,
+        };
+
+        // Bây giờ invoice sẽ có đúng structure với id
+        const invoice = await billingService.createInvoice(invoicePayload);
+
+        // Kiểm tra invoice.id - bây giờ sẽ work
         if (!invoice?.id) {
           throw new Error("Failed to create an invoice.");
         }
 
+        console.log("Invoice created successfully:", invoice.id);
+        console.log("Invoice created successfully:", `${window.location.origin}/payment-success`);
+        console.log("Invoice ID:", `${window.location.origin}/pricing`);
+
         // Bước 2: Khởi tạo thanh toán với invoiceId vừa nhận được.
         const paymentSession = await billingService.initiatePayment({
           invoiceId: invoice.id,
-          gateway: 0, // 0 = PayOs
+          gateway: 2, // 0 = PayOs
           returnUrl: `${window.location.origin}/payment-success`,
           cancelUrl: `${window.location.origin}/pricing`,
         });
@@ -114,6 +133,11 @@ const PricingPage: React.FC = () => {
         setShowConfirmModal(false);
         setPendingPlan(null);
       }
+    } else {
+      // Xử lý trường hợp không có pendingPlan hoặc userId
+      alert("Could not proceed with purchase. Plan or user information is missing.");
+      setShowConfirmModal(false);
+      setPendingPlan(null);
     }
   };
 

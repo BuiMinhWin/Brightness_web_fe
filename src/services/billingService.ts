@@ -6,6 +6,7 @@ import type {
   PaymentSessionResponse,
   CreateInvoicePayload,
   InitiatePaymentPayload,
+  ApiResponse,
 } from "../models/billing";
 
 // Định nghĩa các đường dẫn API cơ sở
@@ -20,15 +21,27 @@ export const billingService = {
   },
 
   /**
-   * Tạo một hóa đơn mới dựa trên planId.
-   * @param payload - Dữ liệu chứa planId.
+   * Tạo một hóa đơn mới.
+   * @param payload - Dữ liệu để tạo hóa đơn, bao gồm ID người dùng, ID gói, ngày hết hạn, và ghi chú.
    * @returns Thông tin hóa đơn vừa được tạo.
    */
-  createInvoice(payload: CreateInvoicePayload) {
-    return httpRequest<InvoiceResponse>(invoicesBaseUrl, {
+  async createInvoice(payload: CreateInvoicePayload): Promise<InvoiceResponse> {
+    const response = await httpRequest<ApiResponse<InvoiceResponse>>(invoicesBaseUrl, {
       method: "POST",
-      body: payload as any,
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
     });
+
+    // Kiểm tra response structure
+    if (!response.flag) {
+      throw new Error(response.message || "Failed to create invoice");
+    }
+
+    if (!response.data?.id) {
+      throw new Error("Invalid response: Invoice data missing");
+    }
+
+    return response.data;
   },
 
   /**
@@ -36,17 +49,33 @@ export const billingService = {
    * @param payload - Dữ liệu chứa invoiceId, gateway, và các URL trả về.
    * @returns Thông tin phiên thanh toán, bao gồm checkoutUrl.
    */
-  initiatePayment(payload: InitiatePaymentPayload) {
-    return httpRequest<PaymentSessionResponse>(`${paymentsBaseUrl}/initiate`, {
-      method: "POST",
-      // SỬA LỖI: Tương tự, ép kiểu `body` thành `any`.
-      body: payload as any,
-    });
+  async initiatePayment(payload: InitiatePaymentPayload): Promise<PaymentSessionResponse> {
+    const response = await httpRequest<ApiResponse<PaymentSessionResponse>>(
+      `${paymentsBaseUrl}/initiate`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      }
+    );
+
+    if (!response.flag) {
+      throw new Error(response.message || "Failed to initiate payment");
+    }
+
+    if (!response.data) {
+      throw new Error("Invalid response: Payment session data missing");
+    }
+
+    return response.data;
   },
 
   //Lấy lịch sử hóa đơn của người dùng.
+  async listUserInvoices(): Promise<InvoiceResponse[]> {
+    const response = await httpRequest<InvoiceResponse[]>(invoicesBaseUrl, { method: "GET" });
 
-  listUserInvoices() {
-    return httpRequest<InvoiceResponse[]>(invoicesBaseUrl, { method: "GET" });
+    // Giả sử listUserInvoices trả về array trực tiếp, không có wrapper
+    // Nếu có wrapper thì cần handle tương tự như createInvoice
+    return response;
   },
 };

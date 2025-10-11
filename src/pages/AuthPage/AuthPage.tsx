@@ -73,6 +73,7 @@ const AuthPage: React.FC = () => {
     console.log("Decoded Token:", id, role);
 
     localStorage.setItem("auth", JSON.stringify(loginRes.data));
+    localStorage.setItem("userId", id);
 
     if (role === "admin") {
       navigate("/admin", { replace: true });
