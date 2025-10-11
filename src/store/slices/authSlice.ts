@@ -150,7 +150,14 @@ export const loadAuthFromStorage = createAsyncThunk(
   "auth/loadFromStorage",
   async (_, { rejectWithValue }) => {
     try {
-      const authJson = localStorage.getItem("auth");
+      console.log("📦 Checking storage for auth...");
+      console.log("📦 All localStorage keys:", Object.keys(localStorage));
+      console.log("📦 All sessionStorage keys:", Object.keys(sessionStorage));
+
+      // Try sessionStorage first, then localStorage
+      let authJson = sessionStorage.getItem("auth") || localStorage.getItem("auth");
+      console.log("📦 Auth data from storage:", authJson ? "FOUND" : "NOT FOUND");
+
       if (!authJson) {
         return rejectWithValue("No auth data in storage");
       }
@@ -159,7 +166,6 @@ export const loadAuthFromStorage = createAsyncThunk(
 
       // Check if token is still valid
       if (isTokenExpired(authData.accessToken)) {
-        localStorage.removeItem("auth");
         return rejectWithValue("Token expired");
       }
 
@@ -182,7 +188,6 @@ export const loadAuthFromStorage = createAsyncThunk(
         userInfo,
       };
     } catch (error) {
-      localStorage.removeItem("auth");
       return rejectWithValue(
         error instanceof Error ? error.message : "Failed to load auth from storage"
       );
@@ -208,7 +213,7 @@ const authSlice = createSlice({
       state.isAuthenticated = false;
       state.error = null;
       state.isRefreshing = false;
-      localStorage.removeItem("auth");
+      // Note: Redux Persist will automatically sync this to storage
     },
     setUserInfo: (state, action: PayloadAction<UserModel>) => {
       state.userInfo = action.payload;
@@ -236,9 +241,7 @@ const authSlice = createSlice({
         state.userId = userId;
         state.userInfo = userInfo;
 
-        // Store in localStorage for persistence
-        localStorage.setItem("auth", JSON.stringify(authData));
-        console.log("💾 Auth saved to localStorage");
+        // Note: Redux Persist automatically handles localStorage persistence
       })
       .addCase(loginUser.rejected, (state, action) => {
         state.isLoading = false;
@@ -263,8 +266,7 @@ const authSlice = createSlice({
         state.userRole = role;
         state.userId = userId;
 
-        // Update localStorage
-        localStorage.setItem("auth", JSON.stringify(authData));
+        // Note: Redux Persist automatically handles storage
       })
       .addCase(refreshAuthToken.rejected, (state, action) => {
         state.isRefreshing = false;

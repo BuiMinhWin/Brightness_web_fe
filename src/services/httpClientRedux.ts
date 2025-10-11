@@ -1,6 +1,5 @@
 import { jwtDecode } from "jwt-decode";
 import type { AuthData } from "../models";
-import { authService } from "./authService";
 import { store } from "../store/store";
 import { refreshAuthToken, clearAuth } from "../store/slices/authSlice";
 

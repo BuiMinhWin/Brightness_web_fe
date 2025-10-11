@@ -111,7 +111,9 @@ const AuthPage: React.FC = () => {
         email: trimmedEmail,
         password: formValues.password,
       };
-      dispatch(loginUser(loginPayload));
+      console.log("🔑 Dispatching login:", loginPayload);
+      const result = await dispatch(loginUser(loginPayload));
+      console.log("📤 Login dispatch result:", result);
     }
   };
 
