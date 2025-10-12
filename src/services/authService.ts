@@ -45,6 +45,7 @@ export const authService = {
   async getUser(id: string): Promise<UserModel> {
     return httpRequest<UserModel>(`/auth/api/Authentication/${id}`, {
       method: "GET",
+      skipAutoLogout: true, // Don't auto-logout if this fails
     });
   },
 

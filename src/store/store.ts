@@ -1,24 +1,20 @@
-import { configureStore, combineReducers } from "@reduxjs/toolkit";
+import { configureStore } from "@reduxjs/toolkit";
 import { persistStore, persistReducer } from "redux-persist";
 import storage from "redux-persist/lib/storage"; // defaults to localStorage
 import authReducer from "./slices/authSlice";
-
-// Combine all reducers
-const rootReducer = combineReducers({
-  auth: authReducer,
-});
 
 // Redux Persist configuration
 const persistConfig = {
   key: "brightnest-auth",
   storage,
-  whitelist: ["auth"], // Only persist auth slice
 };
 
-const persistedReducer = persistReducer(persistConfig, rootReducer);
+const persistedAuthReducer = persistReducer(persistConfig, authReducer);
 
 export const store = configureStore({
-  reducer: persistedReducer,
+  reducer: {
+    auth: persistedAuthReducer,
+  },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({
       serializableCheck: {
