@@ -1,13 +1,6 @@
 import React from "react";
-import { NavLink, useNavigate } from "react-router-dom";
-import logo from "/assets/LogoWhite.png";
 
-interface NavbarProps {
-  currentPage?: string; // giữ lại nếu bạn muốn highlight
-}
-
-const AboutPage: React.FC<NavbarProps> = ({ currentPage = "home" }) => {
-  const navigate = useNavigate();
+const AboutPage: React.FC = () => {
   return (
     <div className="bg-gradient-to-b from-[#8BD3B8] via-[#BFE8D6] to-[#F2F8D0] text-[#022C3C]">
       {/* Header */}
@@ -30,102 +23,6 @@ const AboutPage: React.FC<NavbarProps> = ({ currentPage = "home" }) => {
         </div>
 
         <div className="relative z-10 flex flex-col flex-grow">
-          <div className="navbar-container flex justify-between items-center px-6 py-[18px] bg-transparent">
-            <div
-              className="navbar-logo flex items-center gap-3 cursor-pointer"
-              onClick={() => navigate("/")} // click logo về Home
-            >
-              <div
-                className="navbar-logo-icon w-10 h-10 bg-contain bg-no-repeat"
-                style={{ backgroundImage: `url(${logo})` }}
-              />
-              <span className="navbar-logo-text font-['Lexend_Tera'] tracking-[-1px] text-white font-bold">
-                BRIGHTNEST
-              </span>
-            </div>
-
-            {/* Navigation Links */}
-            <div className="navbar-nav flex items-center gap-6">
-              <NavLink
-                to="/"
-                className={({ isActive }) =>
-                  `navbar-link text-white font-semibold ${isActive ? "text-yellow-400" : ""}`
-                }
-              >
-                Home
-              </NavLink>
-
-              <NavLink
-                to="/blogs"
-                className={({ isActive }) =>
-                  `navbar-link text-white font-semibold ${isActive ? "text-yellow-400" : ""}`
-                }
-              >
-                Blogs
-              </NavLink>
-
-              <NavLink
-                to="/gamification-feature"
-                className={({ isActive }) =>
-                  `navbar-link text-white font-semibold ${isActive ? "text-yellow-400" : ""}`
-                }
-              >
-                Gamification
-              </NavLink>
-
-              <NavLink
-                to="/first-aid"
-                className={({ isActive }) =>
-                  `navbar-link text-white font-semibold ${isActive ? "text-yellow-400" : ""}`
-                }
-              >
-                First aid
-              </NavLink>
-
-              <NavLink
-                to="/about"
-                className={({ isActive }) =>
-                  `navbar-link text-white font-semibold ${isActive ? "text-yellow-400" : ""}`
-                }
-              >
-                About
-              </NavLink>
-            </div>
-
-            {/* Right side icons */}
-            <div className="navbar-actions flex gap-2.5">
-              <button className="navbar-icon-btn text-white">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-                  <path
-                    d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                  <path
-                    d="M13.73 21A2 2 0 0 1 10.27 21"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                </svg>
-              </button>
-              <button className="navbar-icon-btn text-white">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-                  <path
-                    d="M20 21V19A4 4 0 0 0 16 15H8A4 4 0 0 0 4 19V21"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                  <circle cx="12" cy="7" r="4" stroke="currentColor" strokeWidth="2" />
-                </svg>
-              </button>
-            </div>
-          </div>
           <div className="about-hero-text px-6 pt-16 pb-20 text-white max-w-[700px] flex-grow flex items-center">
             <div>
               <h1 className="about-hero-title font-['Pacifico'] text-6xl lg:text-7xl mb-8 leading-tight whitespace-nowrap">

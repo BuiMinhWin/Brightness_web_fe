@@ -1,6 +1,5 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import Navbar from "../../components/layout/Navbar";
 import "./ReviewPostPage.css";
 import GameFooter from "../../components/layout/GameFooter";
 

@@ -1,5 +1,4 @@
 import React, { useState } from "react";
-import Navbar from "../../components/layout/Navbar";
 import GameFooter from "../../components/layout/GameFooter";
 import "./PricingPage.css";
 import { useNavigate } from "react-router-dom";
@@ -154,7 +153,6 @@ const PricingPage: React.FC = () => {
 
   return (
     <div className="pricing-page">
-      <Navbar currentPage="gamification" />
 
       <div className="pricing-content">
         {/* Header */}

@@ -6,6 +6,7 @@ import { AnimatePresence } from "framer-motion";
 
 // Layouts
 import NavbarLayout from "@/layouts/NavbarLayout";
+import MainLayout from "@/layouts/MainLayout";
 
 // import all your pages
 import LandingPage from "../pages/LandingPage/LandingPage";
@@ -41,36 +42,42 @@ const AnimatedRoutes: React.FC = () => {
     <AnimatePresence mode="wait">
       <Routes location={location} key={location.pathname}>
         <Route path="/" element={<LandingPage />} />
-        <Route path="/home" element={<Homepage />} />
-        <Route path="/fitness" element={<FitnessProfile />} />
-        <Route path="/about" element={<AboutPage />} />
-        <Route path="/dashboard" element={<Dashboard />} />
-        <Route path="/blogs" element={<Blogs />} />
+        
+        {/* Pages with navbar */}
+        <Route element={<MainLayout />}>
+          <Route path="/home" element={<Homepage />} />
+          <Route path="/fitness" element={<FitnessProfile />} />
+          <Route path="/about" element={<AboutPage />} />
+          <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/blogs" element={<Blogs />} />
+          <Route path="/gamification-feature" element={<GamificationPage />} />
+          <Route path="/your-missions" element={<YourGamificationPage />} />
+          <Route path="/your-detail/:missionId" element={<YourDetailPage />} />
+          <Route path="/event-detail/:eventId" element={<EventDetailPage />} />
+          <Route path="/leaderboard/:missionId" element={<LeaderboardPage />} />
+          <Route path="/pricing" element={<PricingPage />} />
+          <Route path="/post-management" element={<ReviewPostPage />} />
+          <Route path="/event-management" element={<EventManagementPage />} />
+          <Route path="/first-aid" element={<FirstAidPage />} />
+          <Route path="/video/:id" element={<VideoPage />} />
+        </Route>
 
-        {/* Pages with persistent navbar */}
+        {/* Pages with persistent navbar and sidebar */}
         <Route element={<NavbarLayout />}>
           <Route path="/connect" element={<Connect />} />
           <Route path="/schedule" element={<Schedule />} />
           <Route path="/profile" element={<Profile />} />
           <Route path="/goal" element={<Goal />} />
         </Route>
+        
+        {/* Standalone pages */}
         <Route path="/edit-profile" element={<UserProfile />} />
-        <Route path="/first-aid" element={<FirstAidPage />} />
-        <Route path="/video/:id" element={<VideoPage />} />
         <Route path="/admin/*" element={<AdminMain />} />
         <Route path="/auth" element={<AuthPage />} />
         <Route path="/signin" element={<Navigate to="/auth?mode=signin" replace />} />
         <Route path="/signup" element={<Navigate to="/auth?mode=signup" replace />} />
         <Route path="/signin1" element={<SignInPage />} />
         <Route path="/signup2" element={<SignUpPage />} />
-        <Route path="/gamification-feature" element={<GamificationPage />} />
-        <Route path="/your-missions" element={<YourGamificationPage />} />
-        <Route path="/your-detail/:missionId" element={<YourDetailPage />} />
-        <Route path="/event-detail/:eventId" element={<EventDetailPage />} />
-        <Route path="/leaderboard/:missionId" element={<LeaderboardPage />} />
-        <Route path="/pricing" element={<PricingPage />} />
-        <Route path="/post-management" element={<ReviewPostPage />} />
-        <Route path="/event-management" element={<EventManagementPage />} />
       </Routes>
     </AnimatePresence>
   );

@@ -25,7 +25,7 @@ const Navbar: React.FC<NavbarProps> = ({ currentPage = "home" }) => {
 
         {/* Navigation Links */}
         <div className="navbar-nav">
-          <NavLink to="/" className={({ isActive }) => `navbar-link ${isActive ? "active" : ""}`}>
+          <NavLink to="/home" className={({ isActive }) => `navbar-link ${isActive ? "active" : ""}`}>
             Home
           </NavLink>
 

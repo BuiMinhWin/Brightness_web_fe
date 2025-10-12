@@ -3,7 +3,6 @@ import { useParams, useNavigate } from "react-router-dom";
 import VideoPlayer from "../../components/firstAid/VideoPlayer";
 import VideoDetails from "../../components/firstAid/VideoDetails";
 import RelatedVideos from "../../components/firstAid/RelatedVideos";
-import Navbar from "../../components/layout/Navbar";
 import GameFooter from "../../components/layout/GameFooter";
 import sampleVideos from "../../assets/temps/sampleVideos.json";
 
@@ -34,7 +33,6 @@ const VideoPage: React.FC = () => {
   if (!currentVideo) {
     return (
       <>
-        <Navbar currentPage="first-aid" />
         <div
           style={{
             width: "100%",
@@ -66,7 +64,6 @@ const VideoPage: React.FC = () => {
 
   return (
     <>
-      <Navbar currentPage="first-aid" />
       <div
         style={{
           width: "100%",
