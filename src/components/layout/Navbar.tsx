@@ -151,39 +151,21 @@ const Navbar: React.FC<NavbarProps> = ({ currentPage = "home" }) => {
               {/* Dropdown Menu */}
               {isDropdownOpen && (
                 <div className="user-dropdown">
-                  <div className="dropdown-header">
-                    <div className="user-info">
-                      <span className="user-name-full">{userInfo.fullName || userInfo.userName}</span>
-                      <span className="user-email">{userInfo.email}</span>
-                    </div>
-                  </div>
+                  <button
+                    className="dropdown-item"
+                    onClick={handleProfileClick}
+                  >
+                    <User size={18} />
+                    <span>Profile</span>
+                  </button>
                   
-                  <div className="dropdown-divider"></div>
-                  
-                  <div className="dropdown-items">
-                    <button
-                      className="dropdown-item"
-                      onClick={handleProfileClick}
-                    >
-                      <User size={16} />
-                      <span>Profile</span>
-                    </button>
-                    
-                    <button className="dropdown-item">
-                      <Settings size={16} />
-                      <span>Settings</span>
-                    </button>
-                    
-                    <div className="dropdown-divider"></div>
-                    
-                    <button
-                      className="dropdown-item logout-item"
-                      onClick={handleLogout}
-                    >
-                      <LogOut size={16} />
-                      <span>Logout</span>
-                    </button>
-                  </div>
+                  <button
+                    className="dropdown-item logout-item"
+                    onClick={handleLogout}
+                  >
+                    <LogOut size={18} />
+                    <span>Logout</span>
+                  </button>
                 </div>
               )}
             </div>

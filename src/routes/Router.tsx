@@ -31,8 +31,6 @@ import VideoPage from "@/pages/FirstAid/VideoPage";
 import AdminMain from "@/pages/admin/AdminMain";
 import Goal from "@/pages/Goal/YourGoal";
 import UserProfile from "@/pages/UserProfile/UserProfile";
-import SignInPage from "@/pages/SignInPage/SignInPage";
-import SignUpPage from "@/pages/SignUpPage/SignUpPage";
 import AuthPage from "@/pages/AuthPage/AuthPage";
 
 const AnimatedRoutes: React.FC = () => {
@@ -76,8 +74,6 @@ const AnimatedRoutes: React.FC = () => {
         <Route path="/auth" element={<AuthPage />} />
         <Route path="/signin" element={<Navigate to="/auth?mode=signin" replace />} />
         <Route path="/signup" element={<Navigate to="/auth?mode=signup" replace />} />
-        <Route path="/signin1" element={<SignInPage />} />
-        <Route path="/signup2" element={<SignUpPage />} />
       </Routes>
     </AnimatePresence>
   );

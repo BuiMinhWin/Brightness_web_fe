@@ -1,0 +1,87 @@
+import React from "react";
+import SectionCard from "./SectionCard";
+
+interface FitnessGoalsSectionProps {
+  fitnessGoal: "lose_weight" | "gain_muscle" | "maintain" | "improve_endurance";
+  setFitnessGoal: (value: "lose_weight" | "gain_muscle" | "maintain" | "improve_endurance") => void;
+  fitnessLevel: "beginner" | "intermediate" | "advanced";
+  setFitnessLevel: (value: "beginner" | "intermediate" | "advanced") => void;
+}
+
+const fitnessGoals = [
+  { value: "lose_weight", label: "Lose Weight", icon: "📉", desc: "Reduce body fat" },
+  { value: "gain_muscle", label: "Build Muscle", icon: "💪", desc: "Increase strength" },
+  { value: "maintain", label: "Stay Fit", icon: "⚖️", desc: "Maintain level" },
+  { value: "improve_endurance", label: "Boost Endurance", icon: "🏃", desc: "Improve cardio" },
+] as const;
+
+const fitnessLevels = ["Beginner", "Intermediate", "Advanced"] as const;
+
+const FitnessGoalsSection: React.FC<FitnessGoalsSectionProps> = ({
+  fitnessGoal,
+  setFitnessGoal,
+  fitnessLevel,
+  setFitnessLevel,
+}) => {
+  return (
+    <SectionCard title="Fitness Goals & Experience">
+      <div className="space-y-5">
+        {/* Goals */}
+        <div>
+          <label className="block text-sm font-semibold text-gray-700 mb-2">
+            Primary Fitness Goal <span className="text-red-500">*</span>
+          </label>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+            {fitnessGoals.map((goal) => (
+              <div
+                key={goal.value}
+                onClick={() => setFitnessGoal(goal.value as any)}
+                className={`
+                  p-3 rounded-lg border-2 cursor-pointer transition-all text-center
+                  ${fitnessGoal === goal.value
+                    ? "border-emerald-500 bg-emerald-50"
+                    : "border-gray-200 hover:border-emerald-300 hover:bg-gray-50"
+                  }
+                `}
+              >
+                <div className="text-2xl mb-1">{goal.icon}</div>
+                <p className={`font-semibold text-xs ${fitnessGoal === goal.value ? "text-emerald-700" : "text-gray-800"}`}>
+                  {goal.label}
+                </p>
+                <p className="text-xs text-gray-600 mt-0.5">{goal.desc}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Fitness Level */}
+        <div>
+          <label className="block text-sm font-semibold text-gray-700 mb-2">
+            Current Fitness Level <span className="text-red-500">*</span>
+          </label>
+          <div className="flex flex-wrap gap-2">
+            {fitnessLevels.map((level) => (
+              <button
+                key={level}
+                type="button"
+                onClick={() => setFitnessLevel(level.toLowerCase() as any)}
+                className={`
+                  px-5 py-2 rounded-lg font-medium transition-all text-sm
+                  ${fitnessLevel === level.toLowerCase()
+                    ? "bg-gradient-to-r from-emerald-500 to-teal-500 text-white shadow-md"
+                    : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                  }
+                `}
+              >
+                {level}
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+    </SectionCard>
+  );
+};
+
+export default FitnessGoalsSection;
+

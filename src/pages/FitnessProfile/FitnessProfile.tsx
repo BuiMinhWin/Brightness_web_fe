@@ -1,178 +1,215 @@
 import React, { useState } from "react";
-import "./FitnessProfile.css";
-
-const days = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"] as const;
+import { Sparkles } from "lucide-react";
+import { Snackbar, Alert } from "@mui/material";
+import { useAppSelector } from "@/store/hooks";
+import { selectUserId } from "@/store/slices/authSlice";
+import DocumentUploadSection from "@/components/FitnessProfile/DocumentUploadSection";
+import BasicMeasurementsSection from "@/components/FitnessProfile/BasicMeasurementsSection";
+import FitnessGoalsSection from "@/components/FitnessProfile/FitnessGoalsSection";
+import WorkoutPreferencesSection from "@/components/FitnessProfile/WorkoutPreferencesSection";
+import AdvancedOptionsSection from "@/components/FitnessProfile/AdvancedOptionsSection";
 
 const FitnessProfile: React.FC = () => {
-  const [gender, setGender] = useState<"Male" | "Female" | "Other">("Male");
-  const [role, setRole] = useState<"User" | "Trainer">("User");
-  const [activity, setActivity] = useState<
-    "Sedentary" | "Lightly Active" | "Active" | "Very Active"
-  >("Sedentary");
-  const [daysSel, setDaysSel] = useState<string[]>(["Mon", "Wed", "Fri"]);
+  const userId = useAppSelector(selectUserId);
 
-  const toggleDay = (d: string) =>
-    setDaysSel((cur) => (cur.includes(d) ? cur.filter((x) => x !== d) : [...cur, d]));
+  // Basic fields
+  const [heightCm, setHeightCm] = useState("");
+  const [currentWeight, setCurrentWeight] = useState("");
+  const [targetWeight, setTargetWeight] = useState("");
+  const [fitnessLevel, setFitnessLevel] = useState<"beginner" | "intermediate" | "advanced">("beginner");
+  const [fitnessGoal, setFitnessGoal] = useState<"lose_weight" | "gain_muscle" | "maintain" | "improve_endurance">("lose_weight");
+
+  // Workout Preferences
+  const [daysSel, setDaysSel] = useState<string[]>(["Mon", "Wed", "Fri"]);
+  const [preferredWorkoutTime, setPreferredWorkoutTime] = useState<"morning" | "afternoon" | "evening">("morning");
+  const [workoutDuration, setWorkoutDuration] = useState(45);
+  const [gymAccess, setGymAccess] = useState(false);
+  const [homeWorkoutOnly, setHomeWorkoutOnly] = useState(false);
+  const [equipment, setEquipment] = useState<string[]>([]);
+
+  // Advanced fields
+  const [favoriteExercises, setFavoriteExercises] = useState("");
+  const [dislikedExercises, setDislikedExercises] = useState("");
+  const [medicalConditions, setMedicalConditions] = useState("");
+  const [dietaryRestrictions, setDietaryRestrictions] = useState("");
+
+  // Toast state
+  const [toast, setToast] = useState({
+    open: false,
+    message: "",
+    severity: "success" as "success" | "error" | "info" | "warning",
+  });
+
+  const handleCloseToast = () => {
+    setToast({ ...toast, open: false });
+  };
+
+  const handleUploadSuccess = (data: any) => {
+    autoFillFromOCRData(data);
+  };
+
+  const handleUploadError = (message: string, severity: "error" | "warning") => {
+    setToast({ open: true, message, severity });
+  };
+
+  const autoFillFromOCRData = (data: any) => {
+    try {
+      const processed = JSON.parse(data.processedContent || "{}");
+      let autoFilledFields: string[] = [];
+
+      if (processed.weight) {
+        const weightValue = parseFloat(processed.weight);
+        const unit = processed.weightUnit?.toLowerCase() || (weightValue > 100 ? "lbs" : "kg");
+        const weightInKg = unit === "lbs" 
+          ? (weightValue * 0.453592).toFixed(1) 
+          : weightValue.toFixed(1);
+        setCurrentWeight(weightInKg);
+        autoFilledFields.push(`Weight: ${weightInKg}kg`);
+      }
+
+      if (processed.height) {
+        const heightValue = parseFloat(processed.height);
+        const unit = processed.heightUnit?.toLowerCase() || "cm";
+        const heightInCm = unit === "in" || unit === "inch"
+          ? (heightValue * 2.54).toFixed(1)
+          : heightValue.toFixed(1);
+        setHeightCm(heightInCm);
+        autoFilledFields.push(`Height: ${heightInCm}cm`);
+      }
+
+      if (processed.bmi && processed.height && !targetWeight) {
+        const heightM = parseFloat(processed.height) / 100;
+        const idealBMI = 22;
+        const suggestedWeight = (idealBMI * heightM * heightM).toFixed(1);
+        setTargetWeight(suggestedWeight);
+        autoFilledFields.push(`Target Weight: ${suggestedWeight}kg`);
+      }
+
+      if (processed.bodyFat && (processed.muscleMass || processed.muscle)) {
+        const bodyFatNum = parseFloat(processed.bodyFat.replace("%", ""));
+        const muscleMassNum = parseFloat(processed.muscleMass || processed.muscle);
+        
+        let suggestedLevel: "beginner" | "intermediate" | "advanced" = "beginner";
+        if (bodyFatNum < 12 && muscleMassNum > 80) {
+          suggestedLevel = "advanced";
+        } else if (bodyFatNum < 18 && muscleMassNum > 60) {
+          suggestedLevel = "intermediate";
+        }
+        
+        setFitnessLevel(suggestedLevel);
+        autoFilledFields.push(`Fitness Level: ${suggestedLevel}`);
+      }
+
+      const message = autoFilledFields.length > 0
+        ? `✅ Auto-filled: ${autoFilledFields.join(", ")}`
+        : "Data extracted successfully! Please review and fill remaining fields.";
+
+      setToast({ open: true, message, severity: "success" });
+    } catch (error) {
+      console.error("❌ Error parsing OCR data:", error);
+      setToast({
+        open: true,
+        message: "Data extracted but couldn't auto-fill. Please check console and fill manually.",
+        severity: "warning",
+      });
+    }
+  };
 
   return (
-    <div className="fitness-profile-page">
-      <div className="fp-container">
-        <section className="fp-hero">
-          <h1 className="fp-title">Create Your Fitness Profile</h1>
-          <p className="fp-subtitle">
-            Tell us about yourself so we can create a personalized workout and nutrition plan
-            tailored to your unique needs and goals.
+    <div style={{ minHeight: "100vh", background: "linear-gradient(135deg, #f0fdf4 0%, #ecfdf5 50%, #e0f2fe 100%)" }}>
+      <div style={{ maxWidth: "900px", margin: "0 auto", padding: "32px 16px" }}>
+        {/* Header */}
+        <div style={{ marginBottom: "24px" }}>
+          <h1 style={{ 
+            fontSize: "32px", 
+            fontWeight: "700", 
+            color: "#1e293b",
+            marginBottom: "8px"
+          }}>
+            Create Your Fitness Profile
+          </h1>
+          <p style={{ 
+            fontSize: "15px", 
+            color: "#64748b",
+            lineHeight: "1.6"
+          }}>
+            Tell us about yourself so we can create a personalized workout and nutrition plan tailored to your unique needs and goals.
           </p>
-        </section>
+        </div>
 
-        {/* Personal Information */}
-        <section className="fp-card">
-          <div className="fp-card-header">Personal Information</div>
-          <div className="fp-card-body">
-            <div className="fp-grid">
-              <div>
-                <label className="fp-label">Full Name *</label>
-                <input className="fp-input" placeholder="David Backome" />
-              </div>
-              <div>
-                <label className="fp-label">Age *</label>
-                <input className="fp-input" type="number" placeholder="30" />
-              </div>
-            </div>
+        {/* All Sections */}
+        <DocumentUploadSection
+          userId={userId}
+          onUploadSuccess={handleUploadSuccess}
+          onError={handleUploadError}
+        />
+        
+        <BasicMeasurementsSection
+          heightCm={heightCm}
+          setHeightCm={setHeightCm}
+          currentWeight={currentWeight}
+          setCurrentWeight={setCurrentWeight}
+          targetWeight={targetWeight}
+          setTargetWeight={setTargetWeight}
+        />
+        
+        <FitnessGoalsSection
+          fitnessGoal={fitnessGoal}
+          setFitnessGoal={setFitnessGoal}
+          fitnessLevel={fitnessLevel}
+          setFitnessLevel={setFitnessLevel}
+        />
+        
+        <WorkoutPreferencesSection
+          daysSel={daysSel}
+          setDaysSel={setDaysSel}
+          preferredWorkoutTime={preferredWorkoutTime}
+          setPreferredWorkoutTime={setPreferredWorkoutTime}
+          workoutDuration={workoutDuration}
+          setWorkoutDuration={setWorkoutDuration}
+          gymAccess={gymAccess}
+          setGymAccess={setGymAccess}
+          homeWorkoutOnly={homeWorkoutOnly}
+          setHomeWorkoutOnly={setHomeWorkoutOnly}
+          equipment={equipment}
+          setEquipment={setEquipment}
+        />
+        
+        <AdvancedOptionsSection
+          favoriteExercises={favoriteExercises}
+          setFavoriteExercises={setFavoriteExercises}
+          dislikedExercises={dislikedExercises}
+          setDislikedExercises={setDislikedExercises}
+          medicalConditions={medicalConditions}
+          setMedicalConditions={setMedicalConditions}
+          dietaryRestrictions={dietaryRestrictions}
+          setDietaryRestrictions={setDietaryRestrictions}
+        />
 
-            <div className="fp-row" style={{ marginTop: 12 }}>
-              <label className="fp-label">Gender *</label>
-              <div className="fp-segment">
-                {["Male", "Female", "Other"].map((g) => (
-                  <button
-                    key={g}
-                    type="button"
-                    className={`fp-pill ${gender === g ? "is-active" : ""}`}
-                    onClick={() => setGender(g as any)}
-                  >
-                    {g}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            <div className="fp-grid" style={{ marginTop: 12 }}>
-              <div>
-                <label className="fp-label">Height *</label>
-                <input className="fp-input" placeholder="180" />
-              </div>
-              <div>
-                <label className="fp-label">Weight *</label>
-                <input className="fp-input" placeholder="82" />
-              </div>
-            </div>
-          </div>
-        </section>
-
-        {/* Fitness Goals */}
-        <section className="fp-card">
-          <div className="fp-card-header">Fitness Goals</div>
-          <div className="fp-card-body">
-            <div className="fp-row">
-              <label className="fp-label">You are? *</label>
-              <div className="fp-segment">
-                {["User", "Trainer"].map((r) => (
-                  <button
-                    key={r}
-                    type="button"
-                    className={`fp-pill ${role === r ? "is-active" : ""}`}
-                    onClick={() => setRole(r as any)}
-                  >
-                    {r}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            <div className="fp-row" style={{ marginTop: 12 }}>
-              <label className="fp-label">Activity Level *</label>
-              <div className="fp-activity">
-                {[
-                  { t: "Sedentary", d: "Little to no exercise, desk job" },
-                  { t: "Lightly Active", d: "Light exercise 1-3 days per week" },
-                  { t: "Active", d: "Moderate exercise 3-5 days per week" },
-                  { t: "Very Active", d: "Hard exercise 6-7 days per week" },
-                ].map((a) => (
-                  <div
-                    key={a.t}
-                    className={`fp-activity-item ${activity === a.t ? "is-active" : ""}`}
-                    onClick={() => setActivity(a.t as any)}
-                  >
-                    <div className="fp-activity-title">{a.t}</div>
-                    <div className="fp-activity-desc">{a.d}</div>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            <div className="fp-row" style={{ marginTop: 12 }}>
-              <label className="fp-label">Preferred Workout Days *</label>
-              <div className="fp-days">
-                {days.map((d) => (
-                  <button
-                    key={d}
-                    type="button"
-                    className={`fp-pill ${daysSel.includes(d) ? "is-active" : ""}`}
-                    onClick={() => toggleDay(d)}
-                  >
-                    {d}
-                  </button>
-                ))}
-              </div>
-            </div>
-          </div>
-        </section>
-
-        {/* Health Information */}
-        <section className="fp-card">
-          <div className="fp-card-header">Health Information</div>
-          <div className="fp-card-body">
-            <label className="fp-label">
-              Do you have any medical conditions or injuries we should know about?
-            </label>
-            <textarea
-              className="fp-textarea"
-              placeholder="Please list any conditions or injuries that might affect your workout plan..."
-            />
-          </div>
-        </section>
-
-        {/* Optional Information */}
-        <section className="fp-card">
-          <div className="fp-card-header">Optional Information</div>
-          <div className="fp-card-body">
-            <div className="fp-grid">
-              <div>
-                <label className="fp-label">Waist (cm)</label>
-                <input className="fp-input" placeholder="80" />
-              </div>
-              <div>
-                <label className="fp-label">Chest (cm)</label>
-                <input className="fp-input" placeholder="90" />
-              </div>
-              <div>
-                <label className="fp-label">Hips (cm)</label>
-                <input className="fp-input" placeholder="95" />
-              </div>
-            </div>
-
-            <div className="fp-row" style={{ marginTop: 12 }}>
-              <label className="fp-label">Upload a photo for progress tracking</label>
-              <div className="fp-upload">Upload a photo</div>
-            </div>
-          </div>
-        </section>
-
-        {/* CTA */}
-        <div className="fp-cta-wrap">
-          <button className="fp-cta">Create My Fitness Plan →</button>
+        {/* Submit Button */}
+        <div style={{ display: "flex", justifyContent: "center" }}>
+          <button
+            type="button"
+            className="px-8 py-3 bg-gradient-to-r from-emerald-500 to-teal-500 text-white rounded-xl font-bold text-base shadow-lg hover:shadow-xl hover:scale-105 transition-all flex items-center gap-2"
+          >
+            <Sparkles size={18} />
+            <span>Create My Fitness Plan</span>
+            <span>→</span>
+          </button>
         </div>
       </div>
+
+      {/* Toast Notification */}
+      <Snackbar
+        open={toast.open}
+        autoHideDuration={4000}
+        onClose={handleCloseToast}
+        anchorOrigin={{ vertical: "top", horizontal: "right" }}
+      >
+        <Alert onClose={handleCloseToast} severity={toast.severity} sx={{ width: "100%" }}>
+          {toast.message}
+        </Alert>
+      </Snackbar>
     </div>
   );
 };
