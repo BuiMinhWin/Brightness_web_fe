@@ -12,7 +12,6 @@ import {
 } from "lucide-react";
 import "./EventDetailPage.css";
 import { useNavigate } from "react-router-dom";
-import Navbar from "../../components/layout/Navbar";
 
 // Định nghĩa kiểu dữ liệu Event
 interface Event {

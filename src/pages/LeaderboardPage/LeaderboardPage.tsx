@@ -1,6 +1,5 @@
 import React, { useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import Navbar from "../../components/layout/Navbar";
 import GameFooter from "../../components/layout/GameFooter";
 import "./LeaderboardPage.css";
 import { ArrowLeft } from "lucide-react";
@@ -71,7 +70,6 @@ const LeaderboardPage: React.FC = () => {
 
   return (
     <div className="leaderboard-page">
-      <Navbar currentPage="gamification" />
 
       <div className="leaderboard-content">
         {/* Header */}

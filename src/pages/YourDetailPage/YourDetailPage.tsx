@@ -1,6 +1,5 @@
 import React, { useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import Navbar from "../../components/layout/Navbar";
 import "./YourDetailPage.css";
 import GameFooter from "../../components/layout/GameFooter";
 import { ArrowLeft } from "lucide-react";
@@ -140,7 +139,6 @@ const YourDetailPage: React.FC = () => {
 
   return (
     <div className="your-detail-page">
-      <Navbar currentPage="gamification" />
 
       {/* Back button */}
 

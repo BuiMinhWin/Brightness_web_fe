@@ -1,5 +1,4 @@
 import React, { useState } from "react";
-import Navbar from "../../components/layout/Navbar";
 import "./GamificationPage.css";
 import GameFooter from "../../components/layout/GameFooter";
 import { useNavigate } from "react-router-dom";
@@ -118,7 +117,6 @@ const GamificationPage: React.FC = () => {
 
   return (
     <div className="gamification-page">
-      <Navbar currentPage="gamification" />
 
       <div className="gamification-content">
         {/* Hero Section */}

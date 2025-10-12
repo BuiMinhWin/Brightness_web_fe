@@ -2,7 +2,6 @@
 .gamification-page {
   min-height: 100vh;
   background: linear-gradient(135deg, #a7f3d0 0%, #bfdbfe 50%, #a7f3d0 100%);
-  padding-top: 70px; /* Account for fixed navbar */
 }
 
 .gamification-content {

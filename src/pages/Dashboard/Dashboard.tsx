@@ -1,7 +1,6 @@
 import React from "react";
 import "./Dashboard.css";
 import HomepageHeader from "../../components/layout/HomepageHeader";
-import Navbar from "@/components/layout/Navbar";
 
 const LineChart = () => (
   <svg viewBox="0 0 640 240" preserveAspectRatio="none">
@@ -89,7 +88,6 @@ const Dashboard: React.FC = () => {
     <div className="db-page">
       {/* Topbar */}
       <div className="db-topbar">
-        <Navbar />
       </div>
 
       <div className="db-wrap">

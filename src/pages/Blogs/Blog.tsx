@@ -5,7 +5,6 @@ import PostDialog from "../../components/blogs/PostDialog";
 import FAB from "../../components/blogs/FAB";
 import BlogHeader from "../../components/blogs/BlogHeader";
 import samplePosts from "../../assets/temps/samplePosts.json";
-import Navbar from "@/components/layout/Navbar";
 import GameFooter from "@/components/layout/GameFooter";
 
 const Blogs: React.FC = () => {
@@ -33,7 +32,6 @@ const Blogs: React.FC = () => {
 
   return (
     <>
-      <Navbar currentPage="blogs" />
       <div
         style={{
           width: "100%",

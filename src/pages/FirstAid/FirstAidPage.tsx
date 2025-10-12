@@ -4,7 +4,6 @@ import FirstAidHeader from "../../components/firstAid/firstAidHeader";
 import FirstAidSearchBar from "../../components/firstAid/firstAidSearchBar";
 import VideoCard from "../../components/firstAid/VideoCard";
 import Pagination from "../../components/ui/Pagination";
-import Navbar from "../../components/layout/Navbar";
 import GameFooter from "../../components/layout/GameFooter";
 import sampleVideos from "../../assets/temps/sampleVideos.json";
 
@@ -29,7 +28,6 @@ const FirstAidPage: React.FC = () => {
 
   return (
     <>
-      <Navbar currentPage="first-aid" />
       <div
         style={{
           width: "100%",
