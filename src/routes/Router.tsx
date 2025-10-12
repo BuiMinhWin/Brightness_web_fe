@@ -32,6 +32,8 @@ import AdminMain from "@/pages/admin/AdminMain";
 import Goal from "@/pages/Goal/YourGoal";
 import UserProfile from "@/pages/UserProfile/UserProfile";
 import LoginAdmin from "@/pages/admin/LoginAdmin";
+import SignInPage from "@/pages/SignInPage/SignInPage";
+import SignUpPage from "@/pages/SignUpPage/SignUpPage";
 
 const AnimatedRoutes: React.FC = () => {
   const location = useLocation();
@@ -40,7 +42,7 @@ const AnimatedRoutes: React.FC = () => {
     <AnimatePresence mode="wait">
       <Routes location={location} key={location.pathname}>
         <Route path="/" element={<LandingPage />} />
-        
+
         {/* Pages with navbar */}
         <Route element={<MainLayout />}>
           <Route path="/home" element={<Homepage />} />
@@ -67,7 +69,7 @@ const AnimatedRoutes: React.FC = () => {
           <Route path="/profile" element={<Profile />} />
           <Route path="/goal" element={<Goal />} />
         </Route>
-        
+
         {/* Standalone pages */}
         <Route path="/edit-profile" element={<UserProfile />} />
         <Route path="/admin/*" element={<AdminMain />} />

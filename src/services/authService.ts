@@ -29,6 +29,7 @@ export const authService = {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ refreshToken }),
+      skipAuth: true, // Skip auth header for refresh token request
     });
   },
 

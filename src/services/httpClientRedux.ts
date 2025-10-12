@@ -99,14 +99,46 @@ export async function httpRequest<T>(path: string, options: RequestOptions = {})
   let auth = getAuthData();
   const { skipContentType, skipAuth, headers, ...rest } = options;
 
-  // If token is expired, refresh it
-  if (auth?.accessToken && isTokenExpired(auth.accessToken) && !skipAuth) {
-    const newAuth = await handleRefreshToken();
-    if (newAuth) {
-      auth = newAuth;
-    } else {
-      // Refresh failed, stop the request
+  // Check if both tokens are expired
+  if (auth?.accessToken && auth?.refreshToken && !skipAuth) {
+    const isAccessExpired = isTokenExpired(auth.accessToken);
+    const isRefreshExpired = isTokenExpired(auth.refreshToken);
+
+    if (isAccessExpired && isRefreshExpired) {
+      // Both tokens expired - force logout
+      console.error("Both access and refresh tokens expired. Logging out.");
+      store.dispatch(clearAuth());
+      window.location.href = "/auth?mode=signin";
       return Promise.reject(new ApiError("Session expired. Please log in again.", 401));
+    }
+
+    if (isAccessExpired && !isRefreshExpired) {
+      // Access expired, refresh still valid - attempt refresh
+      const newAuth = await handleRefreshToken();
+      if (newAuth) {
+        auth = newAuth;
+      } else {
+        // Refresh failed, stop the request
+        return Promise.reject(new ApiError("Session expired. Please log in again.", 401));
+      }
+    }
+
+    // Log warning if refresh token will expire soon (e.g., within 24 hours)
+    if (!isRefreshExpired && auth.refreshToken) {
+      try {
+        const decoded = jwtDecode(auth.refreshToken);
+        const currentTime = Date.now() / 1000;
+        const timeToExpiry = (decoded.exp ?? 0) - currentTime;
+        const hoursToExpiry = timeToExpiry / 3600;
+
+        if (hoursToExpiry <= 24 && hoursToExpiry > 0) {
+          console.warn(
+            `⚠️ Refresh token will expire in ${hoursToExpiry.toFixed(1)} hours. Consider re-login.`
+          );
+        }
+      } catch (error) {
+        console.error("Failed to check refresh token expiry:", error);
+      }
     }
   }
 

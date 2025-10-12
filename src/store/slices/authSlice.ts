@@ -1,7 +1,13 @@
 import { createSlice, createAsyncThunk, PayloadAction } from "@reduxjs/toolkit";
 import { jwtDecode } from "jwt-decode";
 import { authService } from "../../services/authService";
-import type { AuthData, LoginRequest, LoginResponse, UserModel } from "../../models/auth";
+import type {
+  AuthData,
+  LoginRequest,
+  LoginResponse,
+  UserModel,
+  RegisterRequest,
+} from "../../models/auth";
 
 interface DecodedToken {
   exp?: number;
@@ -98,6 +104,53 @@ export const loginUser = createAsyncThunk(
     } catch (error) {
       console.error("❌ Login error:", error);
       return rejectWithValue(error instanceof Error ? error.message : "Login failed");
+    }
+  }
+);
+
+// Async thunk for registration
+export const registerUser = createAsyncThunk(
+  "auth/registerUser",
+  async (registerData: RegisterRequest, { rejectWithValue }) => {
+    try {
+      console.log("📝 Attempting registration...");
+      const registerResponse = await authService.register(registerData);
+      console.log("📥 Registration response:", registerResponse);
+
+      if (!registerResponse.flag) {
+        console.error("❌ Registration failed:", registerResponse.message);
+        return rejectWithValue(registerResponse.message || "Registration failed");
+      }
+
+      // After successful registration, auto-login
+      console.log("🔐 Auto-login after registration...");
+      const loginPayload: LoginRequest = {
+        email: registerData.email,
+        password: registerData.password,
+      };
+
+      const loginResponse = await authService.login(loginPayload);
+
+      if (!loginResponse.flag || !loginResponse.data) {
+        console.error("❌ Auto-login failed:", loginResponse.message);
+        return rejectWithValue(loginResponse.message || "Auto-login failed after registration");
+      }
+
+      const { accessToken } = loginResponse.data;
+      const { role, userId } = decodeToken(accessToken);
+      console.log("🔓 Auto-login successful:", { role, userId });
+
+      const userInfo: UserModel | null = null;
+
+      return {
+        authData: loginResponse.data,
+        role,
+        userId,
+        userInfo,
+      };
+    } catch (error) {
+      console.error("❌ Registration error:", error);
+      return rejectWithValue(error instanceof Error ? error.message : "Registration failed");
     }
   }
 );
@@ -244,6 +297,34 @@ const authSlice = createSlice({
         // Note: Redux Persist automatically handles localStorage persistence
       })
       .addCase(loginUser.rejected, (state, action) => {
+        state.isLoading = false;
+        state.isAuthenticated = false;
+        state.error = action.payload as string;
+      })
+
+      // Registration cases
+      .addCase(registerUser.pending, (state) => {
+        state.isLoading = true;
+        state.error = null;
+      })
+      .addCase(registerUser.fulfilled, (state, action) => {
+        console.log("✅ REGISTRATION SUCCESS:", action.payload);
+        state.isLoading = false;
+        state.isAuthenticated = true;
+        state.error = null;
+
+        const { authData, role, userId, userInfo } = action.payload;
+        state.accessToken = authData.accessToken;
+        state.refreshToken = authData.refreshToken;
+        state.accessTokenExpiresAt = authData.accessTokenExpiresAt;
+        state.refreshTokenExpiresAt = authData.refreshTokenExpiresAt;
+        state.userRole = role;
+        state.userId = userId;
+        state.userInfo = userInfo;
+
+        // Note: Redux Persist automatically handles localStorage persistence
+      })
+      .addCase(registerUser.rejected, (state, action) => {
         state.isLoading = false;
         state.isAuthenticated = false;
         state.error = action.payload as string;

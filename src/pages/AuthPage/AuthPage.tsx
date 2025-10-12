@@ -4,7 +4,7 @@ import "./AuthPage.css";
 // import yogaImg from "/assets/yoga_register.png";
 import logoImg from "/assets/logo_color.png";
 import { useAppDispatch, useAppSelector } from "../../store/hooks";
-import { loginUser } from "../../store/slices/authSlice";
+import { loginUser, registerUser } from "../../store/slices/authSlice";
 import { authService } from "../../services";
 import type { LoginRequest, RegisterRequest } from "../../models";
 
@@ -89,22 +89,9 @@ const AuthPage: React.FC = () => {
         status: DEFAULT_STATUS,
       };
 
-      try {
-        const registerResponse = await authService.register(registerPayload);
-        if (!registerResponse.flag) {
-          throw new Error(registerResponse.message || "Registration failed");
-        }
-
-        // After successful registration, auto-login
-        const loginPayload: LoginRequest = {
-          email: registerPayload.email,
-          password: registerPayload.password,
-        };
-        dispatch(loginUser(loginPayload));
-      } catch (error) {
-        console.error("Registration error:", error);
-        alert((error as Error).message || "Registration failed");
-      }
+      console.log("📝 Dispatching registration:", registerPayload);
+      const result = await dispatch(registerUser(registerPayload));
+      console.log("📤 Registration dispatch result:", result);
     } else {
       // Sign in
       const loginPayload: LoginRequest = {
