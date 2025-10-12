@@ -1,7 +1,13 @@
 import { createSlice, createAsyncThunk, PayloadAction } from "@reduxjs/toolkit";
 import { jwtDecode } from "jwt-decode";
 import { authService } from "../../services/authService";
-import type { AuthData, LoginRequest, LoginResponse, UserModel } from "../../models/auth";
+import type {
+  AuthData,
+  LoginRequest,
+  LoginResponse,
+  UserModel,
+  RegisterRequest,
+} from "../../models/auth";
 
 interface DecodedToken {
   exp?: number;
@@ -85,8 +91,8 @@ export const loginUser = createAsyncThunk(
       const { role, userId } = decodeToken(accessToken);
       console.log("🔓 Decoded token:", { role, userId });
 
-      // Don't fetch user info during login - it requires auth which we just got
-      // We'll fetch it later if needed
+      // Don't fetch user info during login to avoid timing issues
+      // The Navbar will fetch it automatically after login
       const userInfo: UserModel | null = null;
 
       return {
@@ -98,6 +104,53 @@ export const loginUser = createAsyncThunk(
     } catch (error) {
       console.error("❌ Login error:", error);
       return rejectWithValue(error instanceof Error ? error.message : "Login failed");
+    }
+  }
+);
+
+// Async thunk for registration
+export const registerUser = createAsyncThunk(
+  "auth/registerUser",
+  async (registerData: RegisterRequest, { rejectWithValue }) => {
+    try {
+      console.log("📝 Attempting registration...");
+      const registerResponse = await authService.register(registerData);
+      console.log("📥 Registration response:", registerResponse);
+
+      if (!registerResponse.flag) {
+        console.error("❌ Registration failed:", registerResponse.message);
+        return rejectWithValue(registerResponse.message || "Registration failed");
+      }
+
+      // After successful registration, auto-login
+      console.log("🔐 Auto-login after registration...");
+      const loginPayload: LoginRequest = {
+        email: registerData.email,
+        password: registerData.password,
+      };
+
+      const loginResponse = await authService.login(loginPayload);
+
+      if (!loginResponse.flag || !loginResponse.data) {
+        console.error("❌ Auto-login failed:", loginResponse.message);
+        return rejectWithValue(loginResponse.message || "Auto-login failed after registration");
+      }
+
+      const { accessToken } = loginResponse.data;
+      const { role, userId } = decodeToken(accessToken);
+      console.log("🔓 Auto-login successful:", { role, userId });
+
+      const userInfo: UserModel | null = null;
+
+      return {
+        authData: loginResponse.data,
+        role,
+        userId,
+        userInfo,
+      };
+    } catch (error) {
+      console.error("❌ Registration error:", error);
+      return rejectWithValue(error instanceof Error ? error.message : "Registration failed");
     }
   }
 );
@@ -130,6 +183,31 @@ export const refreshAuthToken = createAsyncThunk(
       };
     } catch (error) {
       return rejectWithValue(error instanceof Error ? error.message : "Token refresh failed");
+    }
+  }
+);
+
+// Async thunk to fetch user info
+export const fetchUserInfo = createAsyncThunk(
+  "auth/fetchUserInfo",
+  async (userId: string, { rejectWithValue, getState }) => {
+    try {
+      const state = getState() as { auth: AuthState };
+      
+      // Double-check we have a valid token before trying to fetch
+      if (!state.auth.accessToken) {
+        console.warn("⚠️ Cannot fetch user info: No access token");
+        return rejectWithValue("No access token available");
+      }
+      
+      console.log("👤 Fetching user info for:", userId);
+      const userInfo = await authService.getUser(userId);
+      console.log("✅ User info loaded:", userInfo);
+      return userInfo;
+    } catch (error) {
+      console.error("❌ Failed to fetch user info:", error);
+      // Don't propagate the error - we don't want to break auth flow
+      return rejectWithValue(error instanceof Error ? error.message : "Failed to fetch user info");
     }
   }
 );
@@ -213,6 +291,7 @@ const authSlice = createSlice({
       state.isAuthenticated = false;
       state.error = null;
       state.isRefreshing = false;
+      state.isLoading = false;
       // Note: Redux Persist will automatically sync this to storage
     },
     setUserInfo: (state, action: PayloadAction<UserModel>) => {
@@ -244,6 +323,34 @@ const authSlice = createSlice({
         // Note: Redux Persist automatically handles localStorage persistence
       })
       .addCase(loginUser.rejected, (state, action) => {
+        state.isLoading = false;
+        state.isAuthenticated = false;
+        state.error = action.payload as string;
+      })
+
+      // Registration cases
+      .addCase(registerUser.pending, (state) => {
+        state.isLoading = true;
+        state.error = null;
+      })
+      .addCase(registerUser.fulfilled, (state, action) => {
+        console.log("✅ REGISTRATION SUCCESS:", action.payload);
+        state.isLoading = false;
+        state.isAuthenticated = true;
+        state.error = null;
+
+        const { authData, role, userId, userInfo } = action.payload;
+        state.accessToken = authData.accessToken;
+        state.refreshToken = authData.refreshToken;
+        state.accessTokenExpiresAt = authData.accessTokenExpiresAt;
+        state.refreshTokenExpiresAt = authData.refreshTokenExpiresAt;
+        state.userRole = role;
+        state.userId = userId;
+        state.userInfo = userInfo;
+
+        // Note: Redux Persist automatically handles localStorage persistence
+      })
+      .addCase(registerUser.rejected, (state, action) => {
         state.isLoading = false;
         state.isAuthenticated = false;
         state.error = action.payload as string;
@@ -306,7 +413,33 @@ const authSlice = createSlice({
         state.isLoading = false;
         state.isAuthenticated = false;
         state.error = null; // Don't show error for failed storage load
-      });
+      })
+
+      // Fetch user info cases
+      .addCase(fetchUserInfo.pending, (state) => {
+        // Don't set isLoading to prevent UI flicker
+        console.log("🔄 Fetching user info...");
+      })
+      .addCase(fetchUserInfo.fulfilled, (state, action) => {
+        console.log("✅ User info fetched successfully");
+        state.userInfo = action.payload;
+      })
+      .addCase(fetchUserInfo.rejected, (state, action) => {
+        console.log("⚠️ Failed to fetch user info (non-critical):", action.payload);
+        // Don't set error - failing to fetch user info shouldn't break the app
+        // User will just see a placeholder avatar
+      })
+      
+      // Handle Redux Persist REHYDRATE action (must be after all addCase calls)
+      .addMatcher(
+        (action) => action.type === "persist/REHYDRATE",
+        (state) => {
+          console.log("🔄 REHYDRATE action caught, resetting loading state");
+          // Always reset loading state after rehydration
+          state.isLoading = false;
+          state.error = null;
+        }
+      );
   },
 });
 

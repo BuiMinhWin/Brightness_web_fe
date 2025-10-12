@@ -1,13 +1,26 @@
 import { jwtDecode } from "jwt-decode";
 import type { AuthData } from "../models";
-import { store } from "../store/store";
-import { refreshAuthToken, clearAuth } from "../store/slices/authSlice";
 
 const API_BASE_URL = import.meta.env.VITE_API_URL;
 
 // --- Helper functions for Auth --- //
 
-const getAuthData = (): AuthData | null => {
+// Lazy getters to avoid circular dependency
+const getStore = () => {
+  // Import at runtime to break circular dependency
+  return import("../store/store").then((module) => module.store);
+};
+
+const getAuthActions = () => {
+  // Import at runtime to break circular dependency
+  return import("../store/slices/authSlice").then((module) => ({
+    refreshAuthToken: module.refreshAuthToken,
+    clearAuth: module.clearAuth,
+  }));
+};
+
+const getAuthData = async (): Promise<AuthData | null> => {
+  const store = await getStore();
   const state = store.getState();
   const { auth } = state;
 
@@ -40,6 +53,8 @@ let isRefreshing = false;
 let refreshPromise: Promise<AuthData | null> | null = null;
 
 const handleRefreshToken = async (): Promise<AuthData | null> => {
+  const store = await getStore();
+  const { refreshAuthToken, clearAuth } = await getAuthActions();
   const state = store.getState();
   const { auth } = state;
 
@@ -53,7 +68,7 @@ const handleRefreshToken = async (): Promise<AuthData | null> => {
     isRefreshing = true;
     refreshPromise = store
       .dispatch(refreshAuthToken())
-      .then((result) => {
+      .then((result: any) => {
         if (refreshAuthToken.fulfilled.match(result)) {
           const { authData } = result.payload;
           return authData;
@@ -61,8 +76,10 @@ const handleRefreshToken = async (): Promise<AuthData | null> => {
           throw new Error("Failed to refresh token");
         }
       })
-      .catch((error) => {
+      .catch(async (error: any) => {
         console.error("Refresh token failed, logging out:", error);
+        const store = await getStore();
+        const { clearAuth } = await getAuthActions();
         store.dispatch(clearAuth());
         window.location.href = "/auth?mode=signin"; // Redirect to login
         return null;
@@ -93,20 +110,53 @@ export class ApiError extends Error {
 interface RequestOptions extends RequestInit {
   skipContentType?: boolean;
   skipAuth?: boolean; // Option to skip sending Authorization header
+  skipAutoLogout?: boolean; // Option to skip auto-logout on 401
 }
 
 export async function httpRequest<T>(path: string, options: RequestOptions = {}): Promise<T> {
-  let auth = getAuthData();
-  const { skipContentType, skipAuth, headers, ...rest } = options;
+  let auth = await getAuthData();
+  const { skipContentType, skipAuth, skipAutoLogout, headers, ...rest } = options;
 
-  // If token is expired, refresh it
-  if (auth?.accessToken && isTokenExpired(auth.accessToken) && !skipAuth) {
-    const newAuth = await handleRefreshToken();
-    if (newAuth) {
-      auth = newAuth;
-    } else {
-      // Refresh failed, stop the request
+  // Check if both tokens are expired
+  if (auth?.accessToken && auth?.refreshToken && !skipAuth) {
+    const isAccessExpired = isTokenExpired(auth.accessToken);
+    const isRefreshExpired = isTokenExpired(auth.refreshToken);
+
+    if (isAccessExpired && isRefreshExpired) {
+      // Both tokens expired - force logout
+      console.error("Both access and refresh tokens expired. Logging out.");
+      store.dispatch(clearAuth());
+      window.location.href = "/auth?mode=signin";
       return Promise.reject(new ApiError("Session expired. Please log in again.", 401));
+    }
+
+    if (isAccessExpired && !isRefreshExpired) {
+      // Access expired, refresh still valid - attempt refresh
+      const newAuth = await handleRefreshToken();
+      if (newAuth) {
+        auth = newAuth;
+      } else {
+        // Refresh failed, stop the request
+        return Promise.reject(new ApiError("Session expired. Please log in again.", 401));
+      }
+    }
+
+    // Log warning if refresh token will expire soon (e.g., within 24 hours)
+    if (!isRefreshExpired && auth.refreshToken) {
+      try {
+        const decoded = jwtDecode(auth.refreshToken);
+        const currentTime = Date.now() / 1000;
+        const timeToExpiry = (decoded.exp ?? 0) - currentTime;
+        const hoursToExpiry = timeToExpiry / 3600;
+
+        if (hoursToExpiry <= 24 && hoursToExpiry > 0) {
+          console.warn(
+            `⚠️ Refresh token will expire in ${hoursToExpiry.toFixed(1)} hours. Consider re-login.`
+          );
+        }
+      } catch (error) {
+        console.error("Failed to check refresh token expiry:", error);
+      }
     }
   }
 
@@ -176,8 +226,10 @@ export async function httpRequest<T>(path: string, options: RequestOptions = {})
 
     // Special case for 401 Unauthorized, maybe the token expired just now
     // This is a simple implementation; a more robust one might retry the request
-    if (response.status === 401 && !skipAuth) {
+    if (response.status === 401 && !skipAuth && !skipAutoLogout) {
       console.error("Unauthorized access. Logging out.");
+      const store = await getStore();
+      const { clearAuth } = await getAuthActions();
       store.dispatch(clearAuth());
       window.location.href = "/auth?mode=signin";
     }

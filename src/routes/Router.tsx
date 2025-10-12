@@ -31,8 +31,7 @@ import VideoPage from "@/pages/FirstAid/VideoPage";
 import AdminMain from "@/pages/admin/AdminMain";
 import Goal from "@/pages/Goal/YourGoal";
 import UserProfile from "@/pages/UserProfile/UserProfile";
-import SignInPage from "@/pages/SignInPage/SignInPage";
-import SignUpPage from "@/pages/SignUpPage/SignUpPage";
+import LoginAdmin from "@/pages/admin/LoginAdmin";
 import AuthPage from "@/pages/AuthPage/AuthPage";
 
 const AnimatedRoutes: React.FC = () => {
@@ -42,7 +41,7 @@ const AnimatedRoutes: React.FC = () => {
     <AnimatePresence mode="wait">
       <Routes location={location} key={location.pathname}>
         <Route path="/" element={<LandingPage />} />
-        
+
         {/* Pages with navbar */}
         <Route element={<MainLayout />}>
           <Route path="/home" element={<Homepage />} />
@@ -69,15 +68,22 @@ const AnimatedRoutes: React.FC = () => {
           <Route path="/profile" element={<Profile />} />
           <Route path="/goal" element={<Goal />} />
         </Route>
-        
+
         {/* Standalone pages */}
         <Route path="/edit-profile" element={<UserProfile />} />
         <Route path="/admin/*" element={<AdminMain />} />
+        <Route path="/admin/login" element={<LoginAdmin />} />
+        <Route path="/gamification-feature" element={<GamificationPage />} />
+        <Route path="/your-missions" element={<YourGamificationPage />} />
+        <Route path="/your-detail/:missionId" element={<YourDetailPage />} />
+        <Route path="/event-detail/:eventId" element={<EventDetailPage />} />
+        <Route path="/leaderboard/:missionId" element={<LeaderboardPage />} />
+        <Route path="/pricing" element={<PricingPage />} />
+        <Route path="/post-management" element={<ReviewPostPage />} />
+        <Route path="/event-management" element={<EventManagementPage />} />
         <Route path="/auth" element={<AuthPage />} />
         <Route path="/signin" element={<Navigate to="/auth?mode=signin" replace />} />
         <Route path="/signup" element={<Navigate to="/auth?mode=signup" replace />} />
-        <Route path="/signin1" element={<SignInPage />} />
-        <Route path="/signup2" element={<SignUpPage />} />
       </Routes>
     </AnimatePresence>
   );

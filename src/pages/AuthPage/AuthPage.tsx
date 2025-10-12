@@ -4,9 +4,10 @@ import "./AuthPage.css";
 // import yogaImg from "/assets/yoga_register.png";
 import logoImg from "/assets/logo_color.png";
 import { useAppDispatch, useAppSelector } from "../../store/hooks";
-import { loginUser } from "../../store/slices/authSlice";
+import { loginUser, registerUser } from "../../store/slices/authSlice";
 import { authService } from "../../services";
 import type { LoginRequest, RegisterRequest } from "../../models";
+import { Snackbar, Alert } from "@mui/material";
 
 type AuthMode = "signin" | "signup";
 
@@ -30,6 +31,11 @@ const AuthPage: React.FC = () => {
     email: "",
     userName: "",
     password: "",
+  });
+  const [toast, setToast] = useState({
+    open: false,
+    message: "",
+    severity: "error" as "error" | "success" | "info" | "warning",
   });
   const [showPassword, setShowPassword] = useState(false);
   const [agreeTerms, setAgreeTerms] = useState(false);
@@ -89,22 +95,9 @@ const AuthPage: React.FC = () => {
         status: DEFAULT_STATUS,
       };
 
-      try {
-        const registerResponse = await authService.register(registerPayload);
-        if (!registerResponse.flag) {
-          throw new Error(registerResponse.message || "Registration failed");
-        }
-
-        // After successful registration, auto-login
-        const loginPayload: LoginRequest = {
-          email: registerPayload.email,
-          password: registerPayload.password,
-        };
-        dispatch(loginUser(loginPayload));
-      } catch (error) {
-        console.error("Registration error:", error);
-        alert((error as Error).message || "Registration failed");
-      }
+      console.log("📝 Dispatching registration:", registerPayload);
+      const result = await dispatch(registerUser(registerPayload));
+      console.log("📤 Registration dispatch result:", result);
     } else {
       // Sign in
       const loginPayload: LoginRequest = {
@@ -114,15 +107,37 @@ const AuthPage: React.FC = () => {
       console.log("🔑 Dispatching login:", loginPayload);
       const result = await dispatch(loginUser(loginPayload));
       console.log("📤 Login dispatch result:", result);
+      
+      // Check if login failed
+      if (loginUser.rejected.match(result)) {
+        console.error("❌ Login failed:", result.payload);
+        setToast({
+          open: true,
+          message: (result.payload as string) || "Login failed. Please check your credentials.",
+          severity: "error",
+        });
+      }
     }
   };
 
   const handleGoogleAuth = () => {
-    alert(`Google ${authMode === "signup" ? "sign up" : "sign in"} not implemented`);
+    setToast({
+      open: true,
+      message: `Google ${authMode === "signup" ? "sign up" : "sign in"} not implemented yet`,
+      severity: "info",
+    });
   };
 
   const handleFacebookAuth = () => {
-    alert(`Facebook ${authMode === "signup" ? "sign up" : "sign in"} not implemented`);
+    setToast({
+      open: true,
+      message: `Facebook ${authMode === "signup" ? "sign up" : "sign in"} not implemented yet`,
+      severity: "info",
+    });
+  };
+
+  const handleCloseToast = () => {
+    setToast({ ...toast, open: false });
   };
 
   const isFormValid =
@@ -309,6 +324,18 @@ const AuthPage: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* Toast Notification */}
+      <Snackbar
+        open={toast.open}
+        autoHideDuration={4000}
+        onClose={handleCloseToast}
+        anchorOrigin={{ vertical: "top", horizontal: "right" }}
+      >
+        <Alert onClose={handleCloseToast} severity={toast.severity} sx={{ width: "100%" }}>
+          {toast.message}
+        </Alert>
+      </Snackbar>
     </div>
   );
 };

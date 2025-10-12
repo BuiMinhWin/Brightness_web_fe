@@ -29,6 +29,7 @@ export const authService = {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ refreshToken }),
+      skipAuth: true, // Skip auth header for refresh token request
     });
   },
 
@@ -45,6 +46,7 @@ export const authService = {
   async getUser(id: string): Promise<UserModel> {
     return httpRequest<UserModel>(`/auth/api/Authentication/${id}`, {
       method: "GET",
+      skipAutoLogout: true, // Don't auto-logout if this fails
     });
   },
 
