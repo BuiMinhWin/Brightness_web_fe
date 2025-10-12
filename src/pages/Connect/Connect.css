@@ -1,9 +1,10 @@
 /* Background */
 .connect-page {
-  min-height: 100vh;
+  height: 100%;
   background: linear-gradient(180deg, #bfe8d6 0%, #dff4e9 50%, #f1f8d6 100%);
   color: #022c3c;
-  margin-top: 50px;
+  border-radius: 24px;
+  overflow: hidden;
 }
 
 /* Topbar (reuse style from Dashboard for consistency) */
@@ -55,38 +56,16 @@
 
 /* Layout */
 .connect-wrap {
-  max-width: 1180px;
+  max-width: 1400px;
   margin: 22px auto;
   padding: 0 12px;
   display: grid;
-  grid-template-columns: 84px 1fr 420px;
+  grid-template-columns: 1fr 420px;
   gap: 18px;
+  height: 100%;
 }
 
-/* Left rail */
-.connect-rail {
-  background: linear-gradient(180deg, #8bd3b8 0%, #0a6a56 100%);
-  border-radius: 24px;
-  padding: 18px 0;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-}
-.connect-ico {
-  width: 34px;
-  height: 34px;
-  border-radius: 50%;
-  background: rgba(255, 255, 255, 0.35);
-  margin: 8px 0;
-}
-.connect-rail::after {
-  content: "";
-  width: 100%;
-  height: 60px;
-  background: #0a6a56;
-  border-radius: 0 0 24px 24px;
-  margin-top: auto;
-}
+/* Left rail - styles removed as we use PageSidebar component now */
 
 /* Heading */
 .connect-title {

@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { Bell, User, Clock } from "lucide-react";
 import "./YourGoal.css";
-import Navbar from "@/components/layout/Navbar";
 
 const goalData = [
   {
@@ -266,19 +265,9 @@ export default function GoalPage() {
   });
 
   return (
-    <div className="goals-bg relative overflow-hidden ">
-      <Navbar />
-
-      <div className="relative flex">
-        <aside className="w-[104px] min-h-[832px] flex flex-col items-center py-8">
-          <img
-            src="https://api.builder.io/api/v1/image/assets/TEMP/a5267d8ad6239451825e977fb3b90ce489fc9a9e?width=208"
-            alt="Sidebar decoration"
-            className="w-[104px] h-full object-cover"
-          />
-        </aside>
-
-        <main className="flex-1 px-8 py-12">
+    <div className="goals-bg relative overflow-hidden">
+      <div className="relative h-full">
+        <main className="px-8 py-12">
           <div className="mb-8">
             <h2 className="text-brightnest-primary font-dm-sans text-5xl font-bold leading-[46px] capitalize mb-4">
               Your Goals

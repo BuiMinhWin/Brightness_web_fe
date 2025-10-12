@@ -1,25 +1,10 @@
 import React from "react";
 import "./Profile.css";
-import HomepageHeader from "@/components/layout/HomepageHeader";
-import Navbar from "@/components/layout/Navbar";
 
 const Profile: React.FC = () => {
   return (
     <div className="pf-page">
-      {/* Topbar */}
-      <div className="pf-topbar">
-        <Navbar />
-      </div>
-
       <div className="pf-wrap">
-        {/* Left rail */}
-        <aside className="pf-rail">
-          <div style={{ height: 12 }} />
-          {Array.from({ length: 5 }).map((_, i) => (
-            <div className="pf-ico" key={i} />
-          ))}
-        </aside>
-
         {/* Left profile column */}
         <section>
           <div className="pf-title">Profile</div>
