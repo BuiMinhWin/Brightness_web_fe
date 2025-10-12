@@ -1,8 +1,10 @@
 import React, { useState } from "react";
 import { Sparkles } from "lucide-react";
-import { Snackbar, Alert } from "@mui/material";
+import { Snackbar, Alert, CircularProgress } from "@mui/material";
+import { useNavigate } from "react-router-dom";
 import { useAppSelector } from "@/store/hooks";
 import { selectUserId } from "@/store/slices/authSlice";
+import { personalCoachService } from "@/services";
 import DocumentUploadSection from "@/components/FitnessProfile/DocumentUploadSection";
 import BasicMeasurementsSection from "@/components/FitnessProfile/BasicMeasurementsSection";
 import FitnessGoalsSection from "@/components/FitnessProfile/FitnessGoalsSection";
@@ -11,6 +13,7 @@ import AdvancedOptionsSection from "@/components/FitnessProfile/AdvancedOptionsS
 
 const FitnessProfile: React.FC = () => {
   const userId = useAppSelector(selectUserId);
+  const navigate = useNavigate();
 
   // Basic fields
   const [heightCm, setHeightCm] = useState("");
@@ -33,7 +36,8 @@ const FitnessProfile: React.FC = () => {
   const [medicalConditions, setMedicalConditions] = useState("");
   const [dietaryRestrictions, setDietaryRestrictions] = useState("");
 
-  // Toast state
+  // Loading & Toast state
+  const [isSaving, setIsSaving] = useState(false);
   const [toast, setToast] = useState({
     open: false,
     message: "",
@@ -50,6 +54,100 @@ const FitnessProfile: React.FC = () => {
 
   const handleUploadError = (message: string, severity: "error" | "warning") => {
     setToast({ open: true, message, severity });
+  };
+
+  const validateForm = (): boolean => {
+    if (!userId) {
+      setToast({ open: true, message: "Please log in to continue", severity: "error" });
+      return false;
+    }
+
+    if (!heightCm || parseFloat(heightCm) <= 0) {
+      setToast({ open: true, message: "Please enter a valid height", severity: "error" });
+      return false;
+    }
+
+    if (!currentWeight || parseFloat(currentWeight) <= 0) {
+      setToast({ open: true, message: "Please enter a valid current weight", severity: "error" });
+      return false;
+    }
+
+    if (!targetWeight || parseFloat(targetWeight) <= 0) {
+      setToast({ open: true, message: "Please enter a valid target weight", severity: "error" });
+      return false;
+    }
+
+    if (daysSel.length === 0) {
+      setToast({ open: true, message: "Please select at least one workout day", severity: "error" });
+      return false;
+    }
+
+    return true;
+  };
+
+  const handleSubmit = async () => {
+    if (!validateForm()) return;
+
+    setIsSaving(true);
+
+    try {
+      // Parse text fields into arrays
+      const favoriteExercisesList = favoriteExercises
+        .split(',')
+        .map(e => e.trim())
+        .filter(e => e.length > 0);
+      
+      const dislikedExercisesList = dislikedExercises
+        .split(',')
+        .map(e => e.trim())
+        .filter(e => e.length > 0);
+      
+      const dietaryRestrictionsList = dietaryRestrictions
+        .split(',')
+        .map(d => d.trim())
+        .filter(d => d.length > 0);
+
+      const profileData = {
+        userId: userId!,
+        heightCm: parseFloat(heightCm),
+        currentWeightKg: parseFloat(currentWeight),
+        targetWeightKg: parseFloat(targetWeight),
+        fitnessLevel,
+        fitnessGoal,
+        availableDays: daysSel,
+        preferredWorkoutTime,
+        workoutDurationMinutes: workoutDuration,
+        equipmentAvailable: equipment,
+        gymAccess,
+        homeWorkoutOnly,
+        dietaryRestrictions: dietaryRestrictionsList,
+        dislikedExercises: dislikedExercisesList,
+        favoriteExercises: favoriteExercisesList,
+        medicalConditions,
+      };
+
+      await personalCoachService.createOrUpdateProfile(profileData);
+
+      setToast({
+        open: true,
+        message: "✅ Profile saved successfully! Redirecting to your dashboard...",
+        severity: "success",
+      });
+
+      // Redirect to dashboard or schedule page after 2 seconds
+      setTimeout(() => {
+        navigate("/dashboard");
+      }, 2000);
+    } catch (error: any) {
+      console.error("Profile save error:", error);
+      setToast({
+        open: true,
+        message: error?.message || "Failed to save profile. Please try again.",
+        severity: "error",
+      });
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const autoFillFromOCRData = (data: any) => {
@@ -119,23 +217,29 @@ const FitnessProfile: React.FC = () => {
     <div style={{ minHeight: "100vh", background: "linear-gradient(135deg, #f0fdf4 0%, #ecfdf5 50%, #e0f2fe 100%)" }}>
       <div style={{ maxWidth: "900px", margin: "0 auto", padding: "32px 16px" }}>
         {/* Header */}
-        <div style={{ marginBottom: "24px" }}>
+        <div style={{ marginBottom: "24px", textAlign: "center" }}>
           <h1 style={{ 
-            fontSize: "32px", 
-            fontWeight: "700", 
-            color: "#1e293b",
-            marginBottom: "8px"
+            fontSize: "48px", 
+            fontWeight: "400", 
+            background: "linear-gradient(135deg, #059669 0%, #0d9488 50%, #06b6d4 100%)",
+            WebkitBackgroundClip: "text",
+            WebkitTextFillColor: "transparent",
+            backgroundClip: "text",
+            marginBottom: "12px",
+            fontFamily: "'Pacifico', cursive"
           }}>
-            Create Your Fitness Profile
+            Start Your Fitness Journey
           </h1>
           <p style={{ 
-            fontSize: "15px", 
+            fontSize: "16px", 
             color: "#64748b",
-            lineHeight: "1.6"
+            lineHeight: "1.6",
+            maxWidth: "600px",
+            margin: "0 auto"
           }}>
-            Tell us about yourself so we can create a personalized workout and nutrition plan tailored to your unique needs and goals.
+            Share your story with us! We'll craft a personalized adventure designed just for you.
           </p>
-        </div>
+            </div>
 
         {/* All Sections */}
         <DocumentUploadSection
@@ -187,17 +291,180 @@ const FitnessProfile: React.FC = () => {
         />
 
         {/* Submit Button */}
-        <div style={{ display: "flex", justifyContent: "center" }}>
-          <button
-            type="button"
-            className="px-8 py-3 bg-gradient-to-r from-emerald-500 to-teal-500 text-white rounded-xl font-bold text-base shadow-lg hover:shadow-xl hover:scale-105 transition-all flex items-center gap-2"
+        <div style={{ display: "flex", justifyContent: "center", marginTop: "40px", marginBottom: "20px" }}>
+                  <button
+                    type="button"
+            onClick={handleSubmit}
+            disabled={isSaving}
+            style={{
+              position: "relative",
+              padding: "18px 56px",
+              fontSize: "20px",
+              fontWeight: "700",
+              color: "white",
+              background: isSaving 
+                ? "linear-gradient(135deg, #6b7280 0%, #9ca3af 50%, #d1d5db 100%)"
+                : "linear-gradient(135deg, #059669 0%, #0d9488 50%, #06b6d4 100%)",
+              border: "3px solid rgba(255, 255, 255, 0.3)",
+              borderRadius: "50px",
+              cursor: isSaving ? "not-allowed" : "pointer",
+              boxShadow: "0 15px 35px rgba(5, 150, 105, 0.4), 0 5px 15px rgba(13, 148, 136, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.3)",
+              transition: "all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)",
+              overflow: "hidden",
+              letterSpacing: "0.5px",
+              textShadow: "0 2px 4px rgba(0, 0, 0, 0.2)",
+              opacity: isSaving ? 0.7 : 1,
+            }}
+            onMouseEnter={(e) => {
+              if (!isSaving) {
+                e.currentTarget.style.transform = "translateY(-4px) scale(1.05)";
+                e.currentTarget.style.boxShadow = "0 20px 50px rgba(5, 150, 105, 0.5), 0 10px 25px rgba(13, 148, 136, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.5)";
+                e.currentTarget.style.background = "linear-gradient(135deg, #10b981 0%, #14b8a6 50%, #22d3ee 100%)";
+              }
+            }}
+            onMouseLeave={(e) => {
+              if (!isSaving) {
+                e.currentTarget.style.transform = "translateY(0) scale(1)";
+                e.currentTarget.style.boxShadow = "0 15px 35px rgba(5, 150, 105, 0.4), 0 5px 15px rgba(13, 148, 136, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.3)";
+                e.currentTarget.style.background = "linear-gradient(135deg, #059669 0%, #0d9488 50%, #06b6d4 100%)";
+              }
+            }}
+            className="journey-button"
           >
-            <Sparkles size={18} />
-            <span>Create My Fitness Plan</span>
-            <span>→</span>
-          </button>
-        </div>
-      </div>
+            {/* Content */}
+            <span style={{ 
+              display: "flex", 
+              alignItems: "center", 
+              gap: "14px", 
+              position: "relative", 
+              zIndex: 2 
+            }}>
+              {isSaving ? (
+                <>
+                  <CircularProgress size={24} thickness={4} sx={{ color: "white" }} />
+                  <span>Saving Your Profile...</span>
+                </>
+              ) : (
+                <>
+                  <Sparkles 
+                    size={24} 
+                    style={{ 
+                      animation: "sparkle 1.5s ease-in-out infinite",
+                      filter: "drop-shadow(0 0 6px rgba(255, 255, 255, 0.6))"
+                    }} 
+                  />
+                  <span style={{ position: "relative" }}>
+                    Begin My Journey
+                    <span style={{
+                      position: "absolute",
+                      bottom: "-2px",
+                      left: "0",
+                      width: "0",
+                      height: "2px",
+                      background: "white",
+                      transition: "width 0.4s ease",
+                    }} className="underline-animation" />
+                  </span>
+                  <span 
+                    style={{ 
+                      transition: "transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)",
+                      display: "inline-block",
+                      fontSize: "24px",
+                    }} 
+                    className="arrow-animation"
+                  >
+                    →
+                  </span>
+                </>
+              )}
+            </span>
+            
+            {/* Animated shine effect */}
+            <span
+              style={{
+                position: "absolute",
+                top: "-50%",
+                left: "-100%",
+                width: "60%",
+                height: "200%",
+                background: "linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent)",
+                transform: "rotate(30deg)",
+                animation: "shine 3s infinite",
+              }}
+            />
+            
+            {/* Floating particles */}
+            <span
+              style={{
+                position: "absolute",
+                top: "20%",
+                left: "10%",
+                width: "4px",
+                height: "4px",
+                background: "white",
+                borderRadius: "50%",
+                opacity: "0.6",
+                animation: "float 3s infinite ease-in-out",
+              }}
+            />
+            <span
+              style={{
+                position: "absolute",
+                top: "60%",
+                right: "15%",
+                width: "3px",
+                height: "3px",
+                background: "white",
+                borderRadius: "50%",
+                opacity: "0.5",
+                animation: "float 4s infinite ease-in-out 0.5s",
+              }}
+            />
+                  </button>
+            </div>
+
+        {/* Enhanced animations */}
+        <style>{`
+          @keyframes shine {
+            0% { left: -100%; }
+            50%, 100% { left: 100%; }
+          }
+          
+          @keyframes sparkle {
+            0%, 100% { 
+              transform: rotate(0deg) scale(1); 
+              opacity: 1;
+            }
+            50% { 
+              transform: rotate(180deg) scale(1.2); 
+              opacity: 0.8;
+            }
+          }
+          
+          @keyframes float {
+            0%, 100% { 
+              transform: translateY(0) translateX(0); 
+              opacity: 0.6;
+            }
+            50% { 
+              transform: translateY(-20px) translateX(10px); 
+              opacity: 0.3;
+            }
+          }
+          
+          .journey-button:hover .arrow-animation {
+            transform: translateX(8px) scale(1.2);
+          }
+          
+          .journey-button:hover .underline-animation {
+            width: 100%;
+          }
+          
+          .journey-button:active {
+            transform: translateY(-2px) scale(1.02) !important;
+          }
+        `}</style>
+            </div>
 
       {/* Toast Notification */}
       <Snackbar
