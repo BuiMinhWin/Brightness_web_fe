@@ -31,9 +31,7 @@ import VideoPage from "@/pages/FirstAid/VideoPage";
 import AdminMain from "@/pages/admin/AdminMain";
 import Goal from "@/pages/Goal/YourGoal";
 import UserProfile from "@/pages/UserProfile/UserProfile";
-import SignInPage from "@/pages/SignInPage/SignInPage";
-import SignUpPage from "@/pages/SignUpPage/SignUpPage";
-import AuthPage from "@/pages/AuthPage/AuthPage";
+import LoginAdmin from "@/pages/admin/LoginAdmin";
 
 const AnimatedRoutes: React.FC = () => {
   const location = useLocation();
@@ -73,11 +71,17 @@ const AnimatedRoutes: React.FC = () => {
         {/* Standalone pages */}
         <Route path="/edit-profile" element={<UserProfile />} />
         <Route path="/admin/*" element={<AdminMain />} />
-        <Route path="/auth" element={<AuthPage />} />
-        <Route path="/signin" element={<Navigate to="/auth?mode=signin" replace />} />
-        <Route path="/signup" element={<Navigate to="/auth?mode=signup" replace />} />
-        <Route path="/signin1" element={<SignInPage />} />
-        <Route path="/signup2" element={<SignUpPage />} />
+        <Route path="/admin/login" element={<LoginAdmin />} />
+        <Route path="/signin" element={<SignInPage />} />
+        <Route path="/signup" element={<SignUpPage />} />
+        <Route path="/gamification-feature" element={<GamificationPage />} />
+        <Route path="/your-missions" element={<YourGamificationPage />} />
+        <Route path="/your-detail/:missionId" element={<YourDetailPage />} />
+        <Route path="/event-detail/:eventId" element={<EventDetailPage />} />
+        <Route path="/leaderboard/:missionId" element={<LeaderboardPage />} />
+        <Route path="/pricing" element={<PricingPage />} />
+        <Route path="/post-management" element={<ReviewPostPage />} />
+        <Route path="/event-management" element={<EventManagementPage />} />
       </Routes>
     </AnimatePresence>
   );
