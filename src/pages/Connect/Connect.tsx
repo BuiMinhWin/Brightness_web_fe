@@ -1,25 +1,10 @@
 import React from "react";
 import "./Connect.css";
-import HomepageHeader from "@/components/layout/HomepageHeader";
-import Navbar from "@/components/layout/Navbar";
 
 const Connect: React.FC = () => {
   return (
     <div className="connect-page">
-      {/* Topbar */}
-      <div className="connect-topbar">
-        <Navbar />
-      </div>
-
       <div className="connect-wrap">
-        {/* Left rail */}
-        <aside className="connect-rail">
-          <div style={{ height: 12 }} />
-          {Array.from({ length: 4 }).map((_, i) => (
-            <div className="connect-ico" key={i} />
-          ))}
-        </aside>
-
         {/* Main area */}
         <main>
           <h1 className="connect-title">Connect</h1>

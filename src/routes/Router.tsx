@@ -4,6 +4,9 @@ import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-route
 import { ScrollProvider } from "../components/utils/ScrollProvider";
 import { AnimatePresence } from "framer-motion";
 
+// Layouts
+import NavbarLayout from "@/layouts/NavbarLayout";
+
 // import all your pages
 import LandingPage from "../pages/LandingPage/LandingPage";
 import Homepage from "../pages/Homepage/Homepage";
@@ -42,11 +45,15 @@ const AnimatedRoutes: React.FC = () => {
         <Route path="/fitness" element={<FitnessProfile />} />
         <Route path="/about" element={<AboutPage />} />
         <Route path="/dashboard" element={<Dashboard />} />
-        <Route path="/connect" element={<Connect />} />
-        <Route path="/schedule" element={<Schedule />} />
-        <Route path="/profile" element={<Profile />} />
-        <Route path="/goal" element={<Goal />} />
         <Route path="/blogs" element={<Blogs />} />
+
+        {/* Pages with persistent navbar */}
+        <Route element={<NavbarLayout />}>
+          <Route path="/connect" element={<Connect />} />
+          <Route path="/schedule" element={<Schedule />} />
+          <Route path="/profile" element={<Profile />} />
+          <Route path="/goal" element={<Goal />} />
+        </Route>
         <Route path="/edit-profile" element={<UserProfile />} />
         <Route path="/first-aid" element={<FirstAidPage />} />
         <Route path="/video/:id" element={<VideoPage />} />
