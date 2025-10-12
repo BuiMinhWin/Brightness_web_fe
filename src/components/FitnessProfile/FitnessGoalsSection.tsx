@@ -1,4 +1,5 @@
 import React from "react";
+import { TrendingDown, Dumbbell, Scale, Zap } from "lucide-react";
 import SectionCard from "./SectionCard";
 
 interface FitnessGoalsSectionProps {
@@ -9,10 +10,10 @@ interface FitnessGoalsSectionProps {
 }
 
 const fitnessGoals = [
-  { value: "lose_weight", label: "Lose Weight", icon: "📉", desc: "Reduce body fat" },
-  { value: "gain_muscle", label: "Build Muscle", icon: "💪", desc: "Increase strength" },
-  { value: "maintain", label: "Stay Fit", icon: "⚖️", desc: "Maintain level" },
-  { value: "improve_endurance", label: "Boost Endurance", icon: "🏃", desc: "Improve cardio" },
+  { value: "lose_weight", label: "Lose Weight", Icon: TrendingDown, desc: "Reduce body fat" },
+  { value: "gain_muscle", label: "Build Muscle", Icon: Dumbbell, desc: "Increase strength" },
+  { value: "maintain", label: "Stay Fit", Icon: Scale, desc: "Maintain level" },
+  { value: "improve_endurance", label: "Boost Endurance", Icon: Zap, desc: "Improve cardio" },
 ] as const;
 
 const fitnessLevels = ["Beginner", "Intermediate", "Advanced"] as const;
@@ -32,25 +33,33 @@ const FitnessGoalsSection: React.FC<FitnessGoalsSectionProps> = ({
             Primary Fitness Goal <span className="text-red-500">*</span>
           </label>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-            {fitnessGoals.map((goal) => (
-              <div
-                key={goal.value}
-                onClick={() => setFitnessGoal(goal.value as any)}
-                className={`
-                  p-3 rounded-lg border-2 cursor-pointer transition-all text-center
-                  ${fitnessGoal === goal.value
-                    ? "border-emerald-500 bg-emerald-50"
-                    : "border-gray-200 hover:border-emerald-300 hover:bg-gray-50"
-                  }
-                `}
-              >
-                <div className="text-2xl mb-1">{goal.icon}</div>
-                <p className={`font-semibold text-xs ${fitnessGoal === goal.value ? "text-emerald-700" : "text-gray-800"}`}>
-                  {goal.label}
-                </p>
-                <p className="text-xs text-gray-600 mt-0.5">{goal.desc}</p>
-              </div>
-            ))}
+            {fitnessGoals.map((goal) => {
+              const IconComponent = goal.Icon;
+              return (
+                <div
+                  key={goal.value}
+                  onClick={() => setFitnessGoal(goal.value as any)}
+                  className={`
+                    p-3 rounded-lg border-2 cursor-pointer transition-all text-center
+                    ${fitnessGoal === goal.value
+                      ? "border-emerald-500 bg-emerald-50"
+                      : "border-gray-200 hover:border-emerald-300 hover:bg-gray-50"
+                    }
+                  `}
+                >
+                  <div className="flex justify-center mb-1">
+                    <IconComponent 
+                      size={28} 
+                      className={fitnessGoal === goal.value ? "text-emerald-600" : "text-gray-600"} 
+                    />
+                  </div>
+                  <p className={`font-semibold text-xs ${fitnessGoal === goal.value ? "text-emerald-700" : "text-gray-800"}`}>
+                    {goal.label}
+                  </p>
+                  <p className="text-xs text-gray-600 mt-0.5">{goal.desc}</p>
+                </div>
+              );
+            })}
           </div>
         </div>
 

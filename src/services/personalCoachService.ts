@@ -219,4 +219,37 @@ export const personalCoachService = {
       method: "GET",
     });
   },
+
+  /** Create or update user profile */
+  async createOrUpdateProfile(request: {
+    userId: string;
+    heightCm: number;
+    currentWeightKg: number;
+    targetWeightKg: number;
+    fitnessLevel: string;
+    fitnessGoal: string;
+    availableDays: string[];
+    preferredWorkoutTime: string;
+    workoutDurationMinutes: number;
+    equipmentAvailable: string[];
+    gymAccess: boolean;
+    homeWorkoutOnly: boolean;
+    dietaryRestrictions: string[];
+    dislikedExercises: string[];
+    favoriteExercises: string[];
+    medicalConditions?: string;
+  }) {
+    return httpRequest(`/coach/api/UserProfile`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(request),
+    });
+  },
+
+  /** Get user profile */
+  async getUserProfile(userId: string) {
+    return httpRequest(`/coach/api/UserProfile/${userId}`, {
+      method: "GET",
+    });
+  },
 };
