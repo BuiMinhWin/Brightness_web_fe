@@ -89,6 +89,7 @@ const FitnessProfile: React.FC = () => {
     if (!validateForm()) return;
 
     setIsSaving(true);
+    console.log("🚀 Starting profile save...");
 
     try {
       // Parse text fields into arrays
@@ -126,11 +127,13 @@ const FitnessProfile: React.FC = () => {
         medicalConditions,
       };
 
-      await personalCoachService.createOrUpdateProfile(profileData);
+      console.log("Sending profile data:", profileData);
+      const response = await personalCoachService.createOrUpdateProfile(profileData);
+      console.log("Profile saved successfully:", response);
 
       setToast({
         open: true,
-        message: "✅ Profile saved successfully! Redirecting to your dashboard...",
+        message: "Profile saved successfully! Redirecting to your dashboard...",
         severity: "success",
       });
 
@@ -140,13 +143,24 @@ const FitnessProfile: React.FC = () => {
       }, 2000);
     } catch (error: any) {
       console.error("Profile save error:", error);
+      console.error("Error details:", {
+        message: error?.message,
+        response: error?.response,
+        status: error?.status,
+      });
+      
+      const errorMessage = error?.response?.data?.message 
+        || error?.message 
+        || "Failed to save profile. Please check your connection and try again.";
+      
       setToast({
         open: true,
-        message: error?.message || "Failed to save profile. Please try again.",
+        message: errorMessage,
         severity: "error",
       });
     } finally {
       setIsSaving(false);
+      console.log("Save process completed");
     }
   };
 
@@ -199,12 +213,12 @@ const FitnessProfile: React.FC = () => {
       }
 
       const message = autoFilledFields.length > 0
-        ? `✅ Auto-filled: ${autoFilledFields.join(", ")}`
+        ? ` Auto-filled: ${autoFilledFields.join(", ")}`
         : "Data extracted successfully! Please review and fill remaining fields.";
 
       setToast({ open: true, message, severity: "success" });
     } catch (error) {
-      console.error("❌ Error parsing OCR data:", error);
+      console.error("Error parsing OCR data:", error);
       setToast({
         open: true,
         message: "Data extracted but couldn't auto-fill. Please check console and fill manually.",
@@ -217,7 +231,7 @@ const FitnessProfile: React.FC = () => {
     <div style={{ minHeight: "100vh", background: "linear-gradient(135deg, #f0fdf4 0%, #ecfdf5 50%, #e0f2fe 100%)" }}>
       <div style={{ maxWidth: "900px", margin: "0 auto", padding: "32px 16px" }}>
         {/* Header */}
-        <div style={{ marginBottom: "24px", textAlign: "center" }}>
+        <div style={{ marginBottom: "32px", textAlign: "center" }}>
           <h1 style={{ 
             fontSize: "48px", 
             fontWeight: "400", 
@@ -225,21 +239,23 @@ const FitnessProfile: React.FC = () => {
             WebkitBackgroundClip: "text",
             WebkitTextFillColor: "transparent",
             backgroundClip: "text",
-            marginBottom: "12px",
-            fontFamily: "'Pacifico', cursive"
+            marginBottom: "16px",
+            fontFamily: "'Pacifico', cursive",
+            lineHeight: "1.2",
+            paddingBottom: "15px"
           }}>
             Start Your Fitness Journey
           </h1>
           <p style={{ 
             fontSize: "16px", 
             color: "#64748b",
-            lineHeight: "1.6",
-            maxWidth: "600px",
+            lineHeight: "1.8",
+            maxWidth: "700px",
             margin: "0 auto"
           }}>
             Share your story with us! We'll craft a personalized adventure designed just for you.
           </p>
-            </div>
+        </div>
 
         {/* All Sections */}
         <DocumentUploadSection
