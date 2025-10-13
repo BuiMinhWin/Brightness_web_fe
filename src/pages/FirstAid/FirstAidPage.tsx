@@ -1,28 +1,64 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import FirstAidHeader from "../../components/firstAid/firstAidHeader";
 import FirstAidSearchBar from "../../components/firstAid/firstAidSearchBar";
 import VideoCard from "../../components/firstAid/VideoCard";
 import Pagination from "../../components/ui/Pagination";
 import GameFooter from "../../components/layout/GameFooter";
-import sampleVideos from "../../assets/temps/sampleVideos.json";
+import { mediaService } from "../../services/mediaService";
+import type { MediaItem } from "../../models/media";
 
 const FirstAidPage: React.FC = () => {
   const navigate = useNavigate();
   const [currentPage, setCurrentPage] = useState(1);
-  const videosPerPage = 6; // 2 rows × 3 videos
-  const totalPages = Math.ceil(sampleVideos.length / videosPerPage);
+  const [videos, setVideos] = useState<MediaItem[]>([]);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalCount, setTotalCount] = useState(0);
+  const [loading, setLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [sortBy, setSortBy] = useState<'date' | 'views' | 'likes' | 'title'>('date');
+  const videosPerPage = 6; // 2 rows × 3 videos per page for optimal layout
 
-  // Calculate which videos to show for current page
-  const startIndex = (currentPage - 1) * videosPerPage;
-  const endIndex = startIndex + videosPerPage;
-  const currentVideos = sampleVideos.slice(startIndex, endIndex);
+  useEffect(() => {
+    fetchVideos();
+  }, [currentPage, searchQuery, sortBy]);
+
+  const fetchVideos = async () => {
+    try {
+      setLoading(true);
+      const response = await mediaService.getAllVideos(
+        currentPage, 
+        videosPerPage,
+        searchQuery,
+        sortBy
+      );
+      setVideos(response.items || []);
+      setTotalPages(response.totalPages || 1);
+      setTotalCount(response.totalCount || 0);
+    } catch (error) {
+      console.error("Error fetching videos:", error);
+      setVideos([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSearch = (query: string) => {
+    setSearchQuery(query);
+    setCurrentPage(1); // Reset to first page on search
+  };
+
+  const handleSortChange = (newSortBy: 'date' | 'views' | 'likes' | 'title') => {
+    setSortBy(newSortBy);
+    setCurrentPage(1); // Reset to first page on sort change
+  };
 
   const handlePageChange = (page: number) => {
     setCurrentPage(page);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  const handleVideoClick = (videoId: number) => {
+  const handleVideoClick = (videoId: string) => {
     navigate(`/video/${videoId}`);
   };
 
@@ -53,8 +89,31 @@ const FirstAidPage: React.FC = () => {
             paddingRight: "24px",
           }}
         >
-          <FirstAidSearchBar />
+          <FirstAidSearchBar 
+            onSearch={handleSearch}
+            onSortChange={handleSortChange}
+            currentSort={sortBy}
+          />
         </div>
+
+        {/* Results Count */}
+        {!loading && (
+          <div
+            style={{
+              textAlign: "center",
+              color: "white",
+              fontSize: "16px",
+              marginBottom: "16px",
+              fontWeight: "500",
+            }}
+          >
+            {searchQuery ? (
+              <span>Found {totalCount} video{totalCount !== 1 ? 's' : ''} for "{searchQuery}"</span>
+            ) : (
+              <span>Showing {videos.length} of {totalCount} videos</span>
+            )}
+          </div>
+        )}
 
         {/* Video Grid */}
         <div
@@ -68,40 +127,69 @@ const FirstAidPage: React.FC = () => {
             paddingRight: "24px",
           }}
         >
-          {/* Video Cards Grid */}
-          <div
-            style={{
-              display: "flex",
-              flexWrap: "wrap",
-              justifyContent: "space-between",
-              gap: "24px",
-              maxWidth: "1200px",
-              width: "100%",
-            }}
-          >
-            {currentVideos.map((video) => (
-              <div key={video.id} style={{ flex: "1 1 calc(33.333% - 16px)", minWidth: "300px" }}>
-                <VideoCard
-                  id={video.id}
-                  title={video.title}
-                  description={video.description}
-                  thumbnail={video.thumbnail}
-                  views={video.views}
-                  rating={video.rating}
-                  duration={video.duration}
-                  category={video.category}
-                  onClick={() => handleVideoClick(video.id)}
-                />
+          {/* Loading State */}
+          {loading ? (
+            <div style={{ color: "white", fontSize: "18px", padding: "40px" }}>
+              Loading videos...
+            </div>
+          ) : videos.length === 0 ? (
+            <div style={{ 
+              color: "white", 
+              fontSize: "18px", 
+              padding: "40px",
+              textAlign: "center" 
+            }}>
+              {searchQuery ? (
+                <>
+                  <div style={{ marginBottom: "8px" }}>
+                    No videos found for "{searchQuery}"
+                  </div>
+                  <div style={{ fontSize: "14px", opacity: 0.9 }}>
+                    Try different keywords or browse all videos
+                  </div>
+                </>
+              ) : (
+                "No videos available"
+              )}
+            </div>
+          ) : (
+            <>
+              {/* Video Cards Grid */}
+              <div
+                style={{
+                  display: "flex",
+                  flexWrap: "wrap",
+                  justifyContent: "space-between",
+                  gap: "24px",
+                  maxWidth: "1200px",
+                  width: "100%",
+                }}
+              >
+                {videos.map((video) => (
+                  <div key={video.id} style={{ flex: "1 1 calc(33.333% - 16px)", minWidth: "300px" }}>
+                    <VideoCard
+                      id={video.id}
+                      title={video.title || "Untitled"}
+                      description={video.description || "No description available"}
+                      thumbnail={video.thumbnail || "https://via.placeholder.com/400x300"}
+                      views={video.views}
+                      rating={4.5}
+                      duration={video.duration || "N/A"}
+                      category={video.category || "Uncategorized"}
+                      onClick={() => handleVideoClick(video.id)}
+                    />
+                  </div>
+                ))}
               </div>
-            ))}
-          </div>
 
-          {/* Pagination */}
-          <Pagination
-            currentPage={currentPage}
-            totalPages={totalPages}
-            onPageChange={handlePageChange}
-          />
+              {/* Pagination */}
+              <Pagination
+                currentPage={currentPage}
+                totalPages={totalPages}
+                onPageChange={handlePageChange}
+              />
+            </>
+          )}
         </div>
         <div style={{ width: "100%" }}>
           <GameFooter />

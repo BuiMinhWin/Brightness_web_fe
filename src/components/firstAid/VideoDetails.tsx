@@ -1,5 +1,5 @@
 import React from "react";
-import { StarFilledIcon, StarIcon, EyeOpenIcon, CalendarIcon } from "@radix-ui/react-icons";
+import { StarFilledIcon, StarIcon, EyeOpenIcon, CalendarIcon, HeartIcon, HeartFilledIcon } from "@radix-ui/react-icons";
 
 interface VideoDetailsProps {
   title: string;
@@ -11,6 +11,9 @@ interface VideoDetailsProps {
   instructor: string;
   instructorTitle: string;
   tags: string[];
+  likes?: number;
+  isLiked?: boolean;
+  onLikeToggle?: () => void;
 }
 
 const VideoDetails: React.FC<VideoDetailsProps> = ({
@@ -23,6 +26,9 @@ const VideoDetails: React.FC<VideoDetailsProps> = ({
   instructor,
   instructorTitle,
   tags,
+  likes = 0,
+  isLiked = false,
+  onLikeToggle,
 }) => {
   const renderStars = (rating: number) => {
     return Array.from({ length: 5 }, (_, index) => (
@@ -125,6 +131,44 @@ const VideoDetails: React.FC<VideoDetailsProps> = ({
           <CalendarIcon width={16} height={16} />
           <span>{formatDate(uploadDate)}</span>
         </div>
+
+        {/* Like Button */}
+        {onLikeToggle && (
+          <button
+            onClick={onLikeToggle}
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "6px",
+              backgroundColor: isLiked ? "#05644C" : "transparent",
+              color: isLiked ? "white" : "#05644C",
+              border: `2px solid #05644C`,
+              borderRadius: "20px",
+              padding: "6px 16px",
+              fontSize: "14px",
+              fontWeight: "500",
+              cursor: "pointer",
+              transition: "all 0.2s",
+            }}
+            onMouseEnter={(e) => {
+              if (!isLiked) {
+                e.currentTarget.style.backgroundColor = "#f0f0f0";
+              }
+            }}
+            onMouseLeave={(e) => {
+              if (!isLiked) {
+                e.currentTarget.style.backgroundColor = "transparent";
+              }
+            }}
+          >
+            {isLiked ? (
+              <HeartFilledIcon width={16} height={16} />
+            ) : (
+              <HeartIcon width={16} height={16} />
+            )}
+            <span>{formatViews(likes)} likes</span>
+          </button>
+        )}
       </div>
 
       {/* Instructor Info */}
