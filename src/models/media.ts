@@ -1,13 +1,10 @@
 // File: src/models/media.ts
 
+import type { ApiResponse } from "./common";
+
 /**
  * Media API response structure
  */
-export interface ApiResponse<T> {
-  flag: boolean;
-  message: string;
-  data: T | null;
-}
 
 /**
  * Media item structure from backend (MediaItemDTO)

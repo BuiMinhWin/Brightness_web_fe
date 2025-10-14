@@ -1,8 +1,8 @@
-import type { 
-  MediaItem, 
-  PaginatedMediaResponse, 
-  CreateMediaItemRequest, 
-  UpdateMediaItemRequest 
+import type {
+  MediaItem,
+  PaginatedMediaResponse,
+  CreateMediaItemRequest,
+  UpdateMediaItemRequest,
 } from "../models/media";
 import { httpRequest } from "./httpClient";
 
@@ -13,10 +13,10 @@ export const mediaService = {
    * Get all videos with pagination, search, and sorting
    */
   async getAllVideos(
-    pageNumber: number = 1, 
+    pageNumber: number = 1,
     pageSize: number = 10,
     searchQuery?: string,
-    sortBy?: 'date' | 'views' | 'likes' | 'title',
+    sortBy?: "date" | "views" | "likes" | "title",
     category?: string
   ): Promise<PaginatedMediaResponse> {
     const params = new URLSearchParams({
@@ -24,15 +24,14 @@ export const mediaService = {
       pageSize: pageSize.toString(),
     });
 
-    if (searchQuery) params.append('search', searchQuery);
-    if (sortBy) params.append('sortBy', sortBy);
-    if (category) params.append('category', category);
+    if (searchQuery) params.append("search", searchQuery);
+    if (sortBy) params.append("sortBy", sortBy);
+    if (category) params.append("category", category);
 
-    const response = await httpRequest<PaginatedMediaResponse>(
-      `${prefix}?${params.toString()}`,
-      { method: "GET" }
-    );
-    
+    const response = await httpRequest<PaginatedMediaResponse>(`${prefix}?${params.toString()}`, {
+      method: "GET",
+    });
+
     // Backend now returns proper paginated response with metadata
     return response;
   },
@@ -50,7 +49,8 @@ export const mediaService = {
   async createVideo(payload: CreateMediaItemRequest): Promise<MediaItem> {
     return httpRequest<MediaItem>(`${prefix}`, {
       method: "POST",
-      body: payload,
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
     });
   },
 
@@ -60,7 +60,8 @@ export const mediaService = {
   async updateVideo(id: string, payload: UpdateMediaItemRequest): Promise<boolean> {
     const response = await httpRequest<{ message?: string }>(`${prefix}/${id}`, {
       method: "PUT",
-      body: payload,
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
     });
     return true;
   },
@@ -117,15 +118,14 @@ export const mediaService = {
     const response = await fetch(`${import.meta.env.VITE_API_URL}/${prefix}/${id}/download`, {
       method: "GET",
       headers: {
-        "Authorization": `Bearer ${localStorage.getItem("token")}`,
+        Authorization: `Bearer ${localStorage.getItem("token")}`,
       },
     });
-    
+
     if (!response.ok) {
       throw new Error("Failed to download video");
     }
-    
+
     return response.blob();
   },
 };
-

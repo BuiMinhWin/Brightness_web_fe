@@ -23,14 +23,16 @@ export const measurementService = {
   create(payload: MeasurementPayload) {
     return httpRequest<ApiResponse>(`${prefix}`, {
       method: "POST",
-      body: payload,
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
     });
   },
 
   update(id: string, payload: MeasurementPayload) {
     return httpRequest<ApiResponse>(`${prefix}/${id}`, {
       method: "PUT",
-      body: payload,
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
     });
   },
 

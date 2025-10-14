@@ -1,13 +1,9 @@
 // File: src/models/billing.ts
 
-/**
- * Định nghĩa cấu trúc response wrapper từ backend
- */
-export interface ApiResponse<T> {
-  flag: boolean;
-  message: string;
-  data: T | null;
-}
+// Import ApiResponse from common to avoid duplication
+import type { ApiResponse } from "./common";
+
+
 
 /**
  * Định nghĩa cấu trúc của một gói giá (pricing plan) được hiển thị trên giao diện.
