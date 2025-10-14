@@ -6,8 +6,8 @@ import type {
   PaymentSessionResponse,
   CreateInvoicePayload,
   InitiatePaymentPayload,
-  ApiResponse,
 } from "../models/billing";
+import type { ApiResponse } from "../models/common";
 
 // Định nghĩa các đường dẫn API cơ sở
 const plansBaseUrl = "/billing/api/plans";
