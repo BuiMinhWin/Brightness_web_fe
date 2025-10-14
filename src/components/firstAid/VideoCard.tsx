@@ -2,7 +2,7 @@ import React from "react";
 import { StarFilledIcon, StarIcon, EyeOpenIcon } from "@radix-ui/react-icons";
 
 interface VideoCardProps {
-  id: number;
+  id: string;
   title: string;
   description: string;
   thumbnail: string;

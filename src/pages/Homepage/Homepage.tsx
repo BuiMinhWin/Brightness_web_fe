@@ -1,16 +1,12 @@
-import React, { useRef, useState } from "react";
+import React, { useRef } from "react";
 import "./Homepage.css";
 import HomepageHeader from "../../components/layout/HomepageHeader";
 import WhatNewCarousel from "./WhatNewCarousel";
-import ChatDialog from "@/components/ChatDialog/ChatDialog";
+import ChatFAB from "@/components/ChatFAB/ChatFAB";
 import GameFooter from "@/components/layout/GameFooter";
-
-// Chat dialog (simple placeholder, swap with real chat logic later)
-// Chat dialog moved to a separate component: src/components/ChatDialog/ChatDialog.tsx\n
 
 const Homepage: React.FC = () => {
   const whatRef = useRef<HTMLDivElement | null>(null);
-  const [chatOpen, setChatOpen] = useState(false);
 
   return (
     <div className="homepage min-h-screen w-full overflow-x-hidden">
@@ -197,15 +193,7 @@ const Homepage: React.FC = () => {
         <img
           src="/assets/Asset 10.svg"
           alt="mask"
-          className="absolute right-[100px] top-[1px] object-contain z-10 cursor-pointer"
-          onClick={() => setChatOpen(true)}
-          onKeyDown={(e) => {
-            if (e.key === "Enter" || e.key === " ") setChatOpen(true);
-          }}
-          role="button"
-          tabIndex={0}
-          aria-haspopup="dialog"
-          aria-expanded={chatOpen}
+          className="absolute right-[100px] top-[1px] object-contain z-10"
         />
         <h2 className="top-performance-title text-white text-center font-bold text-[48px] mb-[50px]">
           Top performance
@@ -283,8 +271,8 @@ const Homepage: React.FC = () => {
         <GameFooter />
       </div>
 
-      {/* Chat dialog render */}
-      <ChatDialog open={chatOpen} onClose={() => setChatOpen(false)} />
+      {/* AI Chat FAB */}
+      <ChatFAB />
     </div>
   );
 };

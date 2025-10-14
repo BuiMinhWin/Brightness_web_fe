@@ -4,31 +4,109 @@ import VideoPlayer from "../../components/firstAid/VideoPlayer";
 import VideoDetails from "../../components/firstAid/VideoDetails";
 import RelatedVideos from "../../components/firstAid/RelatedVideos";
 import GameFooter from "../../components/layout/GameFooter";
-import sampleVideos from "../../assets/temps/sampleVideos.json";
+import { mediaService } from "../../services/mediaService";
+import type { MediaItem } from "../../models/media";
 
 const VideoPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const [currentVideo, setCurrentVideo] = useState<any>(null);
-  const [relatedVideos, setRelatedVideos] = useState<any[]>([]);
+  const [currentVideo, setCurrentVideo] = useState<MediaItem | null>(null);
+  const [relatedVideos, setRelatedVideos] = useState<MediaItem[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [isLiked, setIsLiked] = useState(false);
 
   useEffect(() => {
     if (id) {
-      const video = sampleVideos.find((v) => v.id === parseInt(id));
-      if (video) {
-        setCurrentVideo(video);
-        // Get related videos (same category, excluding current video)
-        const related = sampleVideos
-          .filter((v) => v.category === video.category && v.id !== video.id)
-          .slice(0, 5);
-        setRelatedVideos(related);
-      }
+      fetchVideo(id);
     }
   }, [id]);
 
-  const handleRelatedVideoClick = (videoId: number) => {
+  const fetchVideo = async (videoId: string) => {
+    try {
+      setLoading(true);
+      const video = await mediaService.getVideoById(videoId);
+      setCurrentVideo(video);
+
+      // Track view
+      await mediaService.viewVideo(videoId);
+
+      // Fetch related videos (same category)
+      if (video.category) {
+        const allVideos = await mediaService.getAllVideos(1, 20);
+        const related = allVideos.items
+          .filter((v) => v.category === video.category && v.id !== videoId)
+          .slice(0, 5);
+        setRelatedVideos(related);
+      }
+    } catch (error) {
+      console.error("Error fetching video:", error);
+      setCurrentVideo(null);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleRelatedVideoClick = (videoId: string) => {
     navigate(`/video/${videoId}`);
   };
+
+  const handleLikeToggle = async () => {
+    if (!currentVideo) return;
+
+    try {
+      if (isLiked) {
+        await mediaService.unlikeVideo(currentVideo.id);
+        setIsLiked(false);
+        // Update local state
+        setCurrentVideo({
+          ...currentVideo,
+          likes: Math.max(0, currentVideo.likes - 1),
+        });
+      } else {
+        await mediaService.likeVideo(currentVideo.id);
+        setIsLiked(true);
+        // Update local state
+        setCurrentVideo({
+          ...currentVideo,
+          likes: currentVideo.likes + 1,
+        });
+      }
+    } catch (error) {
+      console.error("Error toggling like:", error);
+    }
+  };
+
+  if (loading) {
+    return (
+      <>
+        <div
+          style={{
+            width: "100%",
+            minHeight: "100vh",
+            background: "linear-gradient(to bottom right, #50BFA5, #D3D42F)",
+            margin: 0,
+            display: "flex",
+            flexDirection: "column",
+            paddingTop: "80px",
+          }}
+        >
+          <div
+            style={{
+              flex: 1,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+            }}
+          >
+            <div style={{ color: "white", fontSize: "18px" }}>Loading video...</div>
+          </div>
+          <div style={{ width: "100%" }}>
+            <GameFooter />
+          </div>
+        </div>
+      </>
+    );
+  }
 
   if (!currentVideo) {
     return (
@@ -41,7 +119,7 @@ const VideoPage: React.FC = () => {
             margin: 0,
             display: "flex",
             flexDirection: "column",
-            paddingTop: "80px", // Account for fixed navbar
+            paddingTop: "80px",
           }}
         >
           <div
@@ -99,24 +177,24 @@ const VideoPage: React.FC = () => {
           >
             {/* Video Player */}
             <VideoPlayer
-              videoUrl={
-                currentVideo.videoUrl ||
-                "https://sample-videos.com/zip/10/mp4/SampleVideo_1280x720_1mb.mp4"
-              }
-              title={currentVideo.title}
+              videoUrl={currentVideo.url}
+              title={currentVideo.title || "Video"}
             />
 
             {/* Video Details */}
             <VideoDetails
-              title={currentVideo.title}
-              description={currentVideo.description}
-              detailedDescription={currentVideo.detailedDescription || currentVideo.description}
+              title={currentVideo.title || "Untitled"}
+              description={currentVideo.description || "No description available"}
+              detailedDescription={currentVideo.description || "No description available"}
               views={currentVideo.views}
-              rating={currentVideo.rating}
-              uploadDate={currentVideo.uploadDate || "2024-01-15"}
-              instructor={currentVideo.instructor || "Dr. Sarah Johnson"}
-              instructorTitle={currentVideo.instructorTitle || "Emergency Medicine Specialist"}
-              tags={currentVideo.tags || ["First Aid", "Emergency"]}
+              rating={4.5}
+              uploadDate={new Date(currentVideo.createdAt).toLocaleDateString()}
+              instructor="BrightNest Team"
+              instructorTitle="Health & Fitness Specialist"
+              tags={currentVideo.category ? [currentVideo.category] : ["First Aid"]}
+              likes={currentVideo.likes}
+              isLiked={isLiked}
+              onLikeToggle={handleLikeToggle}
             />
           </div>
 
