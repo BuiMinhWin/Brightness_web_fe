@@ -56,7 +56,7 @@ const AnimatedRoutes: React.FC = () => {
           <Route path="/leaderboard/:missionId" element={<LeaderboardPage />} />
           <Route path="/pricing" element={<PricingPage />} />
           <Route path="/post-management" element={<ReviewPostPage />} />
-          <Route path="/event-management" element={<EventManagementPage />} />
+          {/* <Route path="/event-management" element={<EventManagementPage/>} />  */}
           <Route path="/first-aid" element={<FirstAidPage />} />
           <Route path="/video/:id" element={<VideoPage />} />
         </Route>
@@ -80,7 +80,6 @@ const AnimatedRoutes: React.FC = () => {
         <Route path="/leaderboard/:missionId" element={<LeaderboardPage />} />
         <Route path="/pricing" element={<PricingPage />} />
         <Route path="/post-management" element={<ReviewPostPage />} />
-        <Route path="/event-management" element={<EventManagementPage />} />
         <Route path="/auth" element={<AuthPage />} />
         <Route path="/signin" element={<Navigate to="/auth?mode=signin" replace />} />
         <Route path="/signup" element={<Navigate to="/auth?mode=signup" replace />} />

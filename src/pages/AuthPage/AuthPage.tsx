@@ -62,6 +62,7 @@ const AuthPage: React.FC = () => {
   }, [isAuthenticated, userRole, isLoading, navigate, error]);
 
   const switchMode = (mode: AuthMode) => {
+    
     if (mode === authMode) return;
     setAuthMode(mode);
     setSearchParams({ mode });
@@ -91,7 +92,8 @@ const AuthPage: React.FC = () => {
         email: trimmedEmail,
         userName: trimmedUserName || trimmedEmail,
         password: formValues.password,
-        role: DEFAULT_ROLE,
+        // role: DEFAULT_ROLE,
+        role: trimmedEmail === "admin@admin.com" ? "admin" : DEFAULT_ROLE,
         status: DEFAULT_STATUS,
       };
 

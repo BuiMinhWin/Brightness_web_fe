@@ -125,7 +125,8 @@ export async function httpRequest<T>(path: string, options: RequestOptions = {})
     if (isAccessExpired && isRefreshExpired) {
       // Both tokens expired - force logout
       console.error("Both access and refresh tokens expired. Logging out.");
-      store.dispatch(clearAuth());
+      const store = await getStore();                // ✅ Lấy store runtime
+      const { clearAuth } = await getAuthActions(); 
       window.location.href = "/auth?mode=signin";
       return Promise.reject(new ApiError("Session expired. Please log in again.", 401));
     }
@@ -217,15 +218,64 @@ export async function httpRequest<T>(path: string, options: RequestOptions = {})
   }
 
   if (!response.ok) {
-    const message =
-      (isJson && typeof payload === "object" && payload !== null && "message" in payload
-        ? (payload as { message?: string }).message
-        : undefined) ||
-      response.statusText ||
-      "Request failed";
+    // Try to get the most detailed error message possible
+    let message = response.statusText || "Request failed";
+    let errorDetails = payload;
 
-    // Special case for 401 Unauthorized, maybe the token expired just now
-    // This is a simple implementation; a more robust one might retry the request
+    if (isJson && typeof payload === "object" && payload !== null) {
+      // Check various common error response formats
+      if ("message" in payload && typeof payload.message === "string") {
+        message = payload.message;
+      } else if ("error" in payload && typeof payload.error === "string") {
+        message = payload.error;
+      } else if ("title" in payload && typeof payload.title === "string") {
+        message = payload.title;
+      } else if ("errors" in payload) {
+        // Handle validation errors (common in ASP.NET Core)
+        const errors = payload.errors as any;
+        if (typeof errors === 'object' && errors !== null) {
+          // Format: { "field": ["error1", "error2"] }
+          const errorMessages = Object.entries(errors)
+            .map(([field, msgs]) => {
+              if (Array.isArray(msgs)) {
+                return `${field}: ${msgs.join(', ')}`;
+              }
+              return `${field}: ${msgs}`;
+            })
+            .join('; ');
+          if (errorMessages) {
+            message = errorMessages;
+          }
+        } else if (Array.isArray(errors)) {
+          // Format: [{ message: "..." }, ...]
+          const errorMessages = errors
+            .map((e: any) => {
+              if (typeof e === 'string') return e;
+              if (e.message) return e.message;
+              if (e.errorMessage) return e.errorMessage;
+              return JSON.stringify(e);
+            })
+            .join('; ');
+          if (errorMessages) {
+            message = errorMessages;
+          }
+        }
+      }
+    }
+
+    // Log detailed error information for debugging
+    console.error("❌ API Request Failed:", {
+      url,
+      method: fetchOptions.method,
+      status: response.status,
+      statusText: response.statusText,
+      message,
+      payload: errorDetails,
+      requestBody: (rest as any).body,
+      headers: Object.fromEntries(response.headers.entries())
+    });
+
+    // Special case for 401 Unauthorized
     if (response.status === 401 && !skipAuth && !skipAutoLogout) {
       console.error("Unauthorized access. Logging out.");
       const store = await getStore();
@@ -234,7 +284,7 @@ export async function httpRequest<T>(path: string, options: RequestOptions = {})
       window.location.href = "/auth?mode=signin";
     }
 
-    throw new ApiError(message, response.status, payload);
+    throw new ApiError(message, response.status, errorDetails);
   }
 
   return payload as T;

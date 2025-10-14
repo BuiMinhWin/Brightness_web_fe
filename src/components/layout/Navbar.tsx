@@ -49,6 +49,7 @@ const Navbar: React.FC<NavbarProps> = ({ currentPage = "home" }) => {
   }, []);
 
   const handleLogout = async () => {
+    debugger;
     try {
       await dispatch(logoutUser()).unwrap();
       setIsDropdownOpen(false);
