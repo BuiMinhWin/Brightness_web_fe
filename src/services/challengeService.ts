@@ -160,13 +160,26 @@ export const challengeService = {
     return httpRequest<ChallengeRule[]>("/challenge/api/ChallengeRules", { method: "GET" });
   },
 
-    async getRulesByChallengeId(challengeId: string): Promise<ChallengeRule[]> {
-    if (!challengeId || challengeId === 'undefined' || challengeId === 'null') {
-      console.error("❌ Invalid challengeId provided to getRulesByChallengeId:", challengeId);
-      return []; // Return empty array instead of making invalid API call
-    }
-    return httpRequest<ChallengeRule[]>(`/challenge/api/challenges/${challengeId}/rules`, { method: "GET" });
-  },
+  async getRulesByChallengeId(challengeId: string): Promise<ChallengeRule[]> {
+  if (!challengeId || challengeId === 'undefined' || challengeId === 'null') {
+    console.error("❌ Invalid challengeId provided to getRulesByChallengeId:", challengeId);
+    return [];
+  }
+  
+  try {
+    console.log(`🔍 Fetching rules for challenge: ${challengeId}`);
+    const url = `/challenge/api/challenges/${challengeId}/rules`;
+    console.log(`📡 API URL: ${url}`);
+    
+    const result = await httpRequest<ChallengeRule[]>(url, { method: "GET" });
+    console.log(`✅ Rules response:`, result);
+    
+    return result;
+  } catch (error) {
+    console.error(`❌ Error fetching rules for challenge ${challengeId}:`, error);
+    return [];
+  }
+},
 
   async updateChallengeRule(id: string, data: ChallengeRuleDTO): Promise<ApiResponse<string>> {
     return httpRequest<ApiResponse<string>>(`/challenge/api/ChallengeRules/${id}`, {
@@ -206,12 +219,25 @@ export const challengeService = {
   },
 
 async getTasksByChallengeId(challengeId: string): Promise<ChallengeTask[]> {
-    if (!challengeId || challengeId === 'undefined' || challengeId === 'null') {
-      console.error("❌ Invalid challengeId provided to getTasksByChallengeId:", challengeId);
-      return []; // Return empty array instead of making invalid API call
-    }
-    return httpRequest<ChallengeTask[]>(`/challenge/api/challenges/${challengeId}/tasks`, { method: "GET" });
-  },
+  if (!challengeId || challengeId === 'undefined' || challengeId === 'null') {
+    console.error("❌ Invalid challengeId provided to getTasksByChallengeId:", challengeId);
+    return [];
+  }
+  
+  try {
+    console.log(`🔍 Fetching tasks for challenge: ${challengeId}`);
+    const url = `/challenge/api/challenges/${challengeId}/tasks`;
+    console.log(`📡 API URL: ${url}`);
+    
+    const result = await httpRequest<ChallengeTask[]>(url, { method: "GET" });
+    console.log(`✅ Tasks response:`, result);
+    
+    return result;
+  } catch (error) {
+    console.error(`❌ Error fetching tasks for challenge ${challengeId}:`, error);
+    return [];
+  }
+},
 
 
   async updateChallengeTask(id: string, data: ChallengeTaskDTO): Promise<ApiResponse<string>> {
@@ -243,13 +269,27 @@ async getTasksByChallengeId(challengeId: string): Promise<ChallengeTask[]> {
     return httpRequest<ChallengeParticipant[]>("/challenge/api/ChallengeParticipants", { method: "GET" });
   },
 
-  async getParticipantsByChallengeId(challengeId: string): Promise<ChallengeParticipant[]> {
-    if (!challengeId || challengeId === 'undefined' || challengeId === 'null') {
-      console.error("❌ Invalid challengeId provided to getParticipantsByChallengeId:", challengeId);
-      return []; // Return empty array instead of making invalid API call
-    }
-    return httpRequest<ChallengeParticipant[]>(`/challenge/api/challenges/${challengeId}/participants`, { method: "GET" });
-  },
+ async getParticipantsByChallengeId(challengeId: string): Promise<ChallengeParticipant[]> {
+  if (!challengeId || challengeId === 'undefined' || challengeId === 'null') {
+    console.error("❌ Invalid challengeId provided to getParticipantsByChallengeId:", challengeId);
+    return [];
+  }
+  
+  try {
+    console.log(`🔍 Fetching participants for challenge: ${challengeId}`);
+    const url = `/challenge/api/challenges/${challengeId}/participants`;
+    console.log(`📡 API URL: ${url}`);
+    
+    const result = await httpRequest<ChallengeParticipant[]>(url, { method: "GET" });
+    console.log(`✅ Participants response:`, result);
+    
+    return result;
+  } catch (error) {
+    console.error(`❌ Error fetching participants for challenge ${challengeId}:`, error);
+    return [];
+  }
+},
+
 
 
   async updateChallengeParticipant(id: string, data: ChallengeParticipantDTO): Promise<ApiResponse<string>> {

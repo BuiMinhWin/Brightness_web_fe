@@ -1,7 +1,8 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import "./GamificationPage.css";
 import GameFooter from "../../components/layout/GameFooter";
 import { useNavigate } from "react-router-dom";
+import { challengeService, Challenge } from "../../services/challengeService";
 
 interface GamificationPageProps {
   onNavigate: (page: string) => void;
@@ -11,83 +12,61 @@ interface GamificationPageProps {
 const GamificationPage: React.FC = () => {
   const [activeFilter, setActiveFilter] = useState("all");
   const [currentPage, setCurrentPage] = useState(1);
+  const [challenges, setChallenges] = useState<Challenge[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
+  
+  const ITEMS_PER_PAGE = 6;
 
-  const competitions = [
-    {
-      id: 1,
-      title: "Body Burn Challenge",
-      subtitle: "Total Body Strength Tournament",
-      status: "Ongoing",
-      timeRemaining: "3 days remaining",
-      participants: "547 participants",
-      prize: "$500 prize pool",
-      avatar: "BB",
-    },
-    {
-      id: 2,
-      title: "Cardio Kings Cup",
-      subtitle: "Endurance & HIIT Competition",
-      status: "Upcoming",
-      timeRemaining: "Starts in 5 days",
-      participants: "234 registered",
-      prize: "$250 prize pool",
-      avatar: "CK",
-    },
-    {
-      id: 3,
-      title: "Flex & Flow Festival",
-      subtitle: "Mobility + Yoga Balance Series",
-      status: "Ongoing",
-      timeRemaining: "1 days remaining",
-      participants: "345 participants",
-      prize: "$600 prize pool",
-      avatar: "FF",
-    },
-    {
-      id: 4,
-      title: "FitRace Showdown",
-      subtitle: "Weekly Steps & Speed Sprint",
-      status: "Upcoming",
-      timeRemaining: "Starts in 2 weeks",
-      participants: "430 registered",
-      prize: "$300 prize pool",
-      avatar: "FR",
-    },
-    {
-      id: 5,
-      title: "PowerCore Clash",
-      subtitle: "Core Strength & Stability Challenge",
-      status: "Finished",
-      timeRemaining: "Ended 2 days ago",
-      participants: "567 participants",
-      prize: "$600 prize pool",
-      avatar: "PC",
-    },
-    {
-      id: 6,
-      title: "FitRace Showdown",
-      subtitle: "Weekly Steps & Speed Sprint",
-      status: "Upcoming",
-      timeRemaining: "Starts in 3 weeks",
-      participants: "455 registered",
-      prize: "$400 prize pool",
-      avatar: "FR",
-    },
-  ];
+  // Fetch challenges from API
+  useEffect(() => {
+    const fetchChallenges = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        const data = await challengeService.getAllChallenges();
+        setChallenges(data);
+      } catch (err) {
+        console.error("Error fetching challenges:", err);
+        setError("Failed to load challenges. Please try again later.");
+      } finally {
+        setLoading(false);
+      }
+    };
 
-  const filteredCompetitions = competitions.filter((comp) => {
+    fetchChallenges();
+  }, []);
+
+  // Filter challenges based on status
+  const filteredChallenges = challenges.filter((challenge) => {
     if (activeFilter === "all") return true;
-    return comp.status.toLowerCase() === activeFilter.toLowerCase();
+    return challenge.status.toLowerCase() === activeFilter.toLowerCase();
   });
 
+  // Calculate pagination
+  const totalPages = Math.ceil(filteredChallenges.length / ITEMS_PER_PAGE);
+  const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+  const endIndex = startIndex + ITEMS_PER_PAGE;
+  const currentChallenges = filteredChallenges.slice(startIndex, endIndex);
+
+  // Reset to page 1 when filter changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [activeFilter]);
+
+  // Helper function to determine status color
   const getStatusColor = (status: string) => {
     switch (status.toLowerCase()) {
       case "ongoing":
+      case "active":
         return "#10b981";
       case "upcoming":
+      case "scheduled":
         return "#f59e0b";
       case "finished":
+      case "completed":
+      case "ended":
         return "#6b7280";
       default:
         return "#6b7280";
@@ -97,27 +76,115 @@ const GamificationPage: React.FC = () => {
   const getStatusBg = (status: string) => {
     switch (status.toLowerCase()) {
       case "ongoing":
+      case "active":
         return "#dcfce7";
       case "upcoming":
+      case "scheduled":
         return "#fef3c7";
       case "finished":
+      case "completed":
+      case "ended":
         return "#f3f4f6";
       default:
         return "#f3f4f6";
     }
   };
 
-  const handleViewDetails = (eventId: number) => {
-    navigate(`/event-detail/${eventId}`);
+  // Format date to show time remaining or start time
+  const getTimeRemaining = (challenge: Challenge) => {
+    const now = new Date();
+    const startDate = challenge.startAt ? new Date(challenge.startAt) : null;
+    const endDate = challenge.endAt ? new Date(challenge.endAt) : null;
+
+    if (endDate && challenge.status.toLowerCase() === "ongoing") {
+      const diff = endDate.getTime() - now.getTime();
+      const days = Math.ceil(diff / (1000 * 60 * 60 * 24));
+      return days > 0 ? `${days} days remaining` : "Ending soon";
+    } else if (startDate && challenge.status.toLowerCase() === "upcoming") {
+      const diff = startDate.getTime() - now.getTime();
+      const days = Math.ceil(diff / (1000 * 60 * 60 * 24));
+      return days > 0 ? `Starts in ${days} days` : "Starting soon";
+    } else if (endDate && challenge.status.toLowerCase() === "finished") {
+      const diff = now.getTime() - endDate.getTime();
+      const days = Math.ceil(diff / (1000 * 60 * 60 * 24));
+      return `Ended ${days} days ago`;
+    }
+    return "No date info";
+  };
+
+  // Get initials for avatar
+  const getInitials = (title: string) => {
+    return title
+      .split(" ")
+      .map((word) => word[0])
+      .join("")
+      .substring(0, 2)
+      .toUpperCase();
+  };
+
+  const handleViewDetails = (challengeId: string) => {
+    navigate(`/event-detail/${challengeId}`);
   };
 
   const handleYoursClick = () => {
     navigate("/your-missions");
   };
 
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+  const handlePrevPage = () => {
+    if (currentPage > 1) {
+      handlePageChange(currentPage - 1);
+    }
+  };
+
+  const handleNextPage = () => {
+    if (currentPage < totalPages) {
+      handlePageChange(currentPage + 1);
+    }
+  };
+
+  // Generate page numbers to display
+  const getPageNumbers = () => {
+    const pages: (number | string)[] = [];
+    const maxVisiblePages = 5;
+
+    if (totalPages <= maxVisiblePages) {
+      for (let i = 1; i <= totalPages; i++) {
+        pages.push(i);
+      }
+    } else {
+      if (currentPage <= 3) {
+        for (let i = 1; i <= 4; i++) {
+          pages.push(i);
+        }
+        pages.push("...");
+        pages.push(totalPages);
+      } else if (currentPage >= totalPages - 2) {
+        pages.push(1);
+        pages.push("...");
+        for (let i = totalPages - 3; i <= totalPages; i++) {
+          pages.push(i);
+        }
+      } else {
+        pages.push(1);
+        pages.push("...");
+        pages.push(currentPage - 1);
+        pages.push(currentPage);
+        pages.push(currentPage + 1);
+        pages.push("...");
+        pages.push(totalPages);
+      }
+    }
+
+    return pages;
+  };
+
   return (
     <div className="gamification-page">
-
       <div className="gamification-content">
         {/* Hero Section */}
         <div className="gamification-hero">
@@ -159,89 +226,152 @@ const GamificationPage: React.FC = () => {
           </button>
         </div>
 
+        {/* Loading State */}
+        {loading && (
+          <div style={{ textAlign: "center", padding: "40px", color: "#6b7280" }}>
+            Loading challenges...
+          </div>
+        )}
+
+        {/* Error State */}
+        {error && (
+          <div style={{ textAlign: "center", padding: "40px", color: "#ef4444" }}>
+            {error}
+          </div>
+        )}
+
         {/* Competition Cards Grid */}
-        <div className="competitions-grid">
-          {filteredCompetitions.map((comp) => (
-            <div key={comp.id} className="competition-card">
-              <div className="card-header">
-                <div className="competition-avatar">
-                  <span>{comp.avatar}</span>
-                </div>
-                <div
-                  className="status-badge"
-                  style={{
-                    backgroundColor: getStatusBg(comp.status),
-                    color: getStatusColor(comp.status),
-                  }}
-                >
-                  {comp.status}
-                </div>
+        {!loading && !error && (
+          <div className="competitions-grid">
+            {currentChallenges.length === 0 ? (
+              <div style={{ 
+                gridColumn: "1 / -1", 
+                textAlign: "center", 
+                padding: "40px", 
+                color: "#6b7280" 
+              }}>
+                No challenges found for this filter.
               </div>
-
-              <div className="card-content">
-                <h3 className="competition-title">{comp.title}</h3>
-                <p className="competition-subtitle">{comp.subtitle}</p>
-
-                <div className="competition-details">
-                  <div className="detail-item">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-                      <circle cx="12" cy="12" r="10" stroke="#f59e0b" strokeWidth="2" />
-                      <polyline points="12,6 12,12 16,14" stroke="#f59e0b" strokeWidth="2" />
-                    </svg>
-                    <span>{comp.timeRemaining}</span>
+            ) : (
+              currentChallenges.map((challenge) => (
+                <div key={challenge.id} className="competition-card">
+                  <div className="card-header">
+                    <div className="competition-avatar">
+                      <span>{getInitials(challenge.title)}</span>
+                    </div>
+                    <div
+                      className="status-badge"
+                      style={{
+                        backgroundColor: getStatusBg(challenge.status),
+                        color: getStatusColor(challenge.status),
+                      }}
+                    >
+                      {challenge.status}
+                    </div>
                   </div>
 
-                  <div className="detail-item">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-                      <path
-                        d="M16 21V19A4 4 0 0 0 12 15H5A4 4 0 0 0 1 19V21"
-                        stroke="#f59e0b"
-                        strokeWidth="2"
-                      />
-                      <circle cx="8.5" cy="7" r="4" stroke="#f59e0b" strokeWidth="2" />
-                      <path d="M20 8V21L17 19L15 21V8" stroke="#f59e0b" strokeWidth="2" />
-                    </svg>
-                    <span>{comp.participants}</span>
+                  <div className="card-content">
+                    <h3 className="competition-title">{challenge.title}</h3>
+                    <p className="competition-subtitle">
+                      {challenge.description || challenge.taskSummary || "No description available"}
+                    </p>
+
+                    <div className="competition-details">
+                      <div className="detail-item">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                          <circle cx="12" cy="12" r="10" stroke="#f59e0b" strokeWidth="2" />
+                          <polyline points="12,6 12,12 16,14" stroke="#f59e0b" strokeWidth="2" />
+                        </svg>
+                        <span>{getTimeRemaining(challenge)}</span>
+                      </div>
+
+                      <div className="detail-item">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                          <path
+                            d="M16 21V19A4 4 0 0 0 12 15H5A4 4 0 0 0 1 19V21"
+                            stroke="#f59e0b"
+                            strokeWidth="2"
+                          />
+                          <circle cx="8.5" cy="7" r="4" stroke="#f59e0b" strokeWidth="2" />
+                          <path d="M20 8V21L17 19L15 21V8" stroke="#f59e0b" strokeWidth="2" />
+                        </svg>
+                        <span>
+                          {challenge.maxParticipants
+                            ? `Max ${challenge.maxParticipants} participants`
+                            : "Unlimited participants"}
+                        </span>
+                      </div>
+
+                      <div className="detail-item">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                          <path
+                            d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z"
+                            stroke="#f59e0b"
+                            strokeWidth="2"
+                            fill="none"
+                          />
+                        </svg>
+                        <span>
+                          {challenge.prizePool
+                            ? `$${challenge.prizePool} prize pool`
+                            : "No prize pool"}
+                        </span>
+                      </div>
+                    </div>
                   </div>
 
-                  <div className="detail-item">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-                      <path d="M6 9L12 15L18 9" stroke="#f59e0b" strokeWidth="2" />
-                    </svg>
-                    <span>{comp.prize}</span>
-                  </div>
+                  <button
+                    className="view-details-btn"
+                    onClick={() => handleViewDetails(challenge.id)}
+                  >
+                    View Details
+                  </button>
                 </div>
-              </div>
-
-              <button className="view-details-btn" onClick={() => handleViewDetails(comp.id)}>
-                View Details
-              </button>
-            </div>
-          ))}
-        </div>
+              ))
+            )}
+          </div>
+        )}
 
         {/* Pagination */}
-        <div className="pagination">
-          <button className="pagination-btn prev" disabled>
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-              <polyline points="15,18 9,12 15,6" stroke="currentColor" strokeWidth="2" />
-            </svg>
-          </button>
+        {!loading && !error && filteredChallenges.length > 0 && (
+          <div className="pagination">
+            <button 
+              className="pagination-btn prev" 
+              disabled={currentPage === 1}
+              onClick={handlePrevPage}
+            >
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                <polyline points="15,18 9,12 15,6" stroke="currentColor" strokeWidth="2" />
+              </svg>
+            </button>
 
-          <div className="pagination-numbers">
-            <button className="pagination-number active">1</button>
-            <button className="pagination-number">2</button>
-            <button className="pagination-number">3</button>
-            <button className="pagination-number">4</button>
-            <span className="pagination-dots">...</span>
+            <div className="pagination-numbers">
+              {getPageNumbers().map((page, index) => (
+                page === "..." ? (
+                  <span key={`dots-${index}`} className="pagination-dots">...</span>
+                ) : (
+                  <button
+                    key={page}
+                    className={`pagination-number ${currentPage === page ? "active" : ""}`}
+                    onClick={() => handlePageChange(page as number)}
+                  >
+                    {page}
+                  </button>
+                )
+              ))}
+            </div>
+
+            <button 
+              className="pagination-btn next"
+              disabled={currentPage === totalPages}
+              onClick={handleNextPage}
+            >
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                <polyline points="9,18 15,12 9,6" stroke="currentColor" strokeWidth="2" />
+              </svg>
+            </button>
           </div>
-
-          <button className="pagination-btn next">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-              <polyline points="9,18 15,12 9,6" stroke="currentColor" strokeWidth="2" />
-            </svg>
-          </button>
-        </div>
+        )}
       </div>
 
       {/* Footer */}

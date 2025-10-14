@@ -70,7 +70,7 @@ const EventManagementPage: React.FC = () => {
   const [events, setEvents] = useState<Event[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-   const EVENTS_LIMIT = 4;
+   const EVENTS_LIMIT = 5;
 
   const userInfo = useAppSelector(selectUserInfo);
   const isAuthenticated = useAppSelector(selectIsAuthenticated);
@@ -218,8 +218,8 @@ const loadChallenges = async () => {
             points: task.points || 0,
             isRequired: task.isRequired,
             validationRule: task.validationRule || "",
-            startDate: task.startDate || "",
-            endDate: task.endDate || "",
+            startDate: task.startDate ? task.startDate.split("T")[0] : "",
+            endDate: task.endDate ? task.endDate.split("T")[0] : "",
           }));
         } catch (err: any) {
           console.error(`❌ Error loading tasks for challenge ${challengeId}:`, err?.message || err);
