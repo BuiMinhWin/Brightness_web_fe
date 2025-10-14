@@ -265,59 +265,66 @@ export default function GoalPage() {
   });
 
   return (
-    <div className="goals-bg relative overflow-hidden">
-      <div className="relative h-full">
-        <main className="px-8 py-12">
-          <div className="mb-8">
-            <h2 className="text-brightnest-primary font-dm-sans text-5xl font-bold leading-[46px] capitalize mb-4">
-              Your Goals
-            </h2>
-            <div className="text-center mb-8">
-              <h3 className="text-brightnest-accent font-pacifico text-4xl leading-[50px] max-w-[789px] mx-auto">
-                You are almost there, Don't give up!!!
-              </h3>
+    <div className="goals-bg relative overflow-y-auto flex flex-col">
+      <main className="px-8 py-12 flex-grow">
+        <div className="mb-8">
+          <h2 className="text-brightnest-primary font-dm-sans text-5xl font-bold leading-[46px] capitalize mb-4">
+            Your Goals
+          </h2>
+          <div className="text-center mb-8">
+            <h3 className="text-brightnest-accent font-pacifico text-4xl leading-[50px] max-w-[789px] mx-auto">
+              You are almost there, Don't give up!!!
+            </h3>
+          </div>
+        </div>
+
+        <div className="flex gap-8">
+          <div className="flex-1 max-w-[358px]">
+            <h3 className="text-brightnest-primary font-poppins text-2xl font-semibold tracking-[0.5px] mb-6">
+              Goal Preview
+            </h3>
+            <div className="space-y-4 h-[420px] overflow-y-auto pr-2 no-scrollbar">
+              {goalData.map((goal) => (
+                <GoalCard
+                  key={goal.id}
+                  title={goal.title}
+                  description={goal.description}
+                  deadline={goal.deadline}
+                  icon={goal.icon}
+                />
+              ))}
+              {goalData.map((goal) => (
+                <GoalCard
+                  key={goal.id + "-clone"}
+                  title={goal.title}
+                  description={goal.description}
+                  deadline={goal.deadline}
+                  icon={goal.icon}
+                />
+              ))}
             </div>
           </div>
 
-          <div className="flex gap-8">
-            <div className="flex-1 max-w-[358px]">
-              <h3 className="text-brightnest-primary font-poppins text-2xl font-semibold tracking-[0.5px] mb-6">
-                Goal Preview
-              </h3>
-              <div className="space-y-4">
-                {goalData.map((goal) => (
-                  <GoalCard
-                    key={goal.id}
-                    title={goal.title}
-                    description={goal.description}
-                    deadline={goal.deadline}
-                    icon={goal.icon}
-                  />
-                ))}
-              </div>
+          <div className="goal-divider h-[496px] mx-8"></div>
+
+          <div className="flex-1 max-w-[358px]">
+            <h3 className="text-brightnest-primary font-dm-sans text-2xl font-semibold tracking-[0.5px] mb-8">
+              Add New Goal
+            </h3>
+            <div className="space-y-4">
+              <FormField label="Goal Title" value={newGoal.title} />
+              <FormField label="Goal Description" value={newGoal.description} />
+              <FormField label="Reset" value={newGoal.reset} />
+              <FormField label="Maturity Date" value={newGoal.maturity} />
             </div>
-
-            <div className="goal-divider h-[496px] mx-8"></div>
-
-            <div className="flex-1 max-w-[358px]">
-              <h3 className="text-brightnest-primary font-dm-sans text-2xl font-semibold tracking-[0.5px] mb-8">
-                Add New Goal
-              </h3>
-              <div className="space-y-4">
-                <FormField label="Goal Title" value={newGoal.title} />
-                <FormField label="Goal Description" value={newGoal.description} />
-                <FormField label="Reset" value={newGoal.reset} />
-                <FormField label="Maturity Date" value={newGoal.maturity} />
-              </div>
-              <div className="mt-8 flex justify-end">
-                <button className="goal-add-btn font-dm-sans text-2xl tracking-[0.5px] transition-colors">
-                  Add
-                </button>
-              </div>
+            <div className="mt-8 flex justify-end">
+              <button className="goal-add-btn font-dm-sans text-2xl tracking-[0.5px] transition-colors">
+                Add
+              </button>
             </div>
           </div>
-        </main>
-      </div>
+        </div>
+      </main>
     </div>
   );
 }

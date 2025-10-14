@@ -51,10 +51,11 @@ export interface InvoiceResponse {
 export interface PaymentSessionResponse {
   paymentId: string;
   invoiceId: string;
-  gateway: number; // Enum: 0 cho PayOs
-  checkoutUrl: string;
-  expiredAt?: string; // Có thể là null
-  transactionId?: string; // Có thể là null
+  gateway: number; // Enum: 0 cho PayOs, 2 cho các gateway khác
+  checkoutUrl?: string; // URL để chuyển hướng người dùng đến trang thanh toán
+  paymentUrl?: string; // Một số API trả về paymentUrl thay vì checkoutUrl
+  expiredAt?: string; // Thời gian hết hạn phiên thanh toán
+  transactionId?: string; // ID giao dịch từ cổng thanh toán
 }
 
 /**

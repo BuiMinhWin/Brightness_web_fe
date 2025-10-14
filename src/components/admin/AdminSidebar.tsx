@@ -11,19 +11,60 @@ import {
 import { Separator } from "@/components/ui/separator";
 import { SidebarInset, SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { NavUser } from "../ui/nav-user";
-
-const data = {
-  user: {
-    name: "John Doe",
-    email: "john.doe@example.com",
-    avatar: "https://github.com/shadcn.png",
-  },
-};
+import { useAppSelector, useAppDispatch } from "@/store/hooks";
+import {
+  selectUserInfo,
+  selectIsAuthenticated,
+  selectUserId,
+  logoutUser,
+  fetchUserInfo,
+} from "@/store/slices/authSlice";
+import { useNavigate } from "react-router-dom";
+import { useEffect } from "react";
 
 export default function AdminSidebar() {
   const location = useLocation();
+  const dispatch = useAppDispatch();
+  const navigate = useNavigate();
 
-  // Generate breadcrumb items based on current path
+  // Get authenticated user info from Redux
+  const userInfo = useAppSelector(selectUserInfo);
+  const isAuthenticated = useAppSelector(selectIsAuthenticated);
+  const userId = useAppSelector(selectUserId);
+
+  // Fetch user info if authenticated but userInfo is missing
+  useEffect(() => {
+    if (isAuthenticated && userId && !userInfo) {
+      dispatch(fetchUserInfo(userId));
+    }
+  }, [isAuthenticated, userId, userInfo, dispatch]);
+
+  // Handle logout functionality
+  const handleLogout = async () => {
+    try {
+      await dispatch(logoutUser()).unwrap();
+
+      // Purge persisted state
+      const { persistor } = await import("@/store/store");
+      await persistor.purge();
+
+      navigate("/auth");
+    } catch (error) {
+      // Handle logout error silently or show user notification
+    }
+  };
+
+  const userData = {
+    name:
+      userInfo?.fullName ||
+      userInfo?.userName ||
+      (isAuthenticated && userId ? "Loading..." : "Admin User"),
+    email: userInfo?.email || (isAuthenticated && userId ? "Loading..." : "admin@brightnest.com"),
+    avatar: userInfo?.profilePicture || "https://github.com/shadcn.png",
+    onLogout: handleLogout, // Pass logout handler to NavUser
+    onProfile: () => navigate("/profile"), // Add profile handler
+  };
+
   const generateBreadcrumbs = () => {
     const pathSegments = location.pathname.split("/").filter((segment) => segment !== "");
     const breadcrumbs = [];
@@ -89,7 +130,21 @@ export default function AdminSidebar() {
 
           {/* 30% Right Section */}
           <div className="flex-[0.3] flex items-center justify-end">
-            <NavUser user={data.user} />
+            {isAuthenticated ? (
+              <NavUser
+                user={{
+                  name: userData.name,
+                  email: userData.email,
+                  avatar: userData.avatar,
+                  onLogout: userData.onLogout,
+                }}
+              />
+            ) : (
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <div className="h-8 w-8 rounded-full bg-muted animate-pulse" />
+                <div className="h-4 w-20 bg-muted rounded animate-pulse" />
+              </div>
+            )}
           </div>
         </header>
         <Outlet />

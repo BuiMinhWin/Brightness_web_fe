@@ -3,7 +3,7 @@ import "./Connect.css";
 
 const Connect: React.FC = () => {
   return (
-    <div className="connect-page">
+    <div className="connect-page no-scrollbar">
       <div className="connect-wrap">
         {/* Main area */}
         <main>
@@ -29,16 +29,18 @@ const Connect: React.FC = () => {
             <div className="friends-title">Close Friends</div>
             <div className="friends-add">+</div>
           </div>
-          {[1, 2, 3, 4].map((i) => (
-            <div className="friend-item" key={i}>
-              <div className="friend-avatar" />
-              <div>
-                <div className="friend-name">Name</div>
-                <div className="friend-sub">Class</div>
+          <div className="overflow-y-auto h-[345px] no-scrollbar pr-2">
+            {[1, 2, 3, 4, 5, 6, 7].map((i) => (
+              <div className="friend-item" key={i}>
+                <div className="friend-avatar" />
+                <div>
+                  <div className="friend-name">Name</div>
+                  <div className="friend-sub">Class</div>
+                </div>
+                <div className="friend-action">x</div>
               </div>
-              <div className="friend-action">x</div>
-            </div>
-          ))}
+            ))}
+          </div>
         </aside>
 
         {/* Search */}

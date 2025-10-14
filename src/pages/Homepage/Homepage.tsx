@@ -1,15 +1,12 @@
-import React, { useRef, useState } from "react";
+import React, { useRef } from "react";
 import "./Homepage.css";
 import HomepageHeader from "../../components/layout/HomepageHeader";
 import WhatNewCarousel from "./WhatNewCarousel";
-import ChatDialog from "@/components/ChatDialog/ChatDialog";
-
-// Chat dialog (simple placeholder, swap with real chat logic later)
-// Chat dialog moved to a separate component: src/components/ChatDialog/ChatDialog.tsx\n
+import ChatFAB from "@/components/ChatFAB/ChatFAB";
+import GameFooter from "@/components/layout/GameFooter";
 
 const Homepage: React.FC = () => {
   const whatRef = useRef<HTMLDivElement | null>(null);
-  const [chatOpen, setChatOpen] = useState(false);
 
   return (
     <div className="homepage min-h-screen w-full overflow-x-hidden">
@@ -196,15 +193,7 @@ const Homepage: React.FC = () => {
         <img
           src="/assets/Asset 10.svg"
           alt="mask"
-          className="absolute right-[100px] top-[1px] object-contain z-10 cursor-pointer"
-          onClick={() => setChatOpen(true)}
-          onKeyDown={(e) => {
-            if (e.key === "Enter" || e.key === " ") setChatOpen(true);
-          }}
-          role="button"
-          tabIndex={0}
-          aria-haspopup="dialog"
-          aria-expanded={chatOpen}
+          className="absolute right-[100px] top-[1px] object-contain z-10"
         />
         <h2 className="top-performance-title text-white text-center font-bold text-[48px] mb-[50px]">
           Top performance
@@ -278,60 +267,12 @@ const Homepage: React.FC = () => {
       </section>
 
       {/* Footer */}
-      <footer className="homepage-footer bg-[#05644C] py-[63px] text-white">
-        <div className="homepage-footer-content max-w-[1200px] mx-auto px-5 grid grid-cols-1 md:grid-cols-2 gap-[60px] items-center">
-          <div className="homepage-footer-logo flex items-center gap-5">
-            <img
-              className="homepage-footer-logo-image w-[81px] h-[81px]"
-              src="https://api.builder.io/api/v1/image/assets/TEMP/de986a7279fe24b5c6a9695fbf1915b1da6131e9?width=162"
-              alt="BRIGHTNEST Logo"
-            />
-            <div className="homepage-footer-brand font-[600] text-[26px] text-[#ffffff] tracking-[-2.34px] capitalize">
-              BRIGHTNEST
-            </div>
-          </div>
+      <div style={{ width: "100%" }}>
+        <GameFooter />
+      </div>
 
-          <div className="homepage-footer-contact text-left">
-            <h4 className="homepage-footer-contact-title text-[20px] font-bold leading-[18px] mb-5">
-              Contact us
-            </h4>
-            <div className="homepage-footer-contact-item flex items-center gap-[15px] mb-[15px]">
-              <div className="homepage-contact-icon w-[25px] h-[25px] border-2 border-white rounded-[8px] flex items-center justify-center">
-                <svg
-                  width="27"
-                  height="10"
-                  viewBox="0 0 27 10"
-                  fill="none"
-                  xmlns="http://www.w3.org/2000/svg"
-                >
-                  <path d="M1 1.49939L13.5 8.2485L26 1.49939" stroke="white" strokeWidth="2" />
-                </svg>
-              </div>
-              <span className="homepage-footer-contact-text font-bold text-[16px] leading-[18px]">
-                Contact us:
-              </span>
-            </div>
-            <div className="homepage-footer-contact-item flex items-center gap-[15px] mb-[15px]"></div>
-            <div className="homepage-contact-icon w-[25px] h-[25px] border-2 border-white rounded-[8px] flex items-center justify-center">
-              <svg
-                width="7"
-                height="6"
-                viewBox="0 0 7 6"
-                fill="none"
-                xmlns="http://www.w3.org/2000/svg"
-              >
-                <circle cx="3.4625" cy="3.18748" r="1.7125" stroke="white" strokeWidth="2" />
-              </svg>
-            </div>
-            <span className="homepage-footer-contact-text font-bold text-[16px] leading-[18px]">
-              0xxxxxxxxxx
-            </span>
-          </div>
-        </div>
-      </footer>
-
-      {/* Chat dialog render */}
-      <ChatDialog open={chatOpen} onClose={() => setChatOpen(false)} />
+      {/* AI Chat FAB */}
+      <ChatFAB />
     </div>
   );
 };

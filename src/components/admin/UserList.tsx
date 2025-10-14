@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   Table,
@@ -14,12 +14,10 @@ import {
   MenuItem,
   FormControl,
   InputLabel,
-  IconButton,
   Box,
   Typography,
   TextField,
   Menu,
-  ListItemText,
 } from "@mui/material";
 import {
   Refresh,
@@ -28,97 +26,75 @@ import {
   ArrowForwardIos,
   Search,
   FilterListAlt,
-  Clear,
   KeyboardArrowDown,
 } from "@mui/icons-material";
-
-import { Funnel } from "lucide-react";
+import { useAppDispatch, useAppSelector } from "../../store/hooks";
+import {
+  fetchUsers,
+  setSelectedUser,
+  setSearchTerm,
+  setFilterBy,
+  setJoinFilter,
+  setClassFilter,
+  setStatusFilter,
+  resetFilters,
+  selectFilteredUsers,
+  selectIsLoadingUsers,
+  selectUsersError,
+  selectSearchTerm,
+  selectFilterBy,
+  selectJoinFilter,
+  selectClassFilter,
+  selectStatusFilter,
+} from "../../store/slices/adminSlice";
+import { UserModel } from "../../models";
 
 const UserList: React.FC = () => {
   const navigate = useNavigate();
-  const [searchTerm, setSearchTerm] = useState("");
-  const [filterBy, setFilterBy] = useState("");
-  const [joinFilter, setJoinFilter] = useState("");
-  const [classFilter, setClassFilter] = useState("");
-  const [statusFilter, setStatusFilter] = useState("");
-  const [filterMenuAnchor, setFilterMenuAnchor] = useState<null | HTMLElement>(null);
+  const dispatch = useAppDispatch();
+
+  // Redux State
+  const filteredUsers = useAppSelector(selectFilteredUsers);
+  const loading = useAppSelector(selectIsLoadingUsers);
+  const error = useAppSelector(selectUsersError);
+  const searchTerm = useAppSelector(selectSearchTerm);
+  const filterBy = useAppSelector(selectFilterBy);
+  const joinFilter = useAppSelector(selectJoinFilter);
+  const classFilter = useAppSelector(selectClassFilter);
+  const statusFilter = useAppSelector(selectStatusFilter);
+
+  // Local UI State
   const [searchFilterAnchor, setSearchFilterAnchor] = useState<null | HTMLElement>(null);
 
-  // Sample user data
-  const users = [
-    {
-      id: "00001",
-      name: "Christine Brooks",
-      joinDate: "04 Sep 2024",
-      type: "User",
-      status: "Active",
-    },
-    {
-      id: "00002",
-      name: "Rosie Pearson",
-      joinDate: "28 May 2024",
-      type: "Trainer",
-      status: "Active",
-    },
-    {
-      id: "00003",
-      name: "John Smith",
-      joinDate: "15 Jun 2024",
-      type: "User",
-      status: "Active",
-    },
-    {
-      id: "00004",
-      name: "Sarah Johnson",
-      joinDate: "22 Jul 2024",
-      type: "Trainer",
-      status: "Inactive",
-    },
-    {
-      id: "00005",
-      name: "Mike Wilson",
-      joinDate: "08 Aug 2024",
-      type: "User",
-      status: "Active",
-    },
-    {
-      id: "00006",
-      name: "Lisa Brown",
-      joinDate: "12 Sep 2024",
-      type: "User",
-      status: "Inactive",
-    },
-    {
-      id: "00007",
-      name: "Maggie Sullivan",
-      joinDate: "21 Dec 2024",
-      type: "User",
-      status: "Inactive",
-    },
-  ];
+  // Load users on component mount
+  useEffect(() => {
+    dispatch(fetchUsers());
+  }, [dispatch]);
+
+  // Refresh data when user returns to this page
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "visible") {
+        dispatch(fetchUsers());
+      }
+    };
+
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    return () => document.removeEventListener("visibilitychange", handleVisibilityChange);
+  }, [dispatch]);
 
   const handleResetFilters = () => {
-    setSearchTerm("");
-    setFilterBy("");
-    setJoinFilter("");
-    setClassFilter("");
-    setStatusFilter("");
+    dispatch(resetFilters());
   };
 
   const handleAddUser = () => {
     navigate("/admin/user-controls/add-user");
   };
 
-  const handleViewEditUser = () => {
+  const handleEditUser = (user: UserModel) => {
+    // Store selected user in Redux state
+    dispatch(setSelectedUser(user));
     navigate("/admin/user-controls/view-edit-user");
-  };
-
-  const handleFilterMenuOpen = (event: React.MouseEvent<HTMLElement>) => {
-    setFilterMenuAnchor(event.currentTarget);
-  };
-
-  const handleFilterMenuClose = () => {
-    setFilterMenuAnchor(null);
   };
 
   const handleSearchFilterOpen = (event: React.MouseEvent<HTMLElement>) => {
@@ -129,38 +105,7 @@ const UserList: React.FC = () => {
     setSearchFilterAnchor(null);
   };
 
-  const handleClearSearch = () => {
-    setSearchTerm("");
-  };
-
-  // Filter users based on search term and other filters
-  const filteredUsers = users.filter((user) => {
-    const matchesSearch =
-      searchTerm === "" ||
-      user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      user.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      user.type.toLowerCase().includes(searchTerm.toLowerCase());
-
-    const matchesFilterBy =
-      filterBy === "" ||
-      (filterBy === "name" && user.name.toLowerCase().includes(searchTerm.toLowerCase())) ||
-      (filterBy === "type" && user.type.toLowerCase().includes(searchTerm.toLowerCase())) ||
-      (filterBy === "status" && user.status.toLowerCase().includes(searchTerm.toLowerCase()));
-
-    const matchesJoinFilter = joinFilter === "" || true; // Add join date filtering logic if needed
-    const matchesClassFilter =
-      classFilter === "" || user.type.toLowerCase() === classFilter.toLowerCase();
-    const matchesStatusFilter =
-      statusFilter === "" || user.status.toLowerCase() === statusFilter.toLowerCase();
-
-    return (
-      matchesSearch &&
-      matchesFilterBy &&
-      matchesJoinFilter &&
-      matchesClassFilter &&
-      matchesStatusFilter
-    );
-  });
+  // Filtered users are already computed in Redux selector
 
   const getStatusChip = (status: string) => {
     return (
@@ -218,7 +163,7 @@ const UserList: React.FC = () => {
           size="small"
           placeholder="Search ..."
           value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
+          onChange={(e) => dispatch(setSearchTerm(e.target.value))}
           slotProps={{
             input: {
               startAdornment: <Search sx={{ color: "#666", mr: 1 }} />,
@@ -308,7 +253,7 @@ const UserList: React.FC = () => {
               <InputLabel>Filter By</InputLabel>
               <Select
                 value={filterBy}
-                onChange={(e) => setFilterBy(e.target.value)}
+                onChange={(e) => dispatch(setFilterBy(e.target.value))}
                 label="Filter By"
               >
                 <MenuItem value="">All</MenuItem>
@@ -323,7 +268,7 @@ const UserList: React.FC = () => {
               <InputLabel>Join</InputLabel>
               <Select
                 value={joinFilter}
-                onChange={(e) => setJoinFilter(e.target.value)}
+                onChange={(e) => dispatch(setJoinFilter(e.target.value))}
                 label="Join"
               >
                 <MenuItem value="">All</MenuItem>
@@ -338,7 +283,7 @@ const UserList: React.FC = () => {
               <InputLabel>Class</InputLabel>
               <Select
                 value={classFilter}
-                onChange={(e) => setClassFilter(e.target.value)}
+                onChange={(e) => dispatch(setClassFilter(e.target.value))}
                 label="Class"
               >
                 <MenuItem value="">All</MenuItem>
@@ -353,7 +298,7 @@ const UserList: React.FC = () => {
               <InputLabel>Status</InputLabel>
               <Select
                 value={statusFilter}
-                onChange={(e) => setStatusFilter(e.target.value)}
+                onChange={(e) => dispatch(setStatusFilter(e.target.value))}
                 label="Status"
               >
                 <MenuItem value="">All</MenuItem>
@@ -409,14 +354,18 @@ const UserList: React.FC = () => {
             {filteredUsers.map((user) => (
               <TableRow key={user.id} hover>
                 <TableCell sx={{ color: "#076553", fontWeight: 500 }}>{user.id}</TableCell>
-                <TableCell sx={{ color: "#076553", fontWeight: 500 }}>{user.name}</TableCell>
-                <TableCell sx={{ color: "#666" }}>{user.joinDate}</TableCell>
-                <TableCell sx={{ color: "#666" }}>{user.type}</TableCell>
+                <TableCell sx={{ color: "#076553", fontWeight: 500 }}>
+                  {user.fullName || user.userName}
+                </TableCell>
+                <TableCell sx={{ color: "#666" }}>
+                  {user.createdAt ? new Date(user.createdAt).toLocaleDateString() : "N/A"}
+                </TableCell>
+                <TableCell sx={{ color: "#666" }}>{user.role}</TableCell>
                 <TableCell>{getStatusChip(user.status)}</TableCell>
                 <TableCell sx={{ textAlign: "center" }}>
                   <Button
                     variant="contained"
-                    onClick={handleViewEditUser}
+                    onClick={() => handleEditUser(user)}
                     sx={{
                       backgroundColor: "#05644C",
                       color: "white",

@@ -1,6 +1,6 @@
 import * as React from "react";
 import { useLocation, Link } from "react-router-dom";
-import { BarChart3, Users, FileText, Calendar, Settings, LogOut } from "lucide-react";
+import { BarChart3, Users, FileText, Calendar, Settings, LogOut, CreditCard } from "lucide-react";
 
 import { SearchForm } from "@/components/ui/search-form";
 import { VersionSwitcher } from "@/components/ui/version-switcher";
@@ -42,6 +42,11 @@ const data = {
       title: "Event Management",
       url: "/admin/event-management",
       icon: Calendar,
+    },
+    {
+      title: "Subscription Plans",
+      url: "/admin/subscription-plans",
+      icon: CreditCard,
     },
   ],
 };

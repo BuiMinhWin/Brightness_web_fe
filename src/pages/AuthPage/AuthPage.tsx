@@ -15,10 +15,21 @@ type AuthFormValues = {
   email: string;
   userName: string;
   password: string;
+  fullName?: string;
+  gender?: string;
+  dateOfBirth?: string;
 };
 
-const DEFAULT_ROLE = "user";
+const DEFAULT_ROLE = "admin";
 const DEFAULT_STATUS = "active";
+const INITIAL_FORM_VALUES: AuthFormValues = {
+  email: "",
+  userName: "",
+  password: "",
+  fullName: "",
+  gender: "",
+  dateOfBirth: "",
+};
 
 const AuthPage: React.FC = () => {
   const dispatch = useAppDispatch();
@@ -27,11 +38,7 @@ const AuthPage: React.FC = () => {
   const [authMode, setAuthMode] = useState<AuthMode>(
     (searchParams.get("mode") as AuthMode) || "signin"
   );
-  const [formValues, setFormValues] = useState<AuthFormValues>({
-    email: "",
-    userName: "",
-    password: "",
-  });
+  const [formValues, setFormValues] = useState<AuthFormValues>({ ...INITIAL_FORM_VALUES });
   const [toast, setToast] = useState({
     open: false,
     message: "",
@@ -66,12 +73,12 @@ const AuthPage: React.FC = () => {
     if (mode === authMode) return;
     setAuthMode(mode);
     setSearchParams({ mode });
-    setFormValues({ email: "", userName: "", password: "" });
+    setFormValues({ ...INITIAL_FORM_VALUES });
     setShowPassword(false);
     setAgreeTerms(false);
   };
 
-  const handleInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleInputChange = (event: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = event.target;
     setFormValues((prev) => ({ ...prev, [name]: value }));
   };
@@ -81,6 +88,7 @@ const AuthPage: React.FC = () => {
 
     const trimmedEmail = formValues.email.trim();
     const trimmedUserName = formValues.userName.trim();
+    const trimmedFullName = formValues.fullName?.trim();
 
     if (authMode === "signup") {
       if (!agreeTerms) {
@@ -92,8 +100,10 @@ const AuthPage: React.FC = () => {
         email: trimmedEmail,
         userName: trimmedUserName || trimmedEmail,
         password: formValues.password,
-        // role: DEFAULT_ROLE,
-        role: trimmedEmail === "admin@admin.com" ? "admin" : DEFAULT_ROLE,
+        ...(trimmedFullName ? { fullName: trimmedFullName } : {}),
+        ...(formValues.gender ? { gender: formValues.gender } : {}),
+        ...(formValues.dateOfBirth ? { dateOfBirth: formValues.dateOfBirth } : {}),
+        role: DEFAULT_ROLE,
         status: DEFAULT_STATUS,
       };
 
@@ -109,7 +119,7 @@ const AuthPage: React.FC = () => {
       console.log("🔑 Dispatching login:", loginPayload);
       const result = await dispatch(loginUser(loginPayload));
       console.log("📤 Login dispatch result:", result);
-      
+
       // Check if login failed
       if (loginUser.rejected.match(result)) {
         console.error("❌ Login failed:", result.payload);
@@ -220,8 +230,11 @@ const AuthPage: React.FC = () => {
               </div>
             </form>
 
-            <form className="sign-up-form" onSubmit={handleSubmit}>
-              <div className="signup-header">
+            <form
+              className="sign-up-form mt-10 overscroll-y-auto no-scrollbar"
+              onSubmit={handleSubmit}
+            >
+              <div className="signup-header flex items-center flex-col mt-65 ">
                 <div className="signup-logo" style={{ backgroundImage: `url(${logoImg})` }} />
                 <h2 className="title">Create account</h2>
               </div>
@@ -236,6 +249,16 @@ const AuthPage: React.FC = () => {
                   onChange={handleInputChange}
                   autoComplete="email"
                   required
+                />
+              </div>
+              <div className="input-field">
+                <input
+                  name="fullName"
+                  type="text"
+                  placeholder="Full name"
+                  value={formValues.fullName}
+                  onChange={handleInputChange}
+                  autoComplete="name"
                 />
               </div>
               <div className="input-field">
@@ -265,6 +288,44 @@ const AuthPage: React.FC = () => {
                 >
                   {showPassword ? "Hide" : "Show"}
                 </button>
+              </div>
+              <div className="flex justify-between gap-20">
+                {/* Gender Field */}
+                <div className="flex flex-col w-1/2">
+                  <label htmlFor="gender" className="mb-1 text-sm font-medium text-gray-700">
+                    Gender
+                  </label>
+                  <select
+                    id="gender"
+                    name="gender"
+                    value={formValues.gender}
+                    onChange={handleInputChange}
+                    className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-gray-700 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 outline-none transition-all"
+                  >
+                    <option value="">Select gender</option>
+                    <option value="male">Male</option>
+                    <option value="female">Female</option>
+                    <option value="other">Other</option>
+                  </select>
+                </div>
+
+                {/* Date of Birth Field */}
+                <div className="flex flex-col w-1/2">
+                  <label htmlFor="dateOfBirth" className="mb-1 text-sm font-medium text-gray-700">
+                    Date of Birth
+                  </label>
+                  <input
+                    id="dateOfBirth"
+                    name="dateOfBirth"
+                    type="date"
+                    placeholder="Date of birth"
+                    value={formValues.dateOfBirth}
+                    onChange={handleInputChange}
+                    autoComplete="bday"
+                    max={new Date().toISOString().split("T")[0]}
+                    className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-gray-700 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 outline-none transition-all"
+                  />
+                </div>
               </div>
 
               <div className="terms-checkbox">

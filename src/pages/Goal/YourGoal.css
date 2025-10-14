@@ -1,5 +1,4 @@
 .goals-bg {
-  min-height: 100vh;
   background: linear-gradient(
     352deg,
     rgba(91, 193, 127, 0.3) 10.49%,
@@ -38,5 +37,12 @@
 .goals-bg {
   height: 100%;
   border-radius: 24px;
-  overflow: hidden;
+}
+.no-scrollbar::-webkit-scrollbar {
+    display: none;
+}
+
+.no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
 }

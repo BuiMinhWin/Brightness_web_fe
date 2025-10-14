@@ -193,13 +193,13 @@ export const fetchUserInfo = createAsyncThunk(
   async (userId: string, { rejectWithValue, getState }) => {
     try {
       const state = getState() as { auth: AuthState };
-      
+
       // Double-check we have a valid token before trying to fetch
       if (!state.auth.accessToken) {
         console.warn("⚠️ Cannot fetch user info: No access token");
         return rejectWithValue("No access token available");
       }
-      
+
       console.log("👤 Fetching user info for:", userId);
       const userInfo = await authService.getUser(userId);
       console.log("✅ User info loaded:", userInfo);
@@ -429,7 +429,7 @@ const authSlice = createSlice({
         // Don't set error - failing to fetch user info shouldn't break the app
         // User will just see a placeholder avatar
       })
-      
+
       // Handle Redux Persist REHYDRATE action (must be after all addCase calls)
       .addMatcher(
         (action) => action.type === "persist/REHYDRATE",
@@ -452,6 +452,7 @@ export const selectUserRole = (state: { auth: AuthState }) => state.auth.userRol
 export const selectUserId = (state: { auth: AuthState }) => state.auth.userId;
 export const selectUserInfo = (state: { auth: AuthState }) => state.auth.userInfo;
 export const selectAccessToken = (state: { auth: AuthState }) => state.auth.accessToken;
+export const selectRefreshToken = (state: { auth: AuthState }) => state.auth.refreshToken;
 export const selectIsLoading = (state: { auth: AuthState }) => state.auth.isLoading;
 export const selectAuthError = (state: { auth: AuthState }) => state.auth.error;
 export const selectIsRefreshing = (state: { auth: AuthState }) => state.auth.isRefreshing;

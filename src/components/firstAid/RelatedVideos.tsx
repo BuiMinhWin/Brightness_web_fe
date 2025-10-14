@@ -2,19 +2,19 @@ import React from "react";
 import { StarFilledIcon, StarIcon, EyeOpenIcon } from "@radix-ui/react-icons";
 
 interface RelatedVideo {
-  id: number;
-  title: string;
-  description: string;
-  thumbnail: string;
+  id: string;
+  title: string | null;
+  description: string | null;
+  thumbnail: string | null;
   views: number;
-  rating: number;
-  duration: string;
-  category: string;
+  rating?: number;
+  duration: string | null;
+  category: string | null;
 }
 
 interface RelatedVideosProps {
   videos: RelatedVideo[];
-  onVideoClick: (videoId: number) => void;
+  onVideoClick: (videoId: string) => void;
 }
 
 const RelatedVideos: React.FC<RelatedVideosProps> = ({ videos, onVideoClick }) => {
@@ -96,8 +96,8 @@ const RelatedVideos: React.FC<RelatedVideosProps> = ({ videos, onVideoClick }) =
               }}
             >
               <img
-                src={video.thumbnail}
-                alt={video.title}
+                src={video.thumbnail || "https://via.placeholder.com/120x68"}
+                alt={video.title || "Video"}
                 style={{
                   width: "100%",
                   height: "100%",
@@ -105,21 +105,23 @@ const RelatedVideos: React.FC<RelatedVideosProps> = ({ videos, onVideoClick }) =
                 }}
               />
               {/* Duration badge */}
-              <div
-                style={{
-                  position: "absolute",
-                  bottom: "4px",
-                  right: "4px",
-                  backgroundColor: "rgba(0, 0, 0, 0.7)",
-                  color: "white",
-                  padding: "2px 6px",
-                  borderRadius: "3px",
-                  fontSize: "10px",
-                  fontWeight: "500",
-                }}
-              >
-                {video.duration}
-              </div>
+              {video.duration && (
+                <div
+                  style={{
+                    position: "absolute",
+                    bottom: "4px",
+                    right: "4px",
+                    backgroundColor: "rgba(0, 0, 0, 0.7)",
+                    color: "white",
+                    padding: "2px 6px",
+                    borderRadius: "3px",
+                    fontSize: "10px",
+                    fontWeight: "500",
+                  }}
+                >
+                  {video.duration}
+                </div>
+              )}
             </div>
 
             {/* Content */}
@@ -143,24 +145,26 @@ const RelatedVideos: React.FC<RelatedVideosProps> = ({ videos, onVideoClick }) =
                   overflow: "hidden",
                 }}
               >
-                {video.title}
+                {video.title || "Untitled"}
               </h3>
 
               {/* Description */}
-              <p
-                style={{
-                  margin: "0 0 8px 0",
-                  fontSize: "12px",
-                  color: "#666",
-                  lineHeight: "1.4",
-                  display: "-webkit-box",
-                  WebkitLineClamp: 2,
-                  WebkitBoxOrient: "vertical",
-                  overflow: "hidden",
-                }}
-              >
-                {video.description}
-              </p>
+              {video.description && (
+                <p
+                  style={{
+                    margin: "0 0 8px 0",
+                    fontSize: "12px",
+                    color: "#666",
+                    lineHeight: "1.4",
+                    display: "-webkit-box",
+                    WebkitLineClamp: 2,
+                    WebkitBoxOrient: "vertical",
+                    overflow: "hidden",
+                  }}
+                >
+                  {video.description}
+                </p>
+              )}
 
               {/* Stats */}
               <div
@@ -185,16 +189,18 @@ const RelatedVideos: React.FC<RelatedVideosProps> = ({ videos, onVideoClick }) =
                 </div>
 
                 {/* Rating */}
-                <div
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: "3px",
-                  }}
-                >
-                  <div style={{ display: "flex", gap: "1px" }}>{renderStars(video.rating)}</div>
-                  <span>{video.rating}</span>
-                </div>
+                {video.rating && (
+                  <div
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "3px",
+                    }}
+                  >
+                    <div style={{ display: "flex", gap: "1px" }}>{renderStars(video.rating)}</div>
+                    <span>{video.rating}</span>
+                  </div>
+                )}
               </div>
             </div>
           </div>

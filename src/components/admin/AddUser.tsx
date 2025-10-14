@@ -11,19 +11,34 @@ import {
   IconButton,
   Paper,
   Avatar,
+  CircularProgress,
 } from "@mui/material";
 import { ArrowBack, CameraAlt } from "@mui/icons-material";
 import { useNavigate } from "react-router-dom";
+import { useAppDispatch, useAppSelector } from "../../store/hooks";
+import {
+  createUser,
+  selectIsCreatingUser,
+  selectUserOperationError,
+  fetchUsers,
+} from "../../store/slices/adminSlice";
 
 const AddUser: React.FC = () => {
   const navigate = useNavigate();
+  const dispatch = useAppDispatch();
+
+  // Redux State
+  const loading = useAppSelector(selectIsCreatingUser);
+  const error = useAppSelector(selectUserOperationError);
   const [formData, setFormData] = useState({
-    firstName: "",
-    lastName: "",
     email: "",
+    userName: "",
+    password: "",
+    fullName: "",
     phoneNumber: "",
     dateOfBirth: "",
     gender: "",
+    role: "user",
   });
 
   const handleInputChange = (field: string, value: string) => {
@@ -33,12 +48,37 @@ const AddUser: React.FC = () => {
     }));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Handle form submission here
-    console.log("Form submitted:", formData);
-    // Navigate back to user list
-    navigate("/admin/user-controls");
+
+    // Basic validation
+    if (!formData.email || !formData.userName || !formData.password) {
+      return;
+    }
+
+    // Create user via Redux action
+    const userData = {
+      email: formData.email,
+      userName: formData.userName,
+      password: formData.password,
+      fullName: formData.fullName,
+      phoneNumber: formData.phoneNumber,
+      dateOfBirth: formData.dateOfBirth,
+      gender: formData.gender,
+      role: formData.role,
+      status: "active", // Default status for new users
+    };
+
+    try {
+      await dispatch(createUser(userData)).unwrap();
+
+      // Refresh the users list and navigate back
+      dispatch(fetchUsers());
+      navigate("/admin/user-controls");
+    } catch (err) {
+      console.error("Error creating user:", err);
+      // Error is handled by Redux state
+    }
   };
 
   const handleBack = () => {
@@ -64,7 +104,7 @@ const AddUser: React.FC = () => {
             marginBottom: "8px",
           }}
         >
-          Add New Account
+          Add New User
         </Typography>
       </div>
 
@@ -141,90 +181,6 @@ const AddUser: React.FC = () => {
             marginBottom: "20px",
           }}
         >
-          {/* First Name */}
-          <Box>
-            <Typography
-              sx={{
-                marginBottom: "8px",
-                fontWeight: 700,
-                color: "#333",
-                fontSize: "18px",
-              }}
-            >
-              First Name
-            </Typography>
-            <TextField
-              fullWidth
-              label="Enter your first name"
-              variant="outlined"
-              value={formData.firstName}
-              onChange={(e) => handleInputChange("firstName", e.target.value)}
-              sx={{
-                "& .MuiOutlinedInput-root": {
-                  borderRadius: "12px",
-                  backgroundColor: "white",
-                  "& fieldset": {
-                    borderColor: "#E0E0E0",
-                  },
-                  "&:hover fieldset": {
-                    borderColor: "#076553",
-                  },
-                  "&.Mui-focused fieldset": {
-                    borderColor: "#076553",
-                  },
-                },
-                "& .MuiInputLabel-root": {
-                  color: "#666",
-                  "&.Mui-focused": {
-                    color: "#076553",
-                  },
-                },
-              }}
-            />
-          </Box>
-
-          {/* Last Name */}
-          <Box>
-            <Typography
-              sx={{
-                marginBottom: "8px",
-                fontWeight: 700,
-                color: "#333",
-                fontSize: "18px",
-              }}
-            >
-              Last Name
-            </Typography>
-            <TextField
-              fullWidth
-              label="Enter your last name"
-              variant="outlined"
-              value={formData.lastName}
-              onChange={(e) => handleInputChange("lastName", e.target.value)}
-              sx={{
-                "& .MuiOutlinedInput-root": {
-                  borderRadius: "12px",
-                  backgroundColor: "white",
-                  "& fieldset": {
-                    borderColor: "#E0E0E0",
-                  },
-                  "&:hover fieldset": {
-                    borderColor: "#076553",
-                  },
-                  "&.Mui-focused fieldset": {
-                    borderColor: "#076553",
-                  },
-                },
-                "& .MuiInputLabel-root": {
-                  color: "#666",
-                  "&.Mui-focused": {
-                    color: "#076553",
-                  },
-                },
-              }}
-            />
-          </Box>
-
           {/* Email */}
           <Box>
             <Typography
@@ -235,15 +191,145 @@ const AddUser: React.FC = () => {
                 fontSize: "18px",
               }}
             >
-              Email
+              Email *
             </Typography>
             <TextField
               fullWidth
               type="email"
-              label="Enter your email"
+              label="Enter email address"
               variant="outlined"
               value={formData.email}
               onChange={(e) => handleInputChange("email", e.target.value)}
+              required
+              sx={{
+                "& .MuiOutlinedInput-root": {
+                  borderRadius: "12px",
+                  backgroundColor: "white",
+                  "& fieldset": {
+                    borderColor: "#E0E0E0",
+                  },
+                  "&:hover fieldset": {
+                    borderColor: "#076553",
+                  },
+                  "&.Mui-focused fieldset": {
+                    borderColor: "#076553",
+                  },
+                },
+                "& .MuiInputLabel-root": {
+                  color: "#666",
+                  "&.Mui-focused": {
+                    color: "#076553",
+                  },
+                },
+              }}
+            />
+          </Box>
+
+          {/* Username */}
+          <Box>
+            <Typography
+              sx={{
+                marginBottom: "8px",
+                fontWeight: 700,
+                color: "#333",
+                fontSize: "18px",
+              }}
+            >
+              Username *
+            </Typography>
+            <TextField
+              fullWidth
+              label="Enter username"
+              variant="outlined"
+              value={formData.userName}
+              onChange={(e) => handleInputChange("userName", e.target.value)}
+              required
+              sx={{
+                "& .MuiOutlinedInput-root": {
+                  borderRadius: "12px",
+                  backgroundColor: "white",
+                  "& fieldset": {
+                    borderColor: "#E0E0E0",
+                  },
+                  "&:hover fieldset": {
+                    borderColor: "#076553",
+                  },
+                  "&.Mui-focused fieldset": {
+                    borderColor: "#076553",
+                  },
+                },
+                "& .MuiInputLabel-root": {
+                  color: "#666",
+                  "&.Mui-focused": {
+                    color: "#076553",
+                  },
+                },
+              }}
+            />
+          </Box>
+
+          {/* Password */}
+          <Box>
+            <Typography
+              sx={{
+                marginBottom: "8px",
+                fontWeight: 700,
+                color: "#333",
+                fontSize: "18px",
+              }}
+            >
+              Password *
+            </Typography>
+            <TextField
+              fullWidth
+              type="password"
+              label="Enter password"
+              variant="outlined"
+              value={formData.password}
+              onChange={(e) => handleInputChange("password", e.target.value)}
+              required
+              sx={{
+                "& .MuiOutlinedInput-root": {
+                  borderRadius: "12px",
+                  backgroundColor: "white",
+                  "& fieldset": {
+                    borderColor: "#E0E0E0",
+                  },
+                  "&:hover fieldset": {
+                    borderColor: "#076553",
+                  },
+                  "&.Mui-focused fieldset": {
+                    borderColor: "#076553",
+                  },
+                },
+                "& .MuiInputLabel-root": {
+                  color: "#666",
+                  "&.Mui-focused": {
+                    color: "#076553",
+                  },
+                },
+              }}
+            />
+          </Box>
+
+          {/* Full Name */}
+          <Box>
+            <Typography
+              sx={{
+                marginBottom: "8px",
+                fontWeight: 700,
+                color: "#333",
+                fontSize: "18px",
+              }}
+            >
+              Full Name
+            </Typography>
+            <TextField
+              fullWidth
+              label="Enter full name"
+              variant="outlined"
+              value={formData.fullName}
+              onChange={(e) => handleInputChange("fullName", e.target.value)}
               sx={{
                 "& .MuiOutlinedInput-root": {
                   borderRadius: "12px",
@@ -282,52 +368,10 @@ const AddUser: React.FC = () => {
             </Typography>
             <TextField
               fullWidth
-              label="Enter your phone number"
+              label="Enter phone number"
               variant="outlined"
               value={formData.phoneNumber}
               onChange={(e) => handleInputChange("phoneNumber", e.target.value)}
-              sx={{
-                "& .MuiOutlinedInput-root": {
-                  borderRadius: "12px",
-                  backgroundColor: "white",
-                  "& fieldset": {
-                    borderColor: "#E0E0E0",
-                  },
-                  "&:hover fieldset": {
-                    borderColor: "#076553",
-                  },
-                  "&.Mui-focused fieldset": {
-                    borderColor: "#076553",
-                  },
-                },
-                "& .MuiInputLabel-root": {
-                  color: "#666",
-                  "&.Mui-focused": {
-                    color: "#076553",
-                  },
-                },
-              }}
-            />
-          </Box>
-
-          {/* Date of Birth */}
-          <Box>
-            <Typography
-              sx={{
-                marginBottom: "8px",
-                fontWeight: 700,
-                color: "#333",
-                fontSize: "18px",
-              }}
-            >
-              Date of Birth
-            </Typography>
-            <TextField
-              fullWidth
-              label="Enter your birthdate"
-              variant="outlined"
-              value={formData.dateOfBirth}
-              onChange={(e) => handleInputChange("dateOfBirth", e.target.value)}
               sx={{
                 "& .MuiOutlinedInput-root": {
                   borderRadius: "12px",
@@ -405,14 +449,122 @@ const AddUser: React.FC = () => {
               </Select>
             </FormControl>
           </Box>
+
+          {/* Date of Birth */}
+          <Box>
+            <Typography
+              sx={{
+                marginBottom: "8px",
+                fontWeight: 700,
+                color: "#333",
+                fontSize: "18px",
+              }}
+            >
+              Date of Birth
+            </Typography>
+            <TextField
+              fullWidth
+              type="date"
+              label="Select date of birth"
+              variant="outlined"
+              value={formData.dateOfBirth}
+              onChange={(e) => handleInputChange("dateOfBirth", e.target.value)}
+              InputLabelProps={{
+                shrink: true,
+              }}
+              sx={{
+                "& .MuiOutlinedInput-root": {
+                  borderRadius: "12px",
+                  backgroundColor: "white",
+                  "& fieldset": {
+                    borderColor: "#E0E0E0",
+                  },
+                  "&:hover fieldset": {
+                    borderColor: "#076553",
+                  },
+                  "&.Mui-focused fieldset": {
+                    borderColor: "#076553",
+                  },
+                },
+                "& .MuiInputLabel-root": {
+                  color: "#666",
+                  "&.Mui-focused": {
+                    color: "#076553",
+                  },
+                },
+              }}
+            />
+          </Box>
+
+          {/* Role */}
+          <Box>
+            <Typography
+              sx={{
+                marginBottom: "8px",
+                fontWeight: 700,
+                color: "#333",
+                fontSize: "18px",
+              }}
+            >
+              Role *
+            </Typography>
+            <FormControl
+              fullWidth
+              sx={{
+                "& .MuiOutlinedInput-root": {
+                  borderRadius: "12px",
+                  backgroundColor: "white",
+                  "& fieldset": {
+                    borderColor: "#E0E0E0",
+                  },
+                  "&:hover fieldset": {
+                    borderColor: "#076553",
+                  },
+                  "&.Mui-focused fieldset": {
+                    borderColor: "#076553",
+                  },
+                },
+                "& .MuiInputLabel-root": {
+                  color: "#666",
+                  "&.Mui-focused": {
+                    color: "#076553",
+                  },
+                },
+              }}
+            >
+              <InputLabel>Select role</InputLabel>
+              <Select
+                label="Select role"
+                value={formData.role}
+                onChange={(e) => handleInputChange("role", e.target.value)}
+                sx={{
+                  "& .MuiSelect-select": {
+                    color: formData.role ? "#333" : "#999",
+                  },
+                }}
+              >
+                <MenuItem value="user">User</MenuItem>
+                <MenuItem value="admin">Admin</MenuItem>
+                <MenuItem value="trainer">Trainer</MenuItem>
+              </Select>
+            </FormControl>
+          </Box>
         </Box>
 
-        {/* Submit Button */}
-        <Box sx={{ display: "flex", justifyContent: "center" }}>
+        {/* Error Message */}
+        {error && (
+          <Box sx={{ mb: 2, p: 2, bgcolor: "#ffebee", borderRadius: "8px" }}>
+            <Typography color="error">{error}</Typography>
+          </Box>
+        )}
+
+        {/* Submit Buttons */}
+        <Box sx={{ display: "flex", justifyContent: "center", gap: 2, flexWrap: "wrap" }}>
           <Button
             type="submit"
             variant="contained"
             onClick={handleSubmit}
+            disabled={loading}
             sx={{
               backgroundColor: "#05644C",
               color: "white",
@@ -424,11 +576,55 @@ const AddUser: React.FC = () => {
               "&:hover": {
                 backgroundColor: "#076553",
               },
+              "&:disabled": {
+                backgroundColor: "#ccc",
+              },
             }}
           >
-            Add Now
+            {loading ? <CircularProgress size={20} color="inherit" /> : "Create User"}
+          </Button>
+
+          <Button
+            variant="outlined"
+            onClick={handleBack}
+            disabled={loading}
+            sx={{
+              borderColor: "#05644C",
+              color: "#05644C",
+              borderRadius: "12px",
+              padding: "12px 48px",
+              fontSize: "16px",
+              fontWeight: 600,
+              textTransform: "none",
+              "&:hover": {
+                borderColor: "#076553",
+                backgroundColor: "rgba(5, 100, 76, 0.04)",
+              },
+            }}
+          >
+            Cancel
           </Button>
         </Box>
+
+        {/* Loading Overlay */}
+        {loading && (
+          <Box
+            sx={{
+              position: "fixed",
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              backgroundColor: "rgba(0,0,0,0.5)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              zIndex: 9999,
+            }}
+          >
+            <CircularProgress size={60} sx={{ color: "white" }} />
+          </Box>
+        )}
       </Paper>
     </div>
   );

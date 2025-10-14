@@ -494,14 +494,14 @@ const Schedule: React.FC = () => {
 
   return (
     <div
-      className="h-full flex flex-col overflow-hidden px-4 py-3 rounded-3xl"
+      className="h-full flex flex-col overflow-y-auto no-scrollbar px-4 py-3 rounded-3xl"
       style={{
         background: "linear-gradient(180deg, #bfe8d6 0%, #dff4e9 50%, #f1f8d6 100%)",
         color: "#022c3c",
       }}
     >
       {/* Calendar content */}
-      <main className="flex flex-col overflow-hidden h-full">
+      <main className="flex flex-col h-full">
         {/* Heading row */}
         <div className="flex items-center justify-between px-3 py-1 flex-shrink-0">
           <div className="font-black text-4xl" style={{ color: "#0b3d33" }}>
