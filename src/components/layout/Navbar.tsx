@@ -1,10 +1,17 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useEffect } from "react";
 import "./Navbar.css";
 import logo from "/assets/LogoWhite.png";
 import { NavLink, useNavigate } from "react-router-dom";
-import { User, LogOut, Settings, Bell } from "lucide-react";
+import { User, Bell } from "lucide-react";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
-import { selectUserInfo, selectIsAuthenticated, selectUserId, logoutUser, fetchUserInfo } from "@/store/slices/authSlice";
+import {
+  selectUserInfo,
+  selectIsAuthenticated,
+  selectUserId,
+  logoutUser,
+  fetchUserInfo,
+} from "@/store/slices/authSlice";
+import { NavUser } from "@/components/ui/nav-user";
 
 interface NavbarProps {
   currentPage?: string; // giữ lại nếu bạn muốn highlight
@@ -13,62 +20,36 @@ interface NavbarProps {
 const Navbar: React.FC<NavbarProps> = ({ currentPage = "home" }) => {
   const navigate = useNavigate();
   const dispatch = useAppDispatch();
-  
+
   // Get user data from Redux
   const userInfo = useAppSelector(selectUserInfo);
   const isAuthenticated = useAppSelector(selectIsAuthenticated);
   const userId = useAppSelector(selectUserId);
-  
-  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-  const dropdownRef = useRef<HTMLDivElement>(null);
 
   // Fetch user info if authenticated but userInfo is missing
   useEffect(() => {
     if (isAuthenticated && userId && !userInfo) {
-      console.log("🔄 User is authenticated but userInfo is missing. Fetching...");
-      // Add a small delay to ensure Redux Persist has fully rehydrated
-      const timer = setTimeout(() => {
-        dispatch(fetchUserInfo(userId));
-      }, 100);
-      return () => clearTimeout(timer);
+      dispatch(fetchUserInfo(userId));
     }
   }, [isAuthenticated, userId, userInfo, dispatch]);
-
-  // Handle dropdown click outside
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
-        setIsDropdownOpen(false);
-      }
-    };
-
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
-  }, []);
 
   const handleLogout = async () => {
     try {
       await dispatch(logoutUser()).unwrap();
-      setIsDropdownOpen(false);
-      
+
       // Purge persisted state
-      const { persistor } = await import('@/store/store');
+      const { persistor } = await import("@/store/store");
       await persistor.purge();
-      
-      navigate('/auth');
+
+      navigate("/auth");
     } catch (error) {
-      console.error('Logout error:', error);
-      // Still navigate to auth even if logout fails
-      setIsDropdownOpen(false);
-      navigate('/auth');
+      // Handle logout error silently
+      navigate("/auth");
     }
   };
 
   const handleProfileClick = () => {
-    setIsDropdownOpen(false);
-    navigate('/profile');
+    navigate("/profile");
   };
 
   return (
@@ -86,7 +67,10 @@ const Navbar: React.FC<NavbarProps> = ({ currentPage = "home" }) => {
 
         {/* Navigation Links */}
         <div className="navbar-nav">
-          <NavLink to="/home" className={({ isActive }) => `navbar-link ${isActive ? "active" : ""}`}>
+          <NavLink
+            to="/home"
+            className={({ isActive }) => `navbar-link ${isActive ? "active" : ""}`}
+          >
             Home
           </NavLink>
 
@@ -127,53 +111,20 @@ const Navbar: React.FC<NavbarProps> = ({ currentPage = "home" }) => {
               <Bell size={20} />
             </button>
           )}
-          
-          {isAuthenticated && userInfo ? (
-            <div className="relative" ref={dropdownRef}>
-              <button
-                className="user-profile-btn"
-                onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-              >
-                {userInfo.profilePicture ? (
-                  <img
-                    src={userInfo.profilePicture}
-                    alt={userInfo.fullName || userInfo.userName}
-                    className="user-avatar"
-                  />
-                ) : (
-                  <div className="user-avatar-placeholder">
-                    <User size={16} />
-                  </div>
-                )}
-                <span className="user-name">{userInfo.fullName || userInfo.userName}</span>
-              </button>
 
-              {/* Dropdown Menu */}
-              {isDropdownOpen && (
-                <div className="user-dropdown">
-                  <button
-                    className="dropdown-item"
-                    onClick={handleProfileClick}
-                  >
-                    <User size={18} />
-                    <span>Profile</span>
-                  </button>
-                  
-                  <button
-                    className="dropdown-item logout-item"
-                    onClick={handleLogout}
-                  >
-                    <LogOut size={18} />
-                    <span>Logout</span>
-                  </button>
-                </div>
-              )}
-            </div>
+          {isAuthenticated && userInfo ? (
+            <NavUser
+              variant="navbar"
+              user={{
+                name: userInfo.fullName || userInfo.userName || "User",
+                email: userInfo.email || "user@brightnest.com",
+                avatar: userInfo.profilePicture || "https://github.com/shadcn.png",
+                onLogout: handleLogout,
+                onProfile: handleProfileClick,
+              }}
+            />
           ) : (
-            <button
-              className="login-btn"
-              onClick={() => navigate('/auth')}
-            >
+            <button className="login-btn" onClick={() => navigate("/auth")}>
               <User size={16} />
               <span>Login</span>
             </button>

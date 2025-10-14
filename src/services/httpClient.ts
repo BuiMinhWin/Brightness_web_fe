@@ -1,28 +1,71 @@
 import { jwtDecode } from "jwt-decode";
 import type { AuthData } from "../models";
 import { authService } from "./authService";
+import { store } from "../store/store";
+import {
+  selectAccessToken,
+  selectRefreshToken,
+  loginUser,
+  clearAuth,
+  refreshAuthToken,
+} from "../store/slices/authSlice";
 
 const API_BASE_URL = import.meta.env.VITE_API_URL;
-const AUTH_STORAGE_KEY = "auth";
 
 // --- Helper functions for Auth --- //
 
 const getAuthData = (): AuthData | null => {
-  const authJson = localStorage.getItem(AUTH_STORAGE_KEY);
-  if (!authJson) return null;
-  try {
-    return JSON.parse(authJson) as AuthData;
-  } catch {
+  // Get tokens from Redux store instead of localStorage
+  const state = store.getState();
+  const accessToken = selectAccessToken(state);
+  const refreshToken = selectRefreshToken(state);
+
+  if (!accessToken || !refreshToken) {
     return null;
   }
+
+  return {
+    accessToken,
+    refreshToken,
+    accessTokenExpiresAt: "", // Not used in token validation
+    refreshTokenExpiresAt: "", // Not used in token validation
+  };
 };
 
 const setAuthData = (authData: AuthData) => {
-  localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(authData));
+  // Update Redux store with new tokens
+  const { role, userId } = decodeToken(authData.accessToken);
+
+  store.dispatch(
+    loginUser.fulfilled(
+      {
+        authData,
+        role,
+        userId,
+        userInfo: null,
+      },
+      "",
+      {} as any
+    )
+  );
 };
 
 const clearAuthData = () => {
-  localStorage.removeItem(AUTH_STORAGE_KEY);
+  // Clear Redux auth state
+  store.dispatch(clearAuth());
+};
+
+// Helper function to decode token and extract user info
+const decodeToken = (token: string) => {
+  try {
+    const decoded = jwtDecode<any>(token);
+    const role = decoded["http://schemas.microsoft.com/ws/2008/06/identity/claims/role"];
+    const userId = decoded["http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier"];
+    return { role, userId };
+  } catch (error) {
+    console.error("Failed to decode token:", error);
+    return { role: null, userId: null };
+  }
 };
 
 const isTokenExpired = (token: string): boolean => {
@@ -44,7 +87,7 @@ let refreshPromise: Promise<AuthData | null> | null = null;
 const handleRefreshToken = async (): Promise<AuthData | null> => {
   const auth = getAuthData();
   if (!auth?.refreshToken) {
-    clearAuthData();
+    store.dispatch(clearAuth());
     window.location.href = "/auth?mode=signin"; // Redirect to login
     return Promise.reject(new Error("No refresh token available."));
   }
@@ -57,12 +100,26 @@ const handleRefreshToken = async (): Promise<AuthData | null> => {
         if (!response.flag || !response.data) {
           throw new Error("Failed to refresh token");
         }
-        setAuthData(response.data);
+
+        // Update Redux store with new tokens
+        store.dispatch(
+          refreshAuthToken.fulfilled(
+            {
+              authData: response.data,
+              role: "", // These will be filled by the reducer using decodeToken
+              userId: "",
+            },
+            "",
+            undefined
+          )
+        );
+
         return response.data;
       })
       .catch((error) => {
         console.error("Refresh token failed, logging out:", error);
-        clearAuthData();
+        // Clear Redux auth state
+        store.dispatch(clearAuth());
         window.location.href = "/auth?mode=signin"; // Redirect to login
         return null;
       })
@@ -96,6 +153,7 @@ interface RequestOptions extends RequestInit {
 
 export async function httpRequest<T>(path: string, options: RequestOptions = {}): Promise<T> {
   let auth = getAuthData();
+
   const { skipContentType, skipAuth, headers, ...rest } = options;
 
   // If token is expired, refresh it
@@ -149,40 +207,57 @@ export async function httpRequest<T>(path: string, options: RequestOptions = {})
     body,
   };
 
-  const response = await fetch(url, fetchOptions);
-
-  if (response.status === 204) {
-    return undefined as unknown as T;
-  }
-
-  const respContentType = response.headers.get("content-type");
-  const isJson = respContentType?.includes("application/json");
-  let payload: unknown;
-
   try {
-    payload = isJson ? await response.json() : await response.text();
-  } catch {
-    payload = undefined;
-  }
+    const response = await fetch(url, fetchOptions);
 
-  if (!response.ok) {
-    const message =
-      (isJson && typeof payload === "object" && payload !== null && "message" in payload
-        ? (payload as { message?: string }).message
-        : undefined) ||
-      response.statusText ||
-      "Request failed";
-
-    // Special case for 401 Unauthorized, maybe the token expired just now
-    // This is a simple implementation; a more robust one might retry the request
-    if (response.status === 401 && !skipAuth) {
-      console.error("Unauthorized access. Logging out.");
-      clearAuthData();
-      window.location.href = "/auth?mode=signin";
+    if (response.status === 204) {
+      return undefined as unknown as T;
     }
 
-    throw new ApiError(message, response.status, payload);
-  }
+    const respContentType = response.headers.get("content-type");
+    const isJson = respContentType?.includes("application/json");
+    let responsePayload: unknown;
 
-  return payload as T;
+    try {
+      responsePayload = isJson ? await response.json() : await response.text();
+    } catch (e) {
+      console.error("Failed to parse response:", e);
+      responsePayload = undefined;
+    }
+
+    if (!response.ok) {
+      const message =
+        (isJson &&
+        typeof responsePayload === "object" &&
+        responsePayload !== null &&
+        "message" in responsePayload
+          ? (responsePayload as { message?: string }).message
+          : undefined) ||
+        response.statusText ||
+        "Request failed";
+
+      console.error(`Request failed: ${response.status} - ${message}`, responsePayload);
+
+      // Special case for 401 Unauthorized, maybe the token expired just now
+      if (response.status === 401 && !skipAuth) {
+        console.error("Unauthorized access. Logging out.");
+        clearAuthData();
+        window.location.href = "/auth?mode=signin";
+      }
+
+      throw new ApiError(message, response.status, responsePayload);
+    }
+
+    return responsePayload as T;
+  } catch (error) {
+    if (error instanceof ApiError) {
+      throw error;
+    }
+    console.error("Network or fetch error:", error);
+    throw new ApiError(
+      error instanceof Error ? error.message : "Network request failed",
+      undefined,
+      error
+    );
+  }
 }

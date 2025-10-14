@@ -33,6 +33,7 @@ import Goal from "@/pages/Goal/YourGoal";
 import UserProfile from "@/pages/UserProfile/UserProfile";
 import LoginAdmin from "@/pages/admin/LoginAdmin";
 import AuthPage from "@/pages/AuthPage/AuthPage";
+import PaymentSuccessPage from "@/pages/PaymentSuccess/PaymentSuccessPage";
 
 const AnimatedRoutes: React.FC = () => {
   const location = useLocation();
@@ -82,6 +83,7 @@ const AnimatedRoutes: React.FC = () => {
         <Route path="/post-management" element={<ReviewPostPage />} />
         <Route path="/event-management" element={<EventManagementPage />} />
         <Route path="/auth" element={<AuthPage />} />
+        <Route path="/payment-success" element={<PaymentSuccessPage />} />
         <Route path="/signin" element={<Navigate to="/auth?mode=signin" replace />} />
         <Route path="/signup" element={<Navigate to="/auth?mode=signup" replace />} />
       </Routes>

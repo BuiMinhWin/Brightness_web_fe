@@ -5,6 +5,7 @@ import SummarizeStats from "@/components/admin/SummarizeStats";
 import UserList from "@/components/admin/UserList";
 import AddUser from "@/components/admin/AddUser";
 import ViewEditUser from "@/components/admin/ViewEditUser";
+import SubscriptionPlansManager from "@/components/admin/SubscriptionPlansManager";
 import ReviewPostPage from "../../pages/AdminReviewPostPage/ReviewPostPage";
 import EventManagementPage from "../../pages/EventManagementPage/EventManagementPage";
 
@@ -19,6 +20,7 @@ const AdminMain: React.FC = () => {
         <Route path="user-controls/view-edit-user" element={<ViewEditUser />} />
         <Route path="post-management" element={<ReviewPostPage />} />
         <Route path="event-management" element={<EventManagementPage />} />
+        <Route path="subscription-plans" element={<SubscriptionPlansManager />} />
         <Route path="settings" element={<div>Settings - Coming Soon</div>} />
       </Route>
     </Routes>

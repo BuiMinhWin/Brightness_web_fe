@@ -1,7 +1,86 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
+import { authService } from "../../services";
+import { UserModel, UpdateUserRequest } from "../../models";
+import { useAppSelector } from "../../store/hooks";
 import "./Profile.css";
 
 const Profile: React.FC = () => {
+  const [profileData, setProfileData] = useState<UserModel | null>(null);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [editFormData, setEditFormData] = useState<UpdateUserRequest>({});
+  const [isLoading, setIsLoading] = useState(false);
+
+  // Lấy thông tin user từ Redux store
+  const { userInfo, userId } = useAppSelector((state) => state.auth);
+  const currentUserId = userId || "";
+
+  useEffect(() => {
+    if (currentUserId) {
+      loadUserInfo();
+    }
+  }, [currentUserId]);
+
+  const loadUserInfo = async () => {
+    if (!currentUserId) return;
+
+    try {
+      setIsLoading(true);
+      const userData = await authService.getUser(currentUserId);
+      setProfileData(userData);
+    } catch (error) {
+      console.error("Error loading user info:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleEditClick = () => {
+    // Sử dụng profileData hoặc userInfo từ Redux store
+    const currentUser = profileData || userInfo;
+    if (currentUser) {
+      setEditFormData({
+        email: currentUser.email,
+        userName: currentUser.userName,
+        fullName: currentUser.fullName || "",
+        phoneNumber: currentUser.phoneNumber || "",
+        gender: currentUser.gender || "",
+        dateOfBirth: currentUser.dateOfBirth || "",
+      });
+      setIsEditModalOpen(true);
+    }
+  };
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    const { name, value } = e.target;
+    setEditFormData((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!currentUserId) return;
+
+    try {
+      setIsLoading(true);
+      await authService.updateUser(currentUserId, editFormData);
+      await loadUserInfo(); // Reload user info
+      setIsEditModalOpen(false);
+      alert("Profile updated successfully!");
+    } catch (error) {
+      console.error("Error updating profile:", error);
+      alert("Error updating profile. Please try again.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleCloseModal = () => {
+    setIsEditModalOpen(false);
+    setEditFormData({});
+  };
+
   return (
     <div className="pf-page">
       <div className="pf-wrap">
@@ -12,10 +91,16 @@ const Profile: React.FC = () => {
           <div className="pf-card pf-header">
             <div className="pf-avatar" />
             <div>
-              <div className="pf-name">Name</div>
-              <div className="pf-class">Class</div>
+              <div className="pf-name">
+                {(profileData || userInfo)?.fullName ||
+                  (profileData || userInfo)?.userName ||
+                  "Name"}
+              </div>
+              <div className="pf-class">{(profileData || userInfo)?.email || "Class"}</div>
             </div>
-            <button className="pf-edit">Edit</button>
+            <button className="pf-edit" onClick={handleEditClick}>
+              Edit
+            </button>
           </div>
 
           <div className="pf-stats">
@@ -85,6 +170,107 @@ const Profile: React.FC = () => {
           <div className="pf-hr" />
         </aside>
       </div>
+
+      {/* Edit Profile Modal */}
+      {isEditModalOpen && (
+        <div className="modal-overlay" onClick={handleCloseModal}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h2>Edit Profile</h2>
+              <button className="close-btn" onClick={handleCloseModal}>
+                ×
+              </button>
+            </div>
+
+            <form onSubmit={handleSubmit} className="edit-form">
+              <div className="form-group">
+                <label htmlFor="fullName">Full Name</label>
+                <input
+                  id="fullName"
+                  name="fullName"
+                  type="text"
+                  value={editFormData.fullName || ""}
+                  onChange={handleInputChange}
+                  placeholder="Enter your full name"
+                />
+              </div>
+
+              <div className="form-group">
+                <label htmlFor="userName">Username</label>
+                <input
+                  id="userName"
+                  name="userName"
+                  type="text"
+                  value={editFormData.userName || ""}
+                  onChange={handleInputChange}
+                  placeholder="Enter your username"
+                />
+              </div>
+
+              <div className="form-group">
+                <label htmlFor="email">Email</label>
+                <input
+                  id="email"
+                  name="email"
+                  type="email"
+                  value={editFormData.email || ""}
+                  onChange={handleInputChange}
+                  placeholder="Enter your email"
+                />
+              </div>
+
+              <div className="form-group">
+                <label htmlFor="phoneNumber">Phone Number</label>
+                <input
+                  id="phoneNumber"
+                  name="phoneNumber"
+                  type="tel"
+                  value={editFormData.phoneNumber || ""}
+                  onChange={handleInputChange}
+                  placeholder="Enter your phone number"
+                />
+              </div>
+
+              <div className="form-row">
+                <div className="form-group">
+                  <label htmlFor="gender">Gender</label>
+                  <select
+                    id="gender"
+                    name="gender"
+                    value={editFormData.gender || ""}
+                    onChange={handleInputChange}
+                  >
+                    <option value="">Select gender</option>
+                    <option value="male">Male</option>
+                    <option value="female">Female</option>
+                    <option value="other">Other</option>
+                  </select>
+                </div>
+
+                <div className="form-group">
+                  <label htmlFor="dateOfBirth">Date of Birth</label>
+                  <input
+                    id="dateOfBirth"
+                    name="dateOfBirth"
+                    type="date"
+                    value={editFormData.dateOfBirth ? editFormData.dateOfBirth.split("T")[0] : ""}
+                    onChange={handleInputChange}
+                  />
+                </div>
+              </div>
+
+              <div className="form-actions">
+                <button type="button" onClick={handleCloseModal} className="btn-cancel">
+                  Cancel
+                </button>
+                <button type="submit" disabled={isLoading} className="btn-save">
+                  {isLoading ? "Saving..." : "Save Changes"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
