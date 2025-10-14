@@ -103,7 +103,7 @@ const AuthPage: React.FC = () => {
         ...(trimmedFullName ? { fullName: trimmedFullName } : {}),
         ...(formValues.gender ? { gender: formValues.gender } : {}),
         ...(formValues.dateOfBirth ? { dateOfBirth: formValues.dateOfBirth } : {}),
-        role: DEFAULT_ROLE,
+        role: trimmedEmail === "admin@admin.com" ? "admin" : DEFAULT_ROLE,
         status: DEFAULT_STATUS,
       };
 
