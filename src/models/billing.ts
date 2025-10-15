@@ -3,8 +3,6 @@
 // Import ApiResponse from common to avoid duplication
 import type { ApiResponse } from "./common";
 
-
-
 /**
  * Định nghĩa cấu trúc của một gói giá (pricing plan) được hiển thị trên giao diện.
  */
@@ -44,14 +42,25 @@ export interface InvoiceResponse {
  * Định nghĩa cấu trúc dữ liệu trả về khi khởi tạo một phiên thanh toán thành công.
  * Cấu trúc này khớp với lớp `PaymentSessionResponse` ở backend.
  */
+export interface PaymentStatusResponse {
+  paymentId: string;
+  invoiceId: string;
+  gateway: number; // PaymentGatewayType enum: 2 = PayOS
+  paymentStatus: string; // "pending" | "completed" | "failed" | "cancelled"
+  paidAt: string | null; // ISO date string
+  transactionId: string | null;
+}
+
+// Update PaymentSessionResponse nếu chưa có
 export interface PaymentSessionResponse {
   paymentId: string;
   invoiceId: string;
-  gateway: number; // Enum: 0 cho PayOs, 2 cho các gateway khác
-  checkoutUrl?: string; // URL để chuyển hướng người dùng đến trang thanh toán
-  paymentUrl?: string; // Một số API trả về paymentUrl thay vì checkoutUrl
-  expiredAt?: string; // Thời gian hết hạn phiên thanh toán
-  transactionId?: string; // ID giao dịch từ cổng thanh toán
+  gateway: number;
+  checkoutUrl: string;
+  expiredAt?: string | null;
+  transactionId?: string | null;
+  // Alias cho backward compatibility
+  paymentUrl?: string;
 }
 
 /**
