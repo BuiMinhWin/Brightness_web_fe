@@ -53,8 +53,43 @@ const initialState: AuthState = {
 const decodeToken = (token: string) => {
   try {
     const decoded = jwtDecode<DecodedToken>(token);
-    const role = decoded["http://schemas.microsoft.com/ws/2008/06/identity/claims/role"];
-    const userId = decoded["http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier"];
+
+    const takeClaimValue = (value: unknown) => {
+      if (value === undefined || value === null) {
+        return null;
+      }
+      if (Array.isArray(value)) {
+        const [first] = value;
+        return first !== undefined && first !== null ? String(first) : null;
+      }
+      return String(value);
+    };
+
+    const pickClaim = (keys: string[]) => {
+      for (const key of keys) {
+        const value = takeClaimValue(decoded[key]);
+        if (value) {
+          return value;
+        }
+      }
+      return null;
+    };
+
+    const role = pickClaim([
+      "http://schemas.microsoft.com/ws/2008/06/identity/claims/role",
+      "role",
+      "roles",
+    ]);
+
+    const userId = pickClaim([
+      "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier",
+      "sub",
+      "userId",
+      "UserId",
+      "uid",
+      "nameid",
+    ]);
+
     return { role, userId };
   } catch (error) {
     console.error("Failed to decode token:", error);

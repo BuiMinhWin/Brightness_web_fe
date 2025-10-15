@@ -67,7 +67,7 @@ export interface PaymentSessionResponse {
  * Định nghĩa cấu trúc payload (dữ liệu gửi đi) để tạo một hóa đơn.
  */
 export interface CreateInvoicePayload {
-  userExternalId: string;
+  userId: string;
   subscriptionPlanId: string;
   dueDate: string;
   notes?: string;

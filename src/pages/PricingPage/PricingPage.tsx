@@ -141,11 +141,13 @@ const PricingPage: React.FC = () => {
         const dueDate = today.toISOString().split("T")[0]; // Format: YYYY-MM-DD
 
         const invoicePayload: CreateInvoicePayload = {
-          userExternalId: userId,
+          userId: userId,
           subscriptionPlanId: pendingPlan.id,
           dueDate: dueDate,
           notes: `Invoice for plan ${subscriptionPlan.name || pendingPlan.id}`,
         };
+        console.log("invoicePayload: ", invoicePayload);
+        console.log("Creating invoice with payload:", invoicePayload.userId);
 
         // Bây giờ invoice sẽ có đúng structure với id
         const invoice = await billingService.createInvoice(invoicePayload);
@@ -159,8 +161,8 @@ const PricingPage: React.FC = () => {
         const paymentSession = await billingService.initiatePayment({
           invoiceId: invoice.id,
           gateway: 2, // 2 = PayOS
-          returnUrl: `https://brightnessweb.vercel.app/payment-success?invoiceId=${invoice.id}`,
-          cancelUrl: `https://brightnessweb.vercel.app/pricing`,
+          returnUrl: `http://localhost:3000/payment-success?invoiceId=${invoice.id}`,
+          cancelUrl: `http://localhost:3000/pricing`,
         });
 
         // Bước 3: Kiểm tra và chuyển hướng người dùng.
@@ -225,6 +227,11 @@ const PricingPage: React.FC = () => {
   return (
     <div className="pricing-page">
       <div className="pricing-content">
+        {userId && (
+          <div className="pricing-user-id-banner">
+            Logged in user ID: <span className="pricing-user-id">{userId}</span>
+          </div>
+        )}
         {/* Header */}
         <div className="pricing-header">
           <div className="flex justify-between items-center w-full">
