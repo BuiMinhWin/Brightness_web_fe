@@ -19,9 +19,6 @@ type AuthFormValues = {
   gender?: string;
   dateOfBirth?: string;
 };
-
-const DEFAULT_ROLE = "admin";
-const DEFAULT_STATUS = "active";
 const INITIAL_FORM_VALUES: AuthFormValues = {
   email: "",
   userName: "",
@@ -102,26 +99,24 @@ const AuthPage: React.FC = () => {
         ...(trimmedFullName ? { fullName: trimmedFullName } : {}),
         ...(formValues.gender ? { gender: formValues.gender } : {}),
         ...(formValues.dateOfBirth ? { dateOfBirth: formValues.dateOfBirth } : {}),
-        role: DEFAULT_ROLE,
-        status: DEFAULT_STATUS,
       };
 
-      console.log("📝 Dispatching registration:", registerPayload);
+      console.log("Dispatching registration:", registerPayload);
       const result = await dispatch(registerUser(registerPayload));
-      console.log("📤 Registration dispatch result:", result);
+      console.log("Registration dispatch result:", result);
     } else {
       // Sign in
       const loginPayload: LoginRequest = {
         email: trimmedEmail,
         password: formValues.password,
       };
-      console.log("🔑 Dispatching login:", loginPayload);
+      console.log("Dispatching login:", loginPayload);
       const result = await dispatch(loginUser(loginPayload));
-      console.log("📤 Login dispatch result:", result);
+      console.log("Login dispatch result:", result);
 
       // Check if login failed
       if (loginUser.rejected.match(result)) {
-        console.error("❌ Login failed:", result.payload);
+        console.error(" Login failed:", result.payload);
         setToast({
           open: true,
           message: (result.payload as string) || "Login failed. Please check your credentials.",
