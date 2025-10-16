@@ -248,15 +248,27 @@ export const fetchUserInfo = createAsyncThunk(
 );
 
 // Async thunk for logout
-export const logoutUser = createAsyncThunk("auth/logoutUser", async (_, { rejectWithValue }) => {
-  try {
-    // Here you could call a logout endpoint if your API has one
-    // For now, we just clear the local state
-    return true;
-  } catch (error) {
-    return rejectWithValue(error instanceof Error ? error.message : "Logout failed");
+export const logoutUser = createAsyncThunk(
+  "auth/logoutUser",
+  async (_, { getState, rejectWithValue }) => {
+    try {
+      const state = getState() as { auth: AuthState };
+      const refreshToken = state.auth.refreshToken;
+
+      if (refreshToken) {
+        try {
+          await authService.revokeToken(refreshToken);
+        } catch (err) {
+          console.warn("Failed to revoke refresh token:", err);
+        }
+      }
+
+      return true;
+    } catch (error) {
+      return rejectWithValue(error instanceof Error ? error.message : "Logout failed");
+    }
   }
-});
+);
 
 // Async thunk to load auth state from localStorage (for app initialization)
 export const loadAuthFromStorage = createAsyncThunk(

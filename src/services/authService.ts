@@ -32,6 +32,16 @@ export const authService = {
     });
   },
 
+  /** Thu hồi refresh token đang dùng */
+  async revokeToken(refreshToken: string): Promise<ApiResponse<string>> {
+    return httpRequest<ApiResponse<string>>("/auth/api/Authentication/revoke", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ refreshToken }),
+      skipAuth: true, // revoke chỉ cần refresh token
+    });
+  },
+
   /** Đăng ký: backend trả { flag, message } */
   async register(data: RegisterRequest): Promise<RegisterResponse> {
     return httpRequest<RegisterResponse>("/auth/api/Authentication/register", {
