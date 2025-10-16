@@ -20,7 +20,7 @@ type AuthFormValues = {
   dateOfBirth?: string;
 };
 
-const DEFAULT_ROLE = "admin";
+const DEFAULT_ROLE = "user";
 const DEFAULT_STATUS = "active";
 const INITIAL_FORM_VALUES: AuthFormValues = {
   email: "",

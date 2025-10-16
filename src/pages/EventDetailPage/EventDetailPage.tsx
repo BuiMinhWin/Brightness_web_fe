@@ -77,9 +77,38 @@ const EventDetailPage: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [joining, setJoining] = useState(false);
   const [participantCount, setParticipantCount] = useState(0);
+  const [isAlreadyJoined, setIsAlreadyJoined] = useState(false);
   
   const navigate = useNavigate();
   const { eventId } = useParams<{ eventId: string }>();
+
+  // Generate a valid Guid v4
+  const generateGuid = (): string => {
+    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+      const r = Math.random() * 16 | 0;
+      const v = c === 'x' ? r : (r & 0x3 | 0x8);
+      return v.toString(16);
+    });
+  };
+
+  // Get user ID from localStorage or authentication context
+  const getUserId = (): string => {
+    // Try to get from localStorage first
+    const storedUserId = localStorage.getItem('userId');
+    if (storedUserId) {
+      // Validate if it's a proper Guid format
+      const guidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+      if (guidRegex.test(storedUserId)) {
+        return storedUserId;
+      }
+    }
+
+    // If not found or invalid, generate a new Guid and store it
+    const newUserId = generateGuid();
+    localStorage.setItem('userId', newUserId);
+    console.log('🆔 Generated new userId (Guid):', newUserId);
+    return newUserId;
+  };
 
   // Fetch challenge data
   useEffect(() => {
@@ -99,7 +128,6 @@ const EventDetailPage: React.FC = () => {
         // Fetch challenge first
         const challenge = await challengeService.getChallenge(eventId);
         console.log("✅ Challenge fetched:", challenge);
-        console.log("📌 Challenge ID:", challenge.id);
 
         // Fetch rules, tasks, and participants with individual error handling
         let rules: ChallengeRule[] = [];
@@ -109,31 +137,18 @@ const EventDetailPage: React.FC = () => {
         try {
           rules = await challengeService.getRulesByChallengeId(eventId);
           console.log("✅ Rules fetched:", rules);
-          console.log("📊 Rules count:", rules?.length || 0);
           
-          // Fallback: If no rules found, try fetching all and filtering
           if (!rules || rules.length === 0) {
             console.log("⚠️ No rules from specific endpoint, trying to fetch all rules...");
             const allRules = await challengeService.getAllChallengeRules();
-            console.log("📋 All rules:", allRules);
-            rules = allRules.filter(rule => {
-              console.log(`🔍 Comparing rule.challengeId: ${rule.challengeId} with eventId: ${eventId}`);
-              return rule.challengeId === eventId;
-            });
+            rules = allRules.filter(rule => rule.challengeId === eventId);
             console.log("✅ Filtered rules:", rules);
-            console.log("📊 Filtered rules count:", rules?.length || 0);
           }
         } catch (err) {
           console.warn("⚠️ Failed to fetch rules:", err);
-          // Try fallback
           try {
             const allRules = await challengeService.getAllChallengeRules();
-            console.log("📋 All rules (fallback):", allRules);
-            rules = allRules.filter(rule => {
-              console.log(`🔍 Comparing rule.challengeId: ${rule.challengeId} with eventId: ${eventId}`);
-              return rule.challengeId === eventId;
-            });
-            console.log("✅ Filtered rules (fallback):", rules);
+            rules = allRules.filter(rule => rule.challengeId === eventId);
           } catch (fallbackErr) {
             console.error("❌ Fallback also failed:", fallbackErr);
           }
@@ -142,31 +157,18 @@ const EventDetailPage: React.FC = () => {
         try {
           tasks = await challengeService.getTasksByChallengeId(eventId);
           console.log("✅ Tasks fetched:", tasks);
-          console.log("📊 Tasks count:", tasks?.length || 0);
           
-          // Fallback: If no tasks found, try fetching all and filtering
           if (!tasks || tasks.length === 0) {
             console.log("⚠️ No tasks from specific endpoint, trying to fetch all tasks...");
             const allTasks = await challengeService.getAllChallengeTasks();
-            console.log("📋 All tasks:", allTasks);
-            tasks = allTasks.filter(task => {
-              console.log(`🔍 Comparing task.challengeId: ${task.challengeId} with eventId: ${eventId}`);
-              return task.challengeId === eventId;
-            });
+            tasks = allTasks.filter(task => task.challengeId === eventId);
             console.log("✅ Filtered tasks:", tasks);
-            console.log("📊 Filtered tasks count:", tasks?.length || 0);
           }
         } catch (err) {
           console.warn("⚠️ Failed to fetch tasks:", err);
-          // Try fallback
           try {
             const allTasks = await challengeService.getAllChallengeTasks();
-            console.log("📋 All tasks (fallback):", allTasks);
-            tasks = allTasks.filter(task => {
-              console.log(`🔍 Comparing task.challengeId: ${task.challengeId} with eventId: ${eventId}`);
-              return task.challengeId === eventId;
-            });
-            console.log("✅ Filtered tasks (fallback):", tasks);
+            tasks = allTasks.filter(task => task.challengeId === eventId);
           } catch (fallbackErr) {
             console.error("❌ Fallback also failed:", fallbackErr);
           }
@@ -176,20 +178,27 @@ const EventDetailPage: React.FC = () => {
           participants = await challengeService.getParticipantsByChallengeId(eventId);
           console.log("✅ Participants fetched:", participants);
           
-          // Fallback: If no participants found, try fetching all and filtering
           if (!participants || participants.length === 0) {
             console.log("⚠️ No participants from specific endpoint, trying to fetch all participants...");
             const allParticipants = await challengeService.getAllChallengeParticipants();
             participants = allParticipants.filter(p => p.challengeId === eventId);
             console.log("✅ Filtered participants:", participants);
           }
+
+          // Check if current user has already joined
+          const currentUserId = getUserId();
+          const alreadyJoined = participants.some(p => p.userId === currentUserId);
+          setIsAlreadyJoined(alreadyJoined);
+          console.log("✅ Already joined:", alreadyJoined);
         } catch (err) {
           console.warn("⚠️ Failed to fetch participants:", err);
-          // Try fallback
           try {
             const allParticipants = await challengeService.getAllChallengeParticipants();
             participants = allParticipants.filter(p => p.challengeId === eventId);
-            console.log("✅ Filtered participants (fallback):", participants);
+            
+            const currentUserId = getUserId();
+            const alreadyJoined = participants.some(p => p.userId === currentUserId);
+            setIsAlreadyJoined(alreadyJoined);
           } catch (fallbackErr) {
             console.error("❌ Fallback also failed:", fallbackErr);
           }
@@ -231,27 +240,19 @@ const EventDetailPage: React.FC = () => {
       (endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)
     );
 
-    // Calculate average minutes per day from tasks
     const totalPoints = tasks.reduce((sum, task) => sum + (task.points || 0), 0);
     const minPerDay = Math.ceil(totalPoints / durationDays) || 45;
 
-    // Format steps from howToParticipate - ensure it's properly parsed
     let steps: Array<{ number: number; title: string; description: string }> = [];
     
-    console.log("📋 Processing rules:", rules);
-    console.log("📋 howToParticipate:", rules?.howToParticipate);
-    
     if (rules?.howToParticipate) {
-      // Check if it's already an array
       if (Array.isArray(rules.howToParticipate)) {
         steps = rules.howToParticipate.map((step, index) => ({
           number: index + 1,
           title: step,
           description: step,
         }));
-      } 
-      // Check if it's a string that needs parsing
-      else if (typeof rules.howToParticipate === 'string') {
+      } else if (typeof rules.howToParticipate === 'string') {
         try {
           const parsed = JSON.parse(rules.howToParticipate);
           if (Array.isArray(parsed)) {
@@ -267,18 +268,12 @@ const EventDetailPage: React.FC = () => {
       }
     }
 
-    // Format rules from ruleText - ensure it's properly parsed
     let rulesList: string[] = [];
     
-    console.log("📋 ruleText:", rules?.ruleText);
-    
     if (rules?.ruleText) {
-      // Check if it's already an array
       if (Array.isArray(rules.ruleText)) {
         rulesList = rules.ruleText;
-      }
-      // Check if it's a string that needs parsing
-      else if (typeof rules.ruleText === 'string') {
+      } else if (typeof rules.ruleText === 'string') {
         try {
           const parsed = JSON.parse(rules.ruleText);
           if (Array.isArray(parsed)) {
@@ -289,9 +284,6 @@ const EventDetailPage: React.FC = () => {
         }
       }
     }
-
-    console.log("✅ Final steps:", steps);
-    console.log("✅ Final rulesList:", rulesList);
 
     return {
       id: challenge.id,
@@ -341,7 +333,6 @@ const EventDetailPage: React.FC = () => {
     };
   };
 
-  // Helper functions
   const getTimeRemaining = (challenge: Challenge) => {
     const now = new Date();
     const startDate = challenge.startAt ? new Date(challenge.startAt) : null;
@@ -424,11 +415,26 @@ const EventDetailPage: React.FC = () => {
     try {
       setJoining(true);
 
-      // TODO: Replace with actual user ID from your auth context/store
-      const userId = "current-user-id"; // Get from your authentication system
+      const userId = getUserId();
+      console.log("🆔 Using userId:", userId);
+
+      // Validate Guid format
+      const guidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+      if (!guidRegex.test(userId)) {
+        console.error("❌ Invalid userId format (not a Guid):", userId);
+        alert("Invalid user ID format. Please try refreshing the page.");
+        return;
+      }
+
+      // Validate eventId is a Guid
+      if (!guidRegex.test(eventId)) {
+        console.error("❌ Invalid eventId format (not a Guid):", eventId);
+        alert("Invalid event ID format.");
+        return;
+      }
 
       // Create participant
-      await challengeService.createChallengeParticipant({
+      const participantData = {
         challengeId: eventId,
         userId: userId,
         joinedAt: new Date().toISOString(),
@@ -437,26 +443,41 @@ const EventDetailPage: React.FC = () => {
         percentageCompleted: 0,
         currentStreak: 0,
         longestStreak: 0,
-      });
+      };
 
-      // Update participant count
+      console.log("📤 Sending participant data:", participantData);
+
+      await challengeService.createChallengeParticipant(participantData);
+
+      console.log("✅ Successfully joined challenge!");
+
+      // Update participant count and joined status
       setParticipantCount((prev) => prev + 1);
+      setIsAlreadyJoined(true);
       setShowJoinDialog(false);
 
       // Show success message
       alert(`Successfully joined ${event.title}!`);
 
-      // Navigate back to gamification page
-      navigate("/gamification-feature");
-    } catch (err) {
-      console.error("Error joining event:", err);
-      alert("Failed to join the event. You may have already joined or there was an error.");
+      // Navigate to your missions page
+      navigate("/your-missions");
+    } catch (err: any) {
+      console.error("❌ Error joining event:", err);
+      
+      // More specific error messages
+      if (err.message?.includes("already")) {
+        alert("You have already joined this challenge!");
+        setIsAlreadyJoined(true);
+      } else if (err.status === 400) {
+        alert("Invalid request. Please check if the challenge exists and you're not already a participant.");
+      } else {
+        alert("Failed to join the event. Please try again.");
+      }
     } finally {
       setJoining(false);
     }
   };
 
-  // Loading state
   if (loading) {
     return (
       <div className="event-detail-page">
@@ -467,7 +488,6 @@ const EventDetailPage: React.FC = () => {
     );
   }
 
-  // Error state
   if (error || !event) {
     return (
       <div className="event-detail-page">
@@ -489,7 +509,6 @@ const EventDetailPage: React.FC = () => {
 
   return (
     <div className="event-detail-page">
-      {/* Header */}
       <div className="event-header">
         <div className="event-header-content">
           <button onClick={handleYoursClick} className="back-button">
@@ -502,9 +521,7 @@ const EventDetailPage: React.FC = () => {
 
       <h1 className="hero-title">{event.title}</h1>
 
-      {/* Content */}
       <div className="event-content">
-        {/* Event Description */}
         <div className="content-card">
           <div className="card-header">
             <div className="icon-wrapper blue">
@@ -515,7 +532,6 @@ const EventDetailPage: React.FC = () => {
           <p className="description-text">{event.description}</p>
         </div>
 
-        {/* How to Participate */}
         {(event.howToParticipate.steps.length > 0 ||
           event.howToParticipate.rules.length > 0) ? (
           <div className="content-card">
@@ -569,7 +585,6 @@ const EventDetailPage: React.FC = () => {
           </div>
         )}
 
-        {/* Event Duration */}
         <div className="content-card">
           <div className="card-header">
             <div className="icon-wrapper purple">
@@ -599,7 +614,6 @@ const EventDetailPage: React.FC = () => {
           </div>
         </div>
 
-        {/* Tasks Section */}
         {event.tasks.length > 0 ? (
           <div className="content-card">
             <div className="card-header">
@@ -643,7 +657,6 @@ const EventDetailPage: React.FC = () => {
           </div>
         )}
 
-        {/* Bonus Section */}
         {event.prize && event.prize !== "No prize pool" && (
           <div className="content-card">
             <div className="card-header">
@@ -669,29 +682,51 @@ const EventDetailPage: React.FC = () => {
           </div>
         )}
 
-        {/* Action Buttons */}
         <div className="content-card action-section">
-          <p className="action-text">Ready to transform your fitness journey?</p>
+          <p className="action-text">
+            {isAlreadyJoined 
+              ? "You're part of this challenge! Keep up the great work!" 
+              : "Ready to transform your fitness journey?"}
+          </p>
           <div className="action-buttons">
-            <button
-              onClick={() => setShowJoinDialog(true)}
-              className="join-button"
-              disabled={joining}
-            >
-              <CheckCircle className="button-icon" size={20} />
-              {joining ? "Joining..." : "Register to Participate"}
-            </button>
-            <button onClick={handleYoursClick} className="back-button-alt">
-              Go Back
-            </button>
+            {isAlreadyJoined ? (
+              <>
+                <button
+                  onClick={() => navigate("/your-missions")}
+                  className="join-button"
+                  style={{ backgroundColor: "#10b981" }}
+                >
+                  <CheckCircle className="button-icon" size={20} />
+                  View Your Progress
+                </button>
+                <button onClick={handleYoursClick} className="back-button-alt">
+                  Browse More Challenges
+                </button>
+              </>
+            ) : (
+              <>
+                <button
+                  onClick={() => setShowJoinDialog(true)}
+                  className="join-button"
+                  disabled={joining}
+                >
+                  <CheckCircle className="button-icon" size={20} />
+                  {joining ? "Joining..." : "Register to Participate"}
+                </button>
+                <button onClick={handleYoursClick} className="back-button-alt">
+                  Go Back
+                </button>
+              </>
+            )}
           </div>
           <p className="participation-info">
-            Free to join • {participantCount} participants
+            {isAlreadyJoined 
+              ? `You and ${participantCount - 1} others are participating` 
+              : `Free to join • ${participantCount} participants`}
           </p>
         </div>
       </div>
 
-      {/* Join Dialog */}
       {showJoinDialog && (
         <div className="dialog-overlay">
           <div className="dialog-content">

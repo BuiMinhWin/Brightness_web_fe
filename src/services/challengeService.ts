@@ -1,5 +1,3 @@
-
-
 import type { ApiResponse } from "../models";
 import { httpRequest } from "./httpClientRedux";
 
@@ -68,15 +66,15 @@ export interface ChallengeParticipant extends ChallengeParticipantDTO {
   id: string;
 }
 
-// Challenge Task Progress Models
+// ✅ Challenge Task Progress Models - FIXED to match backend
 export interface ChallengeTaskProgressDTO {
   participantId: string;
-  taskId: string;
+  challengeTaskId: string;
+  targetDate?: string;
   status?: string;
-  completedAt?: string;
+  validationData?: string;
   pointsEarned?: number;
-  submissionData?: string;
-  verificationStatus?: string;
+  completedAt?: string;
 }
 
 export interface ChallengeTaskProgress extends ChallengeTaskProgressDTO {
@@ -161,25 +159,25 @@ export const challengeService = {
   },
 
   async getRulesByChallengeId(challengeId: string): Promise<ChallengeRule[]> {
-  if (!challengeId || challengeId === 'undefined' || challengeId === 'null') {
-    console.error("❌ Invalid challengeId provided to getRulesByChallengeId:", challengeId);
-    return [];
-  }
-  
-  try {
-    console.log(`🔍 Fetching rules for challenge: ${challengeId}`);
-    const url = `/challenge/api/challenges/${challengeId}/rules`;
-    console.log(`📡 API URL: ${url}`);
+    if (!challengeId || challengeId === 'undefined' || challengeId === 'null') {
+      console.error("❌ Invalid challengeId provided to getRulesByChallengeId:", challengeId);
+      return [];
+    }
     
-    const result = await httpRequest<ChallengeRule[]>(url, { method: "GET" });
-    console.log(`✅ Rules response:`, result);
-    
-    return result;
-  } catch (error) {
-    console.error(`❌ Error fetching rules for challenge ${challengeId}:`, error);
-    return [];
-  }
-},
+    try {
+      console.log(`🔍 Fetching rules for challenge: ${challengeId}`);
+      const url = `/challenge/api/challenges/${challengeId}/rules`;
+      console.log(`📡 API URL: ${url}`);
+      
+      const result = await httpRequest<ChallengeRule[]>(url, { method: "GET" });
+      console.log(`✅ Rules response:`, result);
+      
+      return result;
+    } catch (error) {
+      console.error(`❌ Error fetching rules for challenge ${challengeId}:`, error);
+      return [];
+    }
+  },
 
   async updateChallengeRule(id: string, data: ChallengeRuleDTO): Promise<ApiResponse<string>> {
     return httpRequest<ApiResponse<string>>(`/challenge/api/ChallengeRules/${id}`, {
@@ -218,27 +216,26 @@ export const challengeService = {
     return httpRequest<ChallengeTask[]>("/challenge/api/ChallengeTasks", { method: "GET" });
   },
 
-async getTasksByChallengeId(challengeId: string): Promise<ChallengeTask[]> {
-  if (!challengeId || challengeId === 'undefined' || challengeId === 'null') {
-    console.error("❌ Invalid challengeId provided to getTasksByChallengeId:", challengeId);
-    return [];
-  }
-  
-  try {
-    console.log(`🔍 Fetching tasks for challenge: ${challengeId}`);
-    const url = `/challenge/api/challenges/${challengeId}/tasks`;
-    console.log(`📡 API URL: ${url}`);
+  async getTasksByChallengeId(challengeId: string): Promise<ChallengeTask[]> {
+    if (!challengeId || challengeId === 'undefined' || challengeId === 'null') {
+      console.error("❌ Invalid challengeId provided to getTasksByChallengeId:", challengeId);
+      return [];
+    }
     
-    const result = await httpRequest<ChallengeTask[]>(url, { method: "GET" });
-    console.log(`✅ Tasks response:`, result);
-    
-    return result;
-  } catch (error) {
-    console.error(`❌ Error fetching tasks for challenge ${challengeId}:`, error);
-    return [];
-  }
-},
-
+    try {
+      console.log(`🔍 Fetching tasks for challenge: ${challengeId}`);
+      const url = `/challenge/api/challenges/${challengeId}/tasks`;
+      console.log(`📡 API URL: ${url}`);
+      
+      const result = await httpRequest<ChallengeTask[]>(url, { method: "GET" });
+      console.log(`✅ Tasks response:`, result);
+      
+      return result;
+    } catch (error) {
+      console.error(`❌ Error fetching tasks for challenge ${challengeId}:`, error);
+      return [];
+    }
+  },
 
   async updateChallengeTask(id: string, data: ChallengeTaskDTO): Promise<ApiResponse<string>> {
     return httpRequest<ApiResponse<string>>(`/challenge/api/ChallengeTasks/${id}`, {
@@ -269,28 +266,26 @@ async getTasksByChallengeId(challengeId: string): Promise<ChallengeTask[]> {
     return httpRequest<ChallengeParticipant[]>("/challenge/api/ChallengeParticipants", { method: "GET" });
   },
 
- async getParticipantsByChallengeId(challengeId: string): Promise<ChallengeParticipant[]> {
-  if (!challengeId || challengeId === 'undefined' || challengeId === 'null') {
-    console.error("❌ Invalid challengeId provided to getParticipantsByChallengeId:", challengeId);
-    return [];
-  }
-  
-  try {
-    console.log(`🔍 Fetching participants for challenge: ${challengeId}`);
-    const url = `/challenge/api/challenges/${challengeId}/participants`;
-    console.log(`📡 API URL: ${url}`);
+  async getParticipantsByChallengeId(challengeId: string): Promise<ChallengeParticipant[]> {
+    if (!challengeId || challengeId === 'undefined' || challengeId === 'null') {
+      console.error("❌ Invalid challengeId provided to getParticipantsByChallengeId:", challengeId);
+      return [];
+    }
     
-    const result = await httpRequest<ChallengeParticipant[]>(url, { method: "GET" });
-    console.log(`✅ Participants response:`, result);
-    
-    return result;
-  } catch (error) {
-    console.error(`❌ Error fetching participants for challenge ${challengeId}:`, error);
-    return [];
-  }
-},
-
-
+    try {
+      console.log(`🔍 Fetching participants for challenge: ${challengeId}`);
+      const url = `/challenge/api/challenges/${challengeId}/participants`;
+      console.log(`📡 API URL: ${url}`);
+      
+      const result = await httpRequest<ChallengeParticipant[]>(url, { method: "GET" });
+      console.log(`✅ Participants response:`, result);
+      
+      return result;
+    } catch (error) {
+      console.error(`❌ Error fetching participants for challenge ${challengeId}:`, error);
+      return [];
+    }
+  },
 
   async updateChallengeParticipant(id: string, data: ChallengeParticipantDTO): Promise<ApiResponse<string>> {
     return httpRequest<ApiResponse<string>>(`/challenge/api/ChallengeParticipants/${id}`, {
@@ -304,7 +299,7 @@ async getTasksByChallengeId(challengeId: string): Promise<ChallengeTask[]> {
     return httpRequest<ApiResponse<string>>(`/challenge/api/ChallengeParticipants/${id}`, { method: "DELETE" });
   },
 
-  // ============ CHALLENGE TASK PROGRESS ENDPOINTS ============
+  // ✅ ============ CHALLENGE TASK PROGRESS ENDPOINTS - FIXED ============
   async createChallengeTaskProgress(data: ChallengeTaskProgressDTO): Promise<ChallengeTaskProgress> {
     return httpRequest<ChallengeTaskProgress>("/challenge/api/ChallengeTaskProgresses", {
       method: "POST",

@@ -2,22 +2,50 @@ import React, { useState, useEffect } from "react";
 import "./GamificationPage.css";
 import GameFooter from "../../components/layout/GameFooter";
 import { useNavigate } from "react-router-dom";
-import { challengeService, Challenge } from "../../services/challengeService";
+import { challengeService, Challenge, ChallengeParticipant } from "../../services/challengeService";
 
 interface GamificationPageProps {
   onNavigate: (page: string) => void;
   onViewEventDetail?: (eventId: number) => void;
 }
 
+interface ChallengeWithRegistration extends Challenge {
+  isRegistered: boolean;
+}
+
 const GamificationPage: React.FC = () => {
   const [activeFilter, setActiveFilter] = useState("all");
   const [currentPage, setCurrentPage] = useState(1);
-  const [challenges, setChallenges] = useState<Challenge[]>([]);
+  const [challenges, setChallenges] = useState<ChallengeWithRegistration[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
   
   const ITEMS_PER_PAGE = 6;
+
+  // Generate a valid Guid v4
+  const generateGuid = (): string => {
+    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+      const r = Math.random() * 16 | 0;
+      const v = c === 'x' ? r : (r & 0x3 | 0x8);
+      return v.toString(16);
+    });
+  };
+
+  // Get user ID from localStorage
+  const getUserId = (): string => {
+    const storedUserId = localStorage.getItem('userId');
+    if (storedUserId) {
+      const guidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+      if (guidRegex.test(storedUserId)) {
+        return storedUserId;
+      }
+    }
+    
+    const newUserId = generateGuid();
+    localStorage.setItem('userId', newUserId);
+    return newUserId;
+  };
 
   // Fetch challenges from API
   useEffect(() => {
@@ -25,8 +53,34 @@ const GamificationPage: React.FC = () => {
       try {
         setLoading(true);
         setError(null);
+        
+        // Fetch all challenges
         const data = await challengeService.getAllChallenges();
-        setChallenges(data);
+        
+        // Fetch all participants
+        const allParticipants = await challengeService.getAllChallengeParticipants();
+        
+        // Get current user ID
+        const userId = getUserId();
+        
+        // Check which challenges the user has registered for
+        const challengesWithRegistration: ChallengeWithRegistration[] = data.map(challenge => {
+          const isRegistered = allParticipants.some(
+            p => p.challengeId === challenge.id && p.userId === userId
+          );
+          return {
+            ...challenge,
+            isRegistered
+          };
+        });
+        
+        // Sort: registered challenges at the bottom
+        const sortedChallenges = challengesWithRegistration.sort((a, b) => {
+          if (a.isRegistered === b.isRegistered) return 0;
+          return a.isRegistered ? 1 : -1;
+        });
+        
+        setChallenges(sortedChallenges);
       } catch (err) {
         console.error("Error fetching challenges:", err);
         setError("Failed to load challenges. Please try again later.");
@@ -127,7 +181,7 @@ const GamificationPage: React.FC = () => {
   };
 
   const handleYoursClick = () => {
-    navigate("/your-missions");
+    navigate("/your-challenges");
   };
 
   const handlePageChange = (page: number) => {
@@ -222,7 +276,7 @@ const GamificationPage: React.FC = () => {
           </div>
 
           <button className="yours-btn" onClick={handleYoursClick}>
-            Yours
+            Your Challenges
           </button>
         </div>
 
@@ -254,7 +308,14 @@ const GamificationPage: React.FC = () => {
               </div>
             ) : (
               currentChallenges.map((challenge) => (
-                <div key={challenge.id} className="competition-card">
+                <div 
+                  key={challenge.id} 
+                  className="competition-card"
+                  style={{
+                    opacity: challenge.isRegistered ? 0.9 : 1,
+                    order: challenge.isRegistered ? 1 : 0
+                  }}
+                >
                   <div className="card-header">
                     <div className="competition-avatar">
                       <span>{getInitials(challenge.title)}</span>
@@ -320,12 +381,36 @@ const GamificationPage: React.FC = () => {
                     </div>
                   </div>
 
-                  <button
-                    className="view-details-btn"
-                    onClick={() => handleViewDetails(challenge.id)}
-                  >
-                    View Details
-                  </button>
+                  {challenge.isRegistered ? (
+                    <button
+                      className="view-details-btn registered"
+                      onClick={() => handleViewDetails(challenge.id)}
+                      style={{
+                        backgroundColor: "#f97316",
+                        borderColor: "#f97316",
+                      }}
+                    >
+                      <svg 
+                        width="16" 
+                        height="16" 
+                        viewBox="0 0 24 24" 
+                        fill="none" 
+                        stroke="currentColor" 
+                        strokeWidth="2"
+                        style={{ marginRight: "6px" }}
+                      >
+                        <polyline points="20 6 9 17 4 12"></polyline>
+                      </svg>
+                      Registered
+                    </button>
+                  ) : (
+                    <button
+                      className="view-details-btn"
+                      onClick={() => handleViewDetails(challenge.id)}
+                    >
+                      View Details
+                    </button>
+                  )}
                 </div>
               ))
             )}
