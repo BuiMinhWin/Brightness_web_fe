@@ -19,6 +19,13 @@ type AuthFormValues = {
   gender?: string;
   dateOfBirth?: string;
 };
+
+const GENDER_OPTIONS = [
+  { value: "", label: "Select gender" },
+  { value: "male", label: "Male" },
+  { value: "female", label: "Female" },
+  { value: "other", label: "Other" },
+] as const;
 const INITIAL_FORM_VALUES: AuthFormValues = {
   email: "",
   userName: "",
@@ -96,6 +103,8 @@ const AuthPage: React.FC = () => {
         email: trimmedEmail,
         userName: trimmedUserName || trimmedEmail,
         password: formValues.password,
+        role: "user",
+        status: "active",
         ...(trimmedFullName ? { fullName: trimmedFullName } : {}),
         ...(formValues.gender ? { gender: formValues.gender } : {}),
         ...(formValues.dateOfBirth ? { dateOfBirth: formValues.dateOfBirth } : {}),
@@ -296,10 +305,15 @@ const AuthPage: React.FC = () => {
                     onChange={handleInputChange}
                     className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-gray-700 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 outline-none transition-all"
                   >
-                    <option value="">Select gender</option>
-                    <option value="male">Male</option>
-                    <option value="female">Female</option>
-                    <option value="other">Other</option>
+                    {GENDER_OPTIONS.map((option) => (
+                      <option
+                        key={option.value || "gender-placeholder"}
+                        value={option.value}
+                        disabled={option.value === ""}
+                      >
+                        {option.label}
+                      </option>
+                    ))}
                   </select>
                 </div>
 
