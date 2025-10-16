@@ -2,7 +2,11 @@ import React, { useState } from "react";
 import { PlusIcon, FileTextIcon, ImageIcon } from "@radix-ui/react-icons";
 import CreatePostDialog from "./CreatePostDialog";
 
-const FAB: React.FC = () => {
+interface FABProps {
+  onPostCreated?: () => void;
+}
+
+const FAB: React.FC<FABProps> = ({ onPostCreated }) => {
   const [isExpanded, setIsExpanded] = useState(false);
   const [hoveredOption, setHoveredOption] = useState<string | null>(null);
   const [isCreatePostOpen, setIsCreatePostOpen] = useState(false);
@@ -192,7 +196,11 @@ const FAB: React.FC = () => {
       </div>
 
       {/* Create Post Dialog */}
-      <CreatePostDialog isOpen={isCreatePostOpen} onClose={() => setIsCreatePostOpen(false)} />
+      <CreatePostDialog 
+        isOpen={isCreatePostOpen} 
+        onClose={() => setIsCreatePostOpen(false)}
+        onPostCreated={onPostCreated}
+      />
     </div>
   );
 };

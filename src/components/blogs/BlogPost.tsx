@@ -1,22 +1,25 @@
-import React, { useState } from "react";
+import React, { useState, useRef, useEffect } from "react";
+import { createPortal } from "react-dom";
 import {
-  StarFilledIcon,
-  StarIcon,
   ChatBubbleIcon,
   Share1Icon,
   HeartFilledIcon,
   HeartIcon,
 } from "@radix-ui/react-icons";
+import { useSelector } from "react-redux";
+import { selectUserId } from "../../store/slices/authSlice";
+import { socialService } from "../../services/socialService";
+import ImageViewer from "./ImageViewer";
 
 interface BlogPostProps {
   user: {
     name: string;
     avatar: string;
-    rating: number;
   };
   timestamp: string;
   content: {
     text: string;
+    title?: string;
     media?: string[];
   };
   interactions: {
@@ -24,35 +27,70 @@ interface BlogPostProps {
     retweets: number;
     likes: number;
   };
+  postId?: string;
+  initialLiked?: boolean;
   onClick?: () => void;
+  onLikeChange?: (postId: string, isLiked: boolean, newCount: number) => void;
 }
 
-const BlogPost: React.FC<BlogPostProps> = ({ user, timestamp, content, interactions, onClick }) => {
-  const [liked, setLiked] = useState(false);
+const BlogPost: React.FC<BlogPostProps> = ({ user, timestamp, content, interactions, postId, initialLiked = false, onClick, onLikeChange }) => {
+  const userId = useSelector(selectUserId);
+  const [liked, setLiked] = useState(initialLiked);
   const [retweeted, setRetweeted] = useState(false);
-  const [likesCount, setLikesCount] = useState(interactions.likes);
+  const [likesCount, setLikesCount] = useState(interactions.likes || 0);
   const [retweetsCount, setRetweetsCount] = useState(interactions.retweets);
+  const [viewingImageIndex, setViewingImageIndex] = useState<number | null>(null);
+  const imageClickedRef = useRef(false);
 
-  const handleLike = () => {
-    setLiked(!liked);
-    setLikesCount(liked ? likesCount - 1 : likesCount + 1);
+  // Update liked state when initialLiked prop changes
+  useEffect(() => {
+    setLiked(initialLiked);
+  }, [initialLiked]);
+
+  // Update likes count when interactions.likes prop changes
+  useEffect(() => {
+    setLikesCount(interactions.likes || 0);
+  }, [interactions.likes]);
+
+  const handleLike = async (e: React.MouseEvent) => {
+    e.stopPropagation(); // Don't open post dialog when liking
+    
+    if (!postId || !userId) {
+      console.warn("Cannot like: missing postId or userId");
+      return;
+    }
+
+    try {
+      const newLikedState = !liked;
+      const newLikesCount = Math.max(0, liked ? likesCount - 1 : likesCount + 1);
+
+      if (liked) {
+        // Unlike the post
+        await socialService.cancelPostVote(postId);
+        setLiked(false);
+        setLikesCount(newLikesCount);
+      } else {
+        // Like the post
+        await socialService.votePost(postId, "reaction");
+        setLiked(true);
+        setLikesCount(newLikesCount);
+      }
+
+      // Notify parent to sync state
+      if (onLikeChange) {
+        onLikeChange(postId, newLikedState, newLikesCount);
+      }
+    } catch (err) {
+      console.error("Failed to toggle post like:", err);
+      // Revert on error
+      setLiked(!liked);
+    }
   };
 
-  const handleRetweet = () => {
+  const handleRetweet = (e: React.MouseEvent) => {
+    e.stopPropagation(); // Don't open post dialog when retweeting
     setRetweeted(!retweeted);
     setRetweetsCount(retweeted ? retweetsCount - 1 : retweetsCount + 1);
-  };
-
-  const renderStars = (rating: number) => {
-    return Array.from({ length: 5 }, (_, index) => (
-      <span key={index} style={{ color: index < rating ? "#FFD700" : "#E5E5E5" }}>
-        {index < rating ? (
-          <StarFilledIcon width={14} height={14} />
-        ) : (
-          <StarIcon width={14} height={14} />
-        )}
-      </span>
-    ));
   };
 
   const getMediaGridStyle = (mediaCount: number) => {
@@ -82,9 +120,29 @@ const BlogPost: React.FC<BlogPostProps> = ({ user, timestamp, content, interacti
     return {};
   };
 
+  const handlePostClick = (e: React.MouseEvent) => {
+    // Don't open post dialog if an image was just clicked
+    if (imageClickedRef.current) {
+      imageClickedRef.current = false;
+      return;
+    }
+    if (onClick) {
+      onClick();
+    }
+  };
+
+  const handleImageClick = (index: number) => {
+    imageClickedRef.current = true;
+    setViewingImageIndex(index);
+    // Reset the flag after a short delay
+    setTimeout(() => {
+      imageClickedRef.current = false;
+    }, 100);
+  };
+
   return (
     <div
-      onClick={onClick}
+      onClick={handlePostClick}
       style={{
         padding: "20px",
         margin: "16px 0",
@@ -128,10 +186,10 @@ const BlogPost: React.FC<BlogPostProps> = ({ user, timestamp, content, interacti
         <div
           style={{
             flex: 1,
-            height: "48px",
             display: "flex",
             flexDirection: "column",
             justifyContent: "center",
+            gap: "4px",
           }}
         >
           <h3
@@ -140,21 +198,11 @@ const BlogPost: React.FC<BlogPostProps> = ({ user, timestamp, content, interacti
               fontSize: "16px",
               fontWeight: "600",
               color: "#1a1a1a",
-              marginBottom: "1px",
               lineHeight: "1",
             }}
           >
             {user.name}
           </h3>
-          <div
-            style={{
-              display: "flex",
-              gap: "2px",
-              margin: 0,
-            }}
-          >
-            {renderStars(user.rating)}
-          </div>
           <p
             style={{
               margin: 0,
@@ -162,7 +210,6 @@ const BlogPost: React.FC<BlogPostProps> = ({ user, timestamp, content, interacti
               color: "#666",
               fontWeight: "400",
               lineHeight: "1",
-              marginTop: "1px",
             }}
           >
             {timestamp}
@@ -172,6 +219,19 @@ const BlogPost: React.FC<BlogPostProps> = ({ user, timestamp, content, interacti
 
       {/* Content Section */}
       <div style={{ marginBottom: "16px" }}>
+        {content.title && (
+          <h3
+            style={{
+              margin: "0 0 8px 0",
+              fontSize: "16px",
+              fontWeight: "700",
+              lineHeight: "1.3",
+              color: "#1a1a1a",
+            }}
+          >
+            {content.title}
+          </h3>
+        )}
         <p
           style={{
             margin: 0,
@@ -179,25 +239,69 @@ const BlogPost: React.FC<BlogPostProps> = ({ user, timestamp, content, interacti
             lineHeight: "1.5",
             color: "#333",
             marginBottom: content.media && content.media.length > 0 ? "12px" : "0",
+            whiteSpace: "pre-wrap",
           }}
         >
           {content.text}
         </p>
 
         {content.media && content.media.length > 0 && (
-          <div style={getMediaGridStyle(content.media.length)}>
+          <div 
+            data-image-container
+            style={{
+              display: "grid",
+              gridTemplateColumns: content.media.length === 1 ? "1fr" : content.media.length === 2 ? "1fr 1fr" : "repeat(2, 1fr)",
+              gap: "8px",
+              marginTop: "12px",
+            }}
+          >
             {content.media.map((mediaUrl, index) => (
-              <img
+              <div
                 key={index}
-                src={mediaUrl}
-                alt={`Media ${index + 1}`}
+                data-image-container
+                onClick={(e) => {
+                  e.stopPropagation();
+                  e.preventDefault();
+                  handleImageClick(index);
+                }}
+                onMouseDown={(e) => e.stopPropagation()}
                 style={{
                   width: "100%",
-                  height: "200px",
-                  objectFit: "cover",
-                  gridRow: content.media!.length > 2 && index === 0 ? "1 / 3" : "auto",
+                  maxHeight: content.media!.length === 1 ? "400px" : "250px",
+                  overflow: "hidden",
+                  borderRadius: "8px",
+                  backgroundColor: "rgba(0, 0, 0, 0.05)",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gridColumn: content.media!.length === 3 && index === 0 ? "1 / 3" : "auto",
+                  cursor: "pointer",
+                  transition: "transform 0.2s",
                 }}
-              />
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.transform = "scale(1.02)";
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.transform = "scale(1)";
+                }}
+              >
+                <img
+                  src={mediaUrl}
+                  alt={`Media ${index + 1}`}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    e.preventDefault();
+                  }}
+                  style={{
+                    width: "100%",
+                    height: "auto",
+                    maxHeight: content.media!.length === 1 ? "400px" : "250px",
+                    objectFit: "contain",
+                    display: "block",
+                    pointerEvents: "none",
+                  }}
+                />
+              </div>
             ))}
           </div>
         )}
@@ -220,7 +324,9 @@ const BlogPost: React.FC<BlogPostProps> = ({ user, timestamp, content, interacti
           }}
         >
           <button
-            onClick={() => {}}
+            onClick={(e) => {
+              e.stopPropagation(); // Don't open post dialog
+            }}
             style={{
               display: "flex",
               alignItems: "center",
@@ -316,6 +422,17 @@ const BlogPost: React.FC<BlogPostProps> = ({ user, timestamp, content, interacti
           </button>
         </div>
       </div>
+
+      {/* Image Viewer Modal - Render in portal to escape BlogPost container */}
+      {viewingImageIndex !== null && content.media && createPortal(
+        <ImageViewer
+          images={content.media}
+          initialIndex={viewingImageIndex}
+          isOpen={viewingImageIndex !== null}
+          onClose={() => setViewingImageIndex(null)}
+        />,
+        document.body
+      )}
     </div>
   );
 };
