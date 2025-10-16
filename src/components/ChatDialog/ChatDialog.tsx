@@ -501,31 +501,45 @@ const ChatDialog: React.FC<ChatDialogProps> = ({ open, onClose }) => {
           <div className="flex gap-2 items-center relative" style={{ zIndex: 999 }}>
             <button
               type="button"
-              onClick={() => setShowQuickMenu(!showQuickMenu)}
+              onClick={() => !(isLoading || activeWidget !== "none") && setShowQuickMenu(!showQuickMenu)}
               className="w-10 h-10 rounded-full flex items-center justify-center hover:bg-gray-100 transition-all border-2"
-              style={{ borderColor: '#c8ead6' }}
+              style={{ 
+                borderColor: '#c8ead6',
+                opacity: (isLoading || activeWidget !== "none") ? 0.6 : 1,
+                cursor: (isLoading || activeWidget !== "none") ? 'not-allowed' : 'pointer'
+              }}
+              disabled={isLoading || activeWidget !== "none"}
             >
               <Menu style={{ color: '#0a6a56', fontSize: 20 }} />
             </button>
             <input
               type="text"
               className="flex-1 border-2 rounded-full px-5 py-3 text-sm focus:outline-none focus:ring-2 transition-all"
-              style={{ borderColor: '#c8ead6' }}
+              style={{ 
+                borderColor: '#c8ead6',
+                opacity: (isLoading || activeWidget !== "none") ? 0.6 : 1
+              }}
               placeholder="Ask me about fitness, health, or nutrition..."
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={(e) => {
-                if (e.key === 'Enter') {
+                if (e.key === 'Enter' && !(isLoading || activeWidget !== "none")) {
                   e.preventDefault();
                   handleSend();
                 }
               }}
+              disabled={isLoading || activeWidget !== "none"}
             />
             <button 
               type="button" 
               className="text-white rounded-full px-6 py-3 text-sm font-semibold hover:opacity-90 transition-all"
-              style={{ background: '#0a6a56' }}
+              style={{ 
+                background: '#0a6a56', 
+                opacity: (isLoading || activeWidget !== "none") ? 0.6 : 1,
+                cursor: (isLoading || activeWidget !== "none") ? 'not-allowed' : 'pointer'
+              }}
               onClick={handleSend}
+              disabled={isLoading || activeWidget !== "none"}
             >
               Send
             </button>
