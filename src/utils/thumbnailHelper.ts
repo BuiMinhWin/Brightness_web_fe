@@ -125,3 +125,7 @@ export async function getBestYouTubeThumbnail(url: string): Promise<string> {
   return 'https://via.placeholder.com/400x300?text=Video+Thumbnail';
 }
 
+
+
+
+
