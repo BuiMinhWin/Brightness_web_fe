@@ -1,18 +1,33 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
+import { createPortal } from "react-dom";
 import { Cross2Icon, ImageIcon, MixerHorizontalIcon } from "@radix-ui/react-icons";
 import LabelIcon from "@mui/icons-material/Label";
 import GifIcon from "@mui/icons-material/Gif";
+import { useSelector } from "react-redux";
 
 import { Menubar, MenubarContent, MenubarItem, MenubarMenu, MenubarTrigger } from "../ui/menubar";
+import { socialService } from "../../services/socialService";
+import { selectUserId } from "../../store/slices/authSlice";
+import ImageViewer from "./ImageViewer";
 
 interface CreatePostDialogProps {
   isOpen: boolean;
   onClose: () => void;
+  onPostCreated?: () => void;
 }
 
-const CreatePostDialog: React.FC<CreatePostDialogProps> = ({ isOpen, onClose }) => {
+const CreatePostDialog: React.FC<CreatePostDialogProps> = ({ isOpen, onClose, onPostCreated }) => {
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
-  const [postText, setPostText] = useState("");
+  const [postTitle, setPostTitle] = useState("");
+  const [postContent, setPostContent] = useState("");
+  const [selectedImages, setSelectedImages] = useState<File[]>([]);
+  const [imagePreviews, setImagePreviews] = useState<string[]>([]);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [viewingImageIndex, setViewingImageIndex] = useState<number | null>(null);
+  
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const userId = useSelector(selectUserId);
 
   const tagOptions = [
     "Health",
@@ -46,11 +61,160 @@ const CreatePostDialog: React.FC<CreatePostDialogProps> = ({ isOpen, onClose }) 
     );
   };
 
-  const handlePostSubmit = () => {
-    console.log("Posting:", { text: postText, tags: selectedTags });
-    setPostText("");
-    setSelectedTags([]);
-    onClose();
+  const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files) return;
+
+    const newFiles = Array.from(files);
+    const totalImages = selectedImages.length + newFiles.length;
+
+    if (totalImages > 4) {
+      setError("You can only upload up to 4 images");
+      return;
+    }
+
+    setError(null);
+    setSelectedImages((prev) => [...prev, ...newFiles]);
+
+    // Create previews
+    newFiles.forEach((file) => {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setImagePreviews((prev) => [...prev, reader.result as string]);
+      };
+      reader.readAsDataURL(file);
+    });
+
+    // Reset input
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
+  };
+
+  const handleRemoveImage = (index: number) => {
+    setSelectedImages((prev) => prev.filter((_, i) => i !== index));
+    setImagePreviews((prev) => prev.filter((_, i) => i !== index));
+    setError(null);
+  };
+
+  const handlePostSubmit = async () => {
+    if (!userId) {
+      setError("You must be logged in to post");
+      return;
+    }
+
+    if (!postTitle.trim()) {
+      setError("Post title cannot be empty");
+      return;
+    }
+
+    if (!postContent.trim()) {
+      setError("Post content cannot be empty");
+      return;
+    }
+
+    setIsSubmitting(true);
+    setError(null);
+
+    try {
+      // Create the post
+      const postPayload = {
+        userId: userId,
+        title: postTitle.trim(),
+        content: postContent.trim(),
+        visibility: "public",
+        status: "published",
+      };
+
+      const createdPost = await socialService.createPost(postPayload);
+      console.log("✅ Post created successfully:", createdPost);
+
+      // Upload images if any
+      if (selectedImages.length > 0) {
+        console.log("📷 Uploading images:", selectedImages.length);
+        console.log("📷 Post ID:", createdPost.id);
+        console.log("📷 Image files:", selectedImages.map(f => ({ name: f.name, size: f.size, type: f.type })));
+        try {
+          const uploadResults = await socialService.uploadPostImages(createdPost.id, selectedImages);
+          console.log("✅ Images uploaded successfully:", uploadResults);
+        } catch (imgErr) {
+          console.error("❌ Failed to upload images:", imgErr);
+          console.error("❌ Error details:", {
+            message: imgErr instanceof Error ? imgErr.message : 'Unknown error',
+            stack: imgErr instanceof Error ? imgErr.stack : undefined,
+            error: imgErr
+          });
+          // Don't fail the whole post creation if images fail
+          setError("Post created but some images failed to upload. Please try again.");
+        }
+      }
+
+      // Reset form
+      setPostTitle("");
+      setPostContent("");
+      setSelectedTags([]);
+      setSelectedImages([]);
+      setImagePreviews([]);
+      
+      // Call callback to refresh posts
+      if (onPostCreated) {
+        onPostCreated();
+      }
+      
+      onClose();
+    } catch (err) {
+      console.error("❌ Error creating post:", err);
+      setError(err instanceof Error ? err.message : "Failed to create post. Please try again.");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  // Clean up image previews when dialog closes
+  useEffect(() => {
+    if (!isOpen) {
+      setSelectedImages([]);
+      setImagePreviews([]);
+      setError(null);
+      setPostTitle("");
+      setPostContent("");
+      setSelectedTags([]);
+    }
+  }, [isOpen]);
+
+  // Get grid layout style for images (Fixed height previews)
+  const getImageGridStyle = (count: number) => {
+    if (count === 1) {
+      return {
+        display: "grid",
+        gridTemplateColumns: "1fr",
+        gap: "4px",
+        marginTop: "12px",
+      };
+    } else if (count === 2) {
+      return {
+        display: "grid",
+        gridTemplateColumns: "1fr 1fr",
+        gap: "4px",
+        marginTop: "12px",
+      };
+    } else if (count === 3) {
+      return {
+        display: "grid",
+        gridTemplateColumns: "2fr 1fr",
+        gridTemplateRows: "150px 150px",
+        gap: "4px",
+        marginTop: "12px",
+      };
+    } else {
+      return {
+        display: "grid",
+        gridTemplateColumns: "1fr 1fr",
+        gridTemplateRows: "150px 150px",
+        gap: "4px",
+        marginTop: "12px",
+      };
+    }
   };
 
   if (!isOpen) return null;
@@ -146,12 +310,35 @@ const CreatePostDialog: React.FC<CreatePostDialogProps> = ({ isOpen, onClose }) 
 
           {/* Content */}
           <div style={{ padding: "0 24px 10px 24px" }}>
-            {/* Text Area */}
+            {/* Title Input */}
+            <input
+              type="text"
+              value={postTitle}
+              onChange={(e) => setPostTitle(e.target.value)}
+              placeholder="Post title..."
+              maxLength={200}
+              style={{
+                width: "100%",
+                padding: "12px 16px",
+                border: "1px solid #186620",
+                borderRadius: "8px",
+                fontSize: "18px",
+                fontWeight: "600",
+                fontFamily: "inherit",
+                backgroundColor: "transparent",
+                color: "#1a1a1a",
+                boxSizing: "border-box",
+                outline: "none",
+                marginBottom: "12px",
+              }}
+            />
+
+            {/* Content Text Area */}
             <textarea
               className="create-post-textarea"
-              value={postText}
-              onChange={(e) => setPostText(e.target.value)}
-              placeholder=""
+              value={postContent}
+              onChange={(e) => setPostContent(e.target.value)}
+              placeholder="What's on your mind?"
               style={{
                 width: "100%",
                 minHeight: "100px",
@@ -170,8 +357,91 @@ const CreatePostDialog: React.FC<CreatePostDialogProps> = ({ isOpen, onClose }) 
               }}
             />
 
+            {/* Image Previews Section */}
+            {imagePreviews.length > 0 && (
+              <div style={getImageGridStyle(imagePreviews.length)}>
+                {imagePreviews.map((preview, index) => (
+                  <div
+                    key={index}
+                    style={{
+                      position: "relative",
+                      gridColumn: imagePreviews.length === 3 && index === 0 ? "1 / 3" : "auto",
+                      borderRadius: "8px",
+                      overflow: "hidden",
+                      height: "150px",
+                      backgroundColor: "rgba(0, 0, 0, 0.05)",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      cursor: "pointer",
+                    }}
+                    onClick={() => setViewingImageIndex(index)}
+                  >
+                    <img
+                      src={preview}
+                      alt={`Preview ${index + 1}`}
+                      style={{
+                        width: "100%",
+                        height: "100%",
+                        objectFit: "cover",
+                      }}
+                    />
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleRemoveImage(index);
+                      }}
+                      style={{
+                        position: "absolute",
+                        top: "8px",
+                        right: "8px",
+                        background: "rgba(0, 0, 0, 0.7)",
+                        border: "none",
+                        borderRadius: "50%",
+                        width: "28px",
+                        height: "28px",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        cursor: "pointer",
+                        color: "white",
+                        fontSize: "18px",
+                        fontWeight: "bold",
+                        transition: "background 0.2s",
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.background = "rgba(239, 68, 68, 0.9)";
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.background = "rgba(0, 0, 0, 0.7)";
+                      }}
+                    >
+                      ×
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Error Message */}
+            {error && (
+              <div
+                style={{
+                  marginTop: "12px",
+                  padding: "8px 12px",
+                  backgroundColor: "rgba(239, 68, 68, 0.1)",
+                  border: "1px solid rgba(239, 68, 68, 0.3)",
+                  borderRadius: "6px",
+                  color: "#dc2626",
+                  fontSize: "14px",
+                }}
+              >
+                {error}
+              </div>
+            )}
+
             {/* Tags Section */}
-            <div>
+            <div style={{ marginTop: imagePreviews.length > 0 ? "12px" : "0" }}>
               <Menubar
                 style={{
                   background: "transparent",
@@ -284,19 +554,32 @@ const CreatePostDialog: React.FC<CreatePostDialogProps> = ({ isOpen, onClose }) 
               alignItems: "center",
             }}
           >
+            {/* Hidden file input */}
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              multiple
+              onChange={handleImageSelect}
+              style={{ display: "none" }}
+            />
+
             {/* Media Options */}
             <div style={{ display: "flex" }}>
               <button
+                onClick={() => fileInputRef.current?.click()}
+                disabled={selectedImages.length >= 4}
                 style={{
                   display: "flex",
                   alignItems: "center",
                   gap: "8px",
                   background: "transparent",
                   border: "none",
-                  color: "#1a1a1a",
+                  color: selectedImages.length >= 4 ? "#999" : "#1a1a1a",
                   fontSize: "14px",
-                  cursor: "pointer",
+                  cursor: selectedImages.length >= 4 ? "not-allowed" : "pointer",
                   padding: "8px",
+                  opacity: selectedImages.length >= 4 ? 0.5 : 1,
                 }}
               >
                 <ImageIcon width={18} height={18} />
@@ -336,26 +619,38 @@ const CreatePostDialog: React.FC<CreatePostDialogProps> = ({ isOpen, onClose }) 
             {/* Post Button */}
             <button
               onClick={handlePostSubmit}
-              disabled={!postText.trim()}
+              disabled={!postTitle.trim() || !postContent.trim() || isSubmitting}
               style={{
-                background: postText.trim() ? "#007E85" : "rgba(255, 255, 255, 0.3)",
+                background: postTitle.trim() && postContent.trim() && !isSubmitting ? "#007E85" : "rgba(255, 255, 255, 0.3)",
                 border: "none",
                 borderRadius: "24px",
                 padding: "8px 14px",
-                color: postText.trim() ? "white" : "grey",
+                color: postTitle.trim() && postContent.trim() && !isSubmitting ? "white" : "grey",
                 fontSize: "16px",
                 fontWeight: "600",
-                cursor: postText.trim() ? "pointer" : "not-allowed",
+                cursor: postTitle.trim() && postContent.trim() && !isSubmitting ? "pointer" : "not-allowed",
                 transition: "all 0.2s ease",
                 marginTop: "5px",
                 marginBottom: "5px",
+                opacity: isSubmitting ? 0.7 : 1,
               }}
             >
-              POST
+              {isSubmitting ? "POSTING..." : "POST"}
             </button>
           </div>
         </div>
       </div>
+
+      {/* Image Viewer Modal - Render in portal */}
+      {viewingImageIndex !== null && imagePreviews.length > 0 && createPortal(
+        <ImageViewer
+          images={imagePreviews}
+          initialIndex={viewingImageIndex}
+          isOpen={viewingImageIndex !== null}
+          onClose={() => setViewingImageIndex(null)}
+        />,
+        document.body
+      )}
     </>
   );
 };

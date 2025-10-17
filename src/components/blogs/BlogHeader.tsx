@@ -1,6 +1,4 @@
 import React from "react";
-import { Button } from "@mui/material";
-import { KeyboardArrowDown } from "@mui/icons-material";
 
 const BlogHeader: React.FC = () => {
   return (
@@ -41,8 +39,7 @@ const BlogHeader: React.FC = () => {
           alignItems: "center",
           position: "relative",
           zIndex: 2,
-          marginLeft: "100px", // Space for the fox
-          marginRight: "120px", // Space for the sort button
+          marginLeft: "15px", // Space for the fox
         }}
       >
         <h1
@@ -59,37 +56,6 @@ const BlogHeader: React.FC = () => {
         >
           See what they are talking about
         </h1>
-      </div>
-
-      {/* Sort By Button - Far Right Bottom */}
-      <div
-        style={{
-          position: "absolute",
-          bottom: "20px",
-          right: "20px",
-          zIndex: 3,
-        }}
-      >
-        <Button
-          variant="contained"
-          endIcon={<KeyboardArrowDown />}
-          sx={{
-            backgroundColor: "rgba(32, 124, 91, 0.6)",
-            color: "white",
-            borderRadius: "25px",
-            padding: "8px 20px",
-            fontSize: "14px",
-            fontWeight: "500",
-            textTransform: "none",
-            boxShadow: "0 2px 8px rgba(0, 0, 0, 0.15)",
-            "&:hover": {
-              backgroundColor: "rgba(32, 124, 91, 1)",
-              boxShadow: "0 4px 12px rgba(0, 0, 0, 0.2)",
-            },
-          }}
-        >
-          Sort by
-        </Button>
       </div>
 
       {/* Decorative Line */}
