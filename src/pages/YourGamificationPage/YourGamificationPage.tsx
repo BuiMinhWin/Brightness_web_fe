@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from "react";
 import "./YourGamificationPage.css";
 import GameFooter from "../../components/layout/GameFooter";
-
 import { useNavigate } from "react-router-dom";
+import { useSelector } from "react-redux";
+import { selectUserId, selectIsAuthenticated } from "../../store/slices/authSlice";
 import { ArrowLeft } from "lucide-react";
 import {
   challengeService,
@@ -30,52 +31,49 @@ const YourGamificationPage: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
   
+  // Get authenticated user ID from Redux
+  const authenticatedUserId = useSelector(selectUserId);
+  const isAuthenticated = useSelector(selectIsAuthenticated);
+  
   const ITEMS_PER_PAGE = 4;
 
-  // Generate a valid Guid v4
-  const generateGuid = (): string => {
-    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
-      const r = Math.random() * 16 | 0;
-      const v = c === 'x' ? r : (r & 0x3 | 0x8);
-      return v.toString(16);
-    });
-  };
+  console.log("🔐 Your Challenges - Auth State:", { isAuthenticated, authenticatedUserId });
 
-  // Get user ID from localStorage
-  const getUserId = (): string => {
-    const storedUserId = localStorage.getItem('userId');
-    if (storedUserId) {
-      // Validate if it's a proper Guid format
-      const guidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-      if (guidRegex.test(storedUserId)) {
-        return storedUserId;
-      }
+  // Redirect to login if not authenticated
+  useEffect(() => {
+    if (!isAuthenticated) {
+      console.log("❌ User not authenticated, redirecting to login");
+      navigate("/auth?mode=signin");
     }
-    
-    // If no userId found or invalid, generate one
-    const newUserId = generateGuid();
-    localStorage.setItem('userId', newUserId);
-    return newUserId;
-  };
+  }, [isAuthenticated, navigate]);
 
   useEffect(() => {
+    // Don't fetch if not authenticated
+    if (!isAuthenticated || !authenticatedUserId) {
+      console.log("⚠️ Skipping fetch - user not authenticated");
+      setLoading(false);
+      return;
+    }
+
     const fetchUserChallenges = async () => {
       try {
         setLoading(true);
         setError(null);
 
-        const userId = getUserId();
-        console.log("🆔 Fetching challenges for userId:", userId);
+        console.log("🆔 Fetching challenges for authenticated userId:", authenticatedUserId);
 
         // Get all participants
         const allParticipants = await challengeService.getAllChallengeParticipants();
         console.log("✅ All participants:", allParticipants);
 
         // Filter to get only current user's participations
-        const userParticipants = allParticipants.filter(p => p.userId === userId);
+        const userParticipants = allParticipants.filter(
+          p => p.userId.toLowerCase() === authenticatedUserId.toLowerCase()
+        );
         console.log("✅ User participants:", userParticipants);
 
         if (userParticipants.length === 0) {
+          console.log("ℹ️ No challenges found for this user");
           setChallenges([]);
           setLoading(false);
           return;
@@ -181,7 +179,7 @@ const YourGamificationPage: React.FC = () => {
     };
 
     fetchUserChallenges();
-  }, []);
+  }, [authenticatedUserId, isAuthenticated]);
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -211,18 +209,6 @@ const YourGamificationPage: React.FC = () => {
 
   const handleViewDetails = (challengeId: string) => {
     console.log("🔍 Navigating to challenge:", challengeId);
-    console.log("🔍 Full URL will be:", `/challenge-detail/${challengeId}`);
-    console.log("🔍 Challenge ID type:", typeof challengeId);
-    console.log("🔍 Challenge ID length:", challengeId.length);
-    
-    // Validate GUID format
-    const guidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-    if (!guidRegex.test(challengeId)) {
-      console.error("❌ Invalid GUID format:", challengeId);
-      alert("Invalid challenge ID format");
-      return;
-    }
-    
     navigate(`/challenge-detail/${challengeId}`);
   };
 
@@ -239,7 +225,6 @@ const YourGamificationPage: React.FC = () => {
   const handlePageChange = (page: number) => {
     if (page >= 1 && page <= totalPages) {
       setCurrentPage(page);
-      // Scroll to top of challenges grid
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
   };
@@ -248,19 +233,16 @@ const YourGamificationPage: React.FC = () => {
     const pages: (number | string)[] = [];
     
     if (totalPages <= 5) {
-      // Show all pages if 5 or fewer
       for (let i = 1; i <= totalPages; i++) {
         pages.push(i);
       }
     } else {
-      // Always show first page
       pages.push(1);
       
       if (currentPage > 3) {
         pages.push('...');
       }
       
-      // Show pages around current page
       for (let i = Math.max(2, currentPage - 1); i <= Math.min(totalPages - 1, currentPage + 1); i++) {
         pages.push(i);
       }
@@ -269,7 +251,6 @@ const YourGamificationPage: React.FC = () => {
         pages.push('...');
       }
       
-      // Always show last page
       pages.push(totalPages);
     }
     

@@ -12,6 +12,8 @@ import {
 } from "lucide-react";
 import "./EventDetailPage.css";
 import { useNavigate, useParams } from "react-router-dom";
+import { useSelector } from "react-redux";
+import { selectUserId, selectIsAuthenticated } from "../../store/slices/authSlice";
 import {
   challengeService,
   Challenge,
@@ -82,33 +84,11 @@ const EventDetailPage: React.FC = () => {
   const navigate = useNavigate();
   const { eventId } = useParams<{ eventId: string }>();
 
-  // Generate a valid Guid v4
-  const generateGuid = (): string => {
-    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
-      const r = Math.random() * 16 | 0;
-      const v = c === 'x' ? r : (r & 0x3 | 0x8);
-      return v.toString(16);
-    });
-  };
+  // ✅ Get authenticated user ID from Redux instead of localStorage
+  const authenticatedUserId = useSelector(selectUserId);
+  const isAuthenticated = useSelector(selectIsAuthenticated);
 
-  // Get user ID from localStorage or authentication context
-  const getUserId = (): string => {
-    // Try to get from localStorage first
-    const storedUserId = localStorage.getItem('userId');
-    if (storedUserId) {
-      // Validate if it's a proper Guid format
-      const guidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-      if (guidRegex.test(storedUserId)) {
-        return storedUserId;
-      }
-    }
-
-    // If not found or invalid, generate a new Guid and store it
-    const newUserId = generateGuid();
-    localStorage.setItem('userId', newUserId);
-    console.log('🆔 Generated new userId (Guid):', newUserId);
-    return newUserId;
-  };
+  console.log("🔐 Event Detail - Auth State:", { isAuthenticated, authenticatedUserId });
 
   // Fetch challenge data
   useEffect(() => {
@@ -185,20 +165,30 @@ const EventDetailPage: React.FC = () => {
             console.log("✅ Filtered participants:", participants);
           }
 
-          // Check if current user has already joined
-          const currentUserId = getUserId();
-          const alreadyJoined = participants.some(p => p.userId === currentUserId);
-          setIsAlreadyJoined(alreadyJoined);
-          console.log("✅ Already joined:", alreadyJoined);
+          // ✅ Check if current AUTHENTICATED user has already joined
+          if (isAuthenticated && authenticatedUserId) {
+            const alreadyJoined = participants.some(
+              p => p.userId.toLowerCase() === authenticatedUserId.toLowerCase()
+            );
+            setIsAlreadyJoined(alreadyJoined);
+            console.log("✅ Already joined:", alreadyJoined);
+            console.log("✅ Checking against userId:", authenticatedUserId);
+          } else {
+            setIsAlreadyJoined(false);
+            console.log("⚠️ User not authenticated");
+          }
         } catch (err) {
           console.warn("⚠️ Failed to fetch participants:", err);
           try {
             const allParticipants = await challengeService.getAllChallengeParticipants();
             participants = allParticipants.filter(p => p.challengeId === eventId);
             
-            const currentUserId = getUserId();
-            const alreadyJoined = participants.some(p => p.userId === currentUserId);
-            setIsAlreadyJoined(alreadyJoined);
+            if (isAuthenticated && authenticatedUserId) {
+              const alreadyJoined = participants.some(
+                p => p.userId.toLowerCase() === authenticatedUserId.toLowerCase()
+              );
+              setIsAlreadyJoined(alreadyJoined);
+            }
           } catch (fallbackErr) {
             console.error("❌ Fallback also failed:", fallbackErr);
           }
@@ -225,7 +215,7 @@ const EventDetailPage: React.FC = () => {
     };
 
     fetchEventData();
-  }, [eventId]);
+  }, [eventId, authenticatedUserId, isAuthenticated]); // ✅ Re-fetch when auth state changes
 
   // Transform API data to Event format
   const transformChallengeToEvent = (
@@ -412,17 +402,23 @@ const EventDetailPage: React.FC = () => {
   const handleJoinEvent = async () => {
     if (!event || !eventId) return;
 
+    // ✅ Check if user is authenticated before allowing join
+    if (!isAuthenticated || !authenticatedUserId) {
+      alert("Please log in to join this challenge");
+      navigate("/auth?mode=signin");
+      return;
+    }
+
     try {
       setJoining(true);
 
-      const userId = getUserId();
-      console.log("🆔 Using userId:", userId);
+      console.log("🆔 Using authenticated userId:", authenticatedUserId);
 
       // Validate Guid format
       const guidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-      if (!guidRegex.test(userId)) {
-        console.error("❌ Invalid userId format (not a Guid):", userId);
-        alert("Invalid user ID format. Please try refreshing the page.");
+      if (!guidRegex.test(authenticatedUserId)) {
+        console.error("❌ Invalid userId format (not a Guid):", authenticatedUserId);
+        alert("Invalid user ID format. Please try logging in again.");
         return;
       }
 
@@ -433,10 +429,10 @@ const EventDetailPage: React.FC = () => {
         return;
       }
 
-      // Create participant
+      // ✅ Create participant with AUTHENTICATED userId
       const participantData = {
         challengeId: eventId,
-        userId: userId,
+        userId: authenticatedUserId, // ✅ Use authenticated user ID
         joinedAt: new Date().toISOString(),
         status: "active",
         totalPoints: 0,
@@ -459,8 +455,8 @@ const EventDetailPage: React.FC = () => {
       // Show success message
       alert(`Successfully joined ${event.title}!`);
 
-      // Navigate to your missions page
-      navigate("/your-missions");
+      // Navigate to your challenges page
+      navigate("/your-challenges");
     } catch (err: any) {
       console.error("❌ Error joining event:", err);
       
@@ -692,7 +688,7 @@ const EventDetailPage: React.FC = () => {
             {isAlreadyJoined ? (
               <>
                 <button
-                  onClick={() => navigate("/your-missions")}
+                  onClick={() => navigate("/your-challenges")}
                   className="join-button"
                   style={{ backgroundColor: "#10b981" }}
                 >
@@ -706,7 +702,14 @@ const EventDetailPage: React.FC = () => {
             ) : (
               <>
                 <button
-                  onClick={() => setShowJoinDialog(true)}
+                  onClick={() => {
+                    if (!isAuthenticated) {
+                      alert("Please log in to join this challenge");
+                      navigate("/auth?mode=signin");
+                    } else {
+                      setShowJoinDialog(true);
+                    }
+                  }}
                   className="join-button"
                   disabled={joining}
                 >

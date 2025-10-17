@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
+import { useSelector } from "react-redux";
+import { selectUserId, selectIsAuthenticated } from "../../store/slices/authSlice";
 import {
   ArrowLeft,
   CheckCircle,
@@ -19,6 +21,7 @@ import {
   ChallengeTaskProgress,
   ChallengeTaskProgressDTO,
   ChallengeRule,
+  LeaderboardEntry as APILeaderboardEntry,
 } from "../../services/challengeService";
 import "./YourDetailPage.css";
 
@@ -27,11 +30,26 @@ interface TaskWithProgress extends ChallengeTask {
   isCompleted: boolean;
 }
 
+interface LeaderboardEntry {
+  id: string;
+  rank: number;
+  name: string;
+  points: number;
+  avatar: string;
+  isCurrentUser?: boolean;
+}
+
 type TabType = "progress" | "leaderboard";
 
 const YourDetailPage: React.FC = () => {
   const { challengeId } = useParams<{ challengeId: string }>();
   const navigate = useNavigate();
+  
+  // ✅ Get authenticated user ID from Redux instead of localStorage
+  const authenticatedUserId = useSelector(selectUserId);
+  const isAuthenticated = useSelector(selectIsAuthenticated);
+
+  console.log("🔐 Your Detail - Auth State:", { isAuthenticated, authenticatedUserId });
   
   const [challenge, setChallenge] = useState<Challenge | null>(null);
   const [participant, setParticipant] = useState<ChallengeParticipant | null>(null);
@@ -42,16 +60,22 @@ const YourDetailPage: React.FC = () => {
   const [updatingTask, setUpdatingTask] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<TabType>("progress");
 
-  // Get user ID from localStorage
-  const getUserId = (): string => {
-    const storedUserId = localStorage.getItem("userId");
-    if (storedUserId) {
-      const guidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-      if (guidRegex.test(storedUserId)) {
-        return storedUserId;
-      }
-    }
-    return "";
+  // ✅ Leaderboard state
+  const [leaderboardData, setLeaderboardData] = useState<LeaderboardEntry[]>([]);
+  const [loadingLeaderboard, setLoadingLeaderboard] = useState(false);
+  const [leaderboardError, setLeaderboardError] = useState<string | null>(null);
+
+  // Generate avatar URL
+  const getAvatarUrl = (userName: string, userId: string): string => {
+    const colors = ["4F46E5", "DC2626", "059669", "D97706", "7C3AED", "EC4899", "10B981"];
+    const colorIndex = userId.charCodeAt(0) % colors.length;
+    const initial = userName?.charAt(0).toUpperCase() || "U";
+    return `https://ui-avatars.com/api/?name=${initial}&background=${colors[colorIndex]}&color=fff&size=80&bold=true`;
+  };
+
+  // Format user display name
+  const formatUserName = (userId: string): string => {
+    return `User ${userId.substring(0, 8)}`;
   };
 
   useEffect(() => {
@@ -60,6 +84,15 @@ const YourDetailPage: React.FC = () => {
         console.error("❌ No challengeId from URL params");
         setError("No challenge ID provided");
         setLoading(false);
+        return;
+      }
+
+      // ✅ Check authentication before fetching
+      if (!isAuthenticated || !authenticatedUserId) {
+        console.error("❌ User not authenticated");
+        setError("Please log in to view your challenge details");
+        setLoading(false);
+        navigate("/auth?mode=signin");
         return;
       }
 
@@ -72,19 +105,19 @@ const YourDetailPage: React.FC = () => {
         return;
       }
 
+      if (!guidRegex.test(authenticatedUserId)) {
+        console.error("❌ Invalid userId format (not a Guid):", authenticatedUserId);
+        setError("Invalid user ID format. Please try logging in again.");
+        setLoading(false);
+        return;
+      }
+
       try {
         setLoading(true);
         setError(null);
 
-        const userId = getUserId();
         console.log("🔍 ChallengeId from URL:", challengeId);
-        console.log("🔍 UserId:", userId);
-        
-        if (!userId) {
-          setError("User not authenticated");
-          setLoading(false);
-          return;
-        }
+        console.log("🔍 Authenticated UserId:", authenticatedUserId);
 
         // Fetch challenge
         const challengeData = await challengeService.getChallenge(challengeId);
@@ -99,16 +132,18 @@ const YourDetailPage: React.FC = () => {
             console.log("✅ Challenge rules:", rulesData[0]);
           }
         } catch (err) {
-          console.warn("Failed to fetch rules:", err);
+          console.warn("⚠️ Failed to fetch rules:", err);
         }
 
-        // Fetch participants to get current user's participant record
+        // ✅ Fetch participants to get current AUTHENTICATED user's participant record
         const allParticipants = await challengeService.getAllChallengeParticipants();
         const userParticipant = allParticipants.find(
-          (p) => p.challengeId === challengeId && p.userId === userId
+          (p) => p.challengeId === challengeId && 
+                 p.userId.toLowerCase() === authenticatedUserId.toLowerCase()
         );
 
         if (!userParticipant) {
+          console.error("❌ User is not a participant of this challenge");
           setError("You are not a participant of this challenge");
           setLoading(false);
           return;
@@ -122,28 +157,33 @@ const YourDetailPage: React.FC = () => {
         try {
           tasksData = await challengeService.getTasksByChallengeId(challengeId);
           if (!tasksData || tasksData.length === 0) {
+            console.log("⚠️ No tasks from specific endpoint, trying to fetch all tasks...");
             const allTasks = await challengeService.getAllChallengeTasks();
             tasksData = allTasks.filter((t) => t.challengeId === challengeId);
           }
         } catch (err) {
-          console.warn("Failed to fetch tasks:", err);
+          console.warn("⚠️ Failed to fetch tasks:", err);
           const allTasks = await challengeService.getAllChallengeTasks();
           tasksData = allTasks.filter((t) => t.challengeId === challengeId);
         }
 
         console.log("✅ Tasks:", tasksData);
 
-        // Fetch task progress
+        // Fetch task progress for THIS user
         let progressData: ChallengeTaskProgress[] = [];
         try {
           progressData = await challengeService.getProgressByParticipantId(userParticipant.id);
+          console.log("✅ Task progress fetched:", progressData);
         } catch (err) {
-          console.warn("Failed to fetch progress:", err);
-          const allProgress = await challengeService.getAllChallengeTaskProgresses();
-          progressData = allProgress.filter((p) => p.participantId === userParticipant.id);
+          console.warn("⚠️ Failed to fetch progress:", err);
+          try {
+            const allProgress = await challengeService.getAllChallengeTaskProgresses();
+            progressData = allProgress.filter((p) => p.participantId === userParticipant.id);
+            console.log("✅ Filtered task progress:", progressData);
+          } catch (fallbackErr) {
+            console.error("❌ Fallback also failed:", fallbackErr);
+          }
         }
-
-        console.log("✅ Task progress:", progressData);
 
         // Combine tasks with progress
         const tasksWithProgress: TaskWithProgress[] = tasksData.map((task) => {
@@ -166,10 +206,75 @@ const YourDetailPage: React.FC = () => {
     };
 
     fetchChallengeDetails();
-  }, [challengeId]);
+  }, [challengeId, authenticatedUserId, isAuthenticated, navigate]);
+
+  // ✅ Fetch leaderboard when switching to leaderboard tab
+  useEffect(() => {
+    if (activeTab === "leaderboard" && challengeId && isAuthenticated && authenticatedUserId) {
+      fetchLeaderboardData();
+    }
+  }, [activeTab, challengeId, authenticatedUserId, isAuthenticated]);
+
+  const fetchLeaderboardData = async () => {
+    if (!challengeId) return;
+
+    try {
+      setLoadingLeaderboard(true);
+      setLeaderboardError(null);
+
+      console.log("🔍 Fetching leaderboard for challenge:", challengeId);
+
+      // Fetch leaderboard from API
+      let apiLeaderboard: APILeaderboardEntry[] = [];
+      try {
+        apiLeaderboard = await challengeService.getLeaderboard(challengeId);
+        console.log("✅ API Leaderboard response:", apiLeaderboard);
+      } catch (err) {
+        console.warn("⚠️ Failed to fetch leaderboard from API, falling back to participants:", err);
+        
+        // Fallback: Calculate from participants
+        const participants = await challengeService.getParticipantsByChallengeId(challengeId);
+        apiLeaderboard = participants
+          .sort((a, b) => (b.totalPoints || 0) - (a.totalPoints || 0))
+          .map((participant, index) => ({
+            userId: participant.userId,
+            userName: formatUserName(participant.userId),
+            totalPoints: participant.totalPoints || 0,
+            rank: index + 1,
+          }));
+        console.log("✅ Fallback leaderboard from participants:", apiLeaderboard);
+      }
+
+      // Transform API leaderboard to component format
+      const transformedLeaderboard: LeaderboardEntry[] = apiLeaderboard.map((entry) => ({
+        id: entry.userId,
+        rank: entry.rank,
+        name: entry.userName || formatUserName(entry.userId),
+        points: entry.totalPoints,
+        avatar: getAvatarUrl(entry.userName || formatUserName(entry.userId), entry.userId),
+        isCurrentUser: entry.userId.toLowerCase() === authenticatedUserId?.toLowerCase(),
+      }));
+
+      console.log("✅ Transformed leaderboard:", transformedLeaderboard);
+      setLeaderboardData(transformedLeaderboard);
+
+    } catch (err) {
+      console.error("❌ Error fetching leaderboard:", err);
+      setLeaderboardError("Failed to load leaderboard. Please try again later.");
+    } finally {
+      setLoadingLeaderboard(false);
+    }
+  };
 
   const handleMarkAsComplete = async (task: TaskWithProgress) => {
     if (!participant || !task.id || task.isCompleted) return;
+
+    // ✅ Verify authentication before allowing task completion
+    if (!isAuthenticated || !authenticatedUserId) {
+      alert("Please log in to mark tasks as complete");
+      navigate("/auth?mode=signin");
+      return;
+    }
 
     try {
       setUpdatingTask(task.id);
@@ -185,6 +290,7 @@ const YourDetailPage: React.FC = () => {
         };
 
         await challengeService.updateChallengeTaskProgress(task.progress.id, updateData);
+        console.log("✅ Task progress updated successfully");
       } else {
         // Create new progress
         const newProgressData: ChallengeTaskProgressDTO = {
@@ -196,6 +302,7 @@ const YourDetailPage: React.FC = () => {
         };
 
         await challengeService.createChallengeTaskProgress(newProgressData);
+        console.log("✅ Task progress created successfully");
       }
 
       // Update local state
@@ -290,6 +397,23 @@ const YourDetailPage: React.FC = () => {
           </div>
           <div style={{ textAlign: "center", padding: "40px", color: "#ef4444" }}>
             {error || "Challenge not found"}
+            {error && error.includes("not authenticated") && (
+              <div style={{ marginTop: "20px" }}>
+                <button
+                  onClick={() => navigate("/auth?mode=signin")}
+                  style={{
+                    padding: "10px 20px",
+                    backgroundColor: "#3b82f6",
+                    color: "white",
+                    border: "none",
+                    borderRadius: "8px",
+                    cursor: "pointer",
+                  }}
+                >
+                  Go to Login
+                </button>
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -303,6 +427,8 @@ const YourDetailPage: React.FC = () => {
   const progressPercentage = totalTasksCount > 0 
     ? Math.round((completedTasksCount / totalTasksCount) * 100) 
     : 0;
+
+  const currentUserInLeaderboard = leaderboardData.find(entry => entry.isCurrentUser);
 
   return (
     <div className="your-detail-page">
@@ -550,502 +676,315 @@ const YourDetailPage: React.FC = () => {
           </>
         )}
 
-        {/* Leaderboard Tab Content */}
-        {activeTab === "leaderboard" && (
-          <div className="all-challenges">
-            <h2 className="all-challenges-title">Challenge Leaderboard</h2>
-            <div style={{ padding: "40px", textAlign: "center", color: "#6b7280" }}>
-              <Trophy size={48} style={{ margin: "0 auto 16px", opacity: 0.5 }} />
-              <p>Leaderboard feature coming soon!</p>
-              <p style={{ fontSize: "14px", marginTop: "8px" }}>
-                Compete with other participants and track rankings.
+        {/* ✅ Leaderboard Tab Content - NOW WITH REAL DATA */}
+{activeTab === "leaderboard" && (
+  <div className="all-challenges">
+    {/* Main Preview Card */}
+    <div style={{
+      backgroundColor: "white",
+      border: "1px solid #e5e7eb",
+      borderRadius: "16px",
+      padding: "40px",
+      textAlign: "center",
+    }}>
+      {loadingLeaderboard ? (
+        <div style={{ color: "#6b7280", padding: "20px" }}>
+          <div style={{
+            width: "48px",
+            height: "48px",
+            border: "3px solid #e5e7eb",
+            borderTop: "3px solid #3b82f6",
+            borderRadius: "50%",
+            margin: "0 auto 16px",
+            animation: "spin 1s linear infinite",
+          }} />
+          <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+          Loading leaderboard...
+        </div>
+      ) : leaderboardError ? (
+        <div>
+          <div style={{
+            fontSize: "48px",
+            marginBottom: "16px",
+          }}>😕</div>
+          <div style={{ color: "#ef4444", marginBottom: "20px" }}>
+            {leaderboardError}
+          </div>
+          <button
+            onClick={fetchLeaderboardData}
+            style={{
+              padding: "10px 20px",
+              backgroundColor: "#3b82f6",
+              color: "white",
+              border: "none",
+              borderRadius: "8px",
+              cursor: "pointer",
+            }}
+          >
+            Try Again
+          </button>
+        </div>
+      ) : (
+        <>
+          {/* Trophy Icon */}
+          <div style={{
+            width: "80px",
+            height: "80px",
+            borderRadius: "50%",
+            backgroundColor: "#FEF3C7",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            margin: "0 auto 24px",
+          }}>
+            <Trophy size={40} style={{ color: "#F59E0B" }} />
+          </div>
+
+          {/* Title */}
+          <h2 style={{
+            fontSize: "24px",
+            fontWeight: "bold",
+            marginBottom: "12px",
+            color: "#111827",
+          }}>
+            Challenge Leaderboard
+          </h2>
+
+          {/* Description */}
+          <p style={{
+            fontSize: "16px",
+            color: "#6b7280",
+            marginBottom: "32px",
+            maxWidth: "500px",
+            margin: "0 auto 32px",
+          }}>
+            See how you rank against other participants and compete for the top spots!
+          </p>
+
+          {/* Quick Stats Grid */}
+          {currentUserInLeaderboard ? (
+            <div style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(3, 1fr)",
+              gap: "20px",
+              marginBottom: "32px",
+              maxWidth: "600px",
+              margin: "0 auto 32px",
+            }}>
+              {/* Your Rank */}
+              <div style={{
+                padding: "20px",
+                backgroundColor: "#EFF6FF",
+                borderRadius: "12px",
+                border: "2px solid #3B82F6",
+              }}>
+                <div style={{
+                  fontSize: "32px",
+                  fontWeight: "bold",
+                  color: "#3B82F6",
+                  marginBottom: "4px",
+                }}>
+                  #{currentUserInLeaderboard.rank}
+                </div>
+                <div style={{ fontSize: "14px", color: "#1E40AF", fontWeight: "500" }}>
+                  Your Rank
+                </div>
+              </div>
+
+              {/* Your Points */}
+              <div style={{
+                padding: "20px",
+                backgroundColor: "#F0FDF4",
+                borderRadius: "12px",
+                border: "2px solid #10B981",
+              }}>
+                <div style={{
+                  fontSize: "32px",
+                  fontWeight: "bold",
+                  color: "#10B981",
+                  marginBottom: "4px",
+                }}>
+                  {currentUserInLeaderboard.points}
+                </div>
+                <div style={{ fontSize: "14px", color: "#065F46", fontWeight: "500" }}>
+                  Your Points
+                </div>
+              </div>
+
+              {/* Total Players */}
+              <div style={{
+                padding: "20px",
+                backgroundColor: "#FEF3C7",
+                borderRadius: "12px",
+                border: "2px solid #F59E0B",
+              }}>
+                <div style={{
+                  fontSize: "32px",
+                  fontWeight: "bold",
+                  color: "#F59E0B",
+                  marginBottom: "4px",
+                }}>
+                  {leaderboardData.length}
+                </div>
+                <div style={{ fontSize: "14px", color: "#92400E", fontWeight: "500" }}>
+                  Total Players
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div style={{
+              padding: "20px",
+              backgroundColor: "#FEF3C7",
+              borderRadius: "12px",
+              marginBottom: "32px",
+              maxWidth: "500px",
+              margin: "0 auto 32px",
+              border: "1px solid #FDE68A",
+            }}>
+              <div style={{ fontSize: "24px", marginBottom: "8px" }}>📊</div>
+              <p style={{ fontSize: "14px", color: "#92400E", margin: 0, fontWeight: "500" }}>
+                Complete tasks to appear on the leaderboard!
               </p>
             </div>
-          </div>
-        )}
+          )}
+
+          {/* Main CTA Button */}
+          <button
+            onClick={() => navigate(`/leaderboard/${challengeId}`)}
+            style={{
+              padding: "16px 48px",
+              backgroundColor: "#3b82f6",
+              color: "white",
+              border: "none",
+              borderRadius: "12px",
+              cursor: "pointer",
+              fontSize: "16px",
+              fontWeight: "600",
+              boxShadow: "0 4px 6px rgba(59, 130, 246, 0.3)",
+              transition: "all 0.2s",
+              display: "inline-flex",
+              alignItems: "center",
+              gap: "8px",
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.backgroundColor = "#2563eb";
+              e.currentTarget.style.transform = "translateY(-2px)";
+              e.currentTarget.style.boxShadow = "0 6px 8px rgba(59, 130, 246, 0.4)";
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.backgroundColor = "#3b82f6";
+              e.currentTarget.style.transform = "translateY(0)";
+              e.currentTarget.style.boxShadow = "0 4px 6px rgba(59, 130, 246, 0.3)";
+            }}
+          >
+            View Full Leaderboard
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+              <path d="M7 3L14 10L7 17" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
+          </button>
+
+          {/* Top 3 Preview (Optional) */}
+          {leaderboardData.length >= 3 && (
+            <div style={{
+              marginTop: "40px",
+              paddingTop: "32px",
+              borderTop: "1px solid #e5e7eb",
+            }}>
+              <h3 style={{
+                fontSize: "18px",
+                fontWeight: "600",
+                marginBottom: "20px",
+                color: "#374151",
+              }}>
+                🏆 Current Top 3
+              </h3>
+              <div style={{
+                display: "flex",
+                gap: "16px",
+                justifyContent: "center",
+                flexWrap: "wrap",
+              }}>
+                {leaderboardData.slice(0, 3).map((entry, index) => (
+                  <div key={entry.id} style={{
+                    flex: "1",
+                    minWidth: "150px",
+                    maxWidth: "200px",
+                    padding: "20px",
+                    backgroundColor: index === 0 ? "#FEF3C7" : "#F9FAFB",
+                    borderRadius: "12px",
+                    border: entry.isCurrentUser ? "2px solid #3B82F6" : "1px solid #e5e7eb",
+                    position: "relative",
+                  }}>
+                    {/* Medal/Rank Badge */}
+                    <div style={{
+                      position: "absolute",
+                      top: "-12px",
+                      right: "-12px",
+                      width: "32px",
+                      height: "32px",
+                      borderRadius: "50%",
+                      backgroundColor: index === 0 ? "#FFD700" : index === 1 ? "#C0C0C0" : "#CD7F32",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      fontSize: "16px",
+                      fontWeight: "bold",
+                      color: "white",
+                      boxShadow: "0 2px 4px rgba(0,0,0,0.2)",
+                    }}>
+                      {index + 1}
+                    </div>
+
+                    <img
+                      src={entry.avatar}
+                      alt={entry.name}
+                      style={{
+                        width: "56px",
+                        height: "56px",
+                        borderRadius: "50%",
+                        margin: "0 auto 12px",
+                        display: "block",
+                        border: entry.isCurrentUser ? "3px solid #3B82F6" : "2px solid #e5e7eb",
+                      }}
+                    />
+                    <div style={{
+                      fontSize: "15px",
+                      fontWeight: "600",
+                      color: entry.isCurrentUser ? "#3B82F6" : "#374151",
+                      marginBottom: "4px",
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                      whiteSpace: "nowrap",
+                    }}>
+                      {entry.isCurrentUser ? "You 👋" : entry.name}
+                    </div>
+                    <div style={{
+                      fontSize: "18px",
+                      fontWeight: "bold",
+                      color: "#10B981",
+                    }}>
+                      {entry.points} pts
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <div style={{
+                marginTop: "16px",
+                fontSize: "13px",
+                color: "#6b7280",
+              }}>
+                Click "View Full Leaderboard" to see all rankings
+              </div>
+            </div>
+          )}
+        </>
+      )}
+    </div>
+  </div>
+)}
       </div>
     </div>
   );
 };
 
 export default YourDetailPage;
-
-// import React, { useState, useEffect } from "react";
-// import { useParams, useNavigate } from "react-router-dom";
-// import {
-//   ArrowLeft,
-//   CheckCircle,
-//   Circle,
-//   Clock,
-//   Trophy,
-//   Calendar,
-//   Star,
-//   Target,
-//   TrendingUp,
-// } from "lucide-react";
-// import {
-//   challengeService,
-//   Challenge,
-//   ChallengeTask,
-//   ChallengeParticipant,
-//   ChallengeTaskProgress,
-//   ChallengeTaskProgressDTO,
-// } from "../../services/challengeService";
-// import "./YourDetailPage.css";
-
-// interface TaskWithProgress extends ChallengeTask {
-//   progress?: ChallengeTaskProgress;
-//   isCompleted: boolean;
-// }
-
-// const YourDetailPage: React.FC = () => {
-//   const { challengeId } = useParams<{ challengeId: string }>();
-//   const navigate = useNavigate();
-  
-//   const [challenge, setChallenge] = useState<Challenge | null>(null);
-//   const [participant, setParticipant] = useState<ChallengeParticipant | null>(null);
-//   const [tasks, setTasks] = useState<TaskWithProgress[]>([]);
-//   const [loading, setLoading] = useState(true);
-//   const [error, setError] = useState<string | null>(null);
-//   const [updatingTask, setUpdatingTask] = useState<string | null>(null);
-
-//   // Get user ID from localStorage
-//   const getUserId = (): string => {
-//     const storedUserId = localStorage.getItem("userId");
-//     if (storedUserId) {
-//       const guidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-//       if (guidRegex.test(storedUserId)) {
-//         return storedUserId;
-//       }
-//     }
-//     return "";
-//   };
-
-//   useEffect(() => {
-//     const fetchChallengeDetails = async () => {
-//       if (!challengeId) {
-//         console.error("❌ No challengeId from URL params");
-//         setError("No challenge ID provided");
-//         setLoading(false);
-//         return;
-//       }
-
-//       // Validate GUID format
-//       const guidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-//       if (!guidRegex.test(challengeId)) {
-//         console.error("❌ Invalid challengeId format:", challengeId);
-//         setError("Invalid challenge ID format");
-//         setLoading(false);
-//         return;
-//       }
-
-//       try {
-//         setLoading(true);
-//         setError(null);
-
-//         const userId = getUserId();
-//         console.log("🔍 ChallengeId from URL:", challengeId);
-//         console.log("🔍 UserId:", userId);
-        
-//         if (!userId) {
-//           setError("User not authenticated");
-//           setLoading(false);
-//           return;
-//         }
-
-//         // Fetch challenge
-//         const challengeData = await challengeService.getChallenge(challengeId);
-//         console.log("✅ Challenge:", challengeData);
-//         setChallenge(challengeData);
-
-//         // Fetch participants to get current user's participant record
-//         const allParticipants = await challengeService.getAllChallengeParticipants();
-//         const userParticipant = allParticipants.find(
-//           (p) => p.challengeId === challengeId && p.userId === userId
-//         );
-
-//         if (!userParticipant) {
-//           setError("You are not a participant of this challenge");
-//           setLoading(false);
-//           return;
-//         }
-
-//         console.log("✅ User participant:", userParticipant);
-//         setParticipant(userParticipant);
-
-//         // Fetch tasks
-//         let tasksData: ChallengeTask[] = [];
-//         try {
-//           tasksData = await challengeService.getTasksByChallengeId(challengeId);
-//           if (!tasksData || tasksData.length === 0) {
-//             const allTasks = await challengeService.getAllChallengeTasks();
-//             tasksData = allTasks.filter((t) => t.challengeId === challengeId);
-//           }
-//         } catch (err) {
-//           console.warn("Failed to fetch tasks:", err);
-//           const allTasks = await challengeService.getAllChallengeTasks();
-//           tasksData = allTasks.filter((t) => t.challengeId === challengeId);
-//         }
-
-//         console.log("✅ Tasks:", tasksData);
-
-//         // Fetch task progress
-//         let progressData: ChallengeTaskProgress[] = [];
-//         try {
-//           progressData = await challengeService.getProgressByParticipantId(userParticipant.id);
-//         } catch (err) {
-//           console.warn("Failed to fetch progress:", err);
-//           const allProgress = await challengeService.getAllChallengeTaskProgresses();
-//           progressData = allProgress.filter((p) => p.participantId === userParticipant.id);
-//         }
-
-//         console.log("✅ Task progress:", progressData);
-
-//         // Combine tasks with progress
-//         const tasksWithProgress: TaskWithProgress[] = tasksData.map((task) => {
-//           const progress = progressData.find((p) => p.challengeTaskId === task.id);
-//           return {
-//             ...task,
-//             progress,
-//             isCompleted: progress?.status?.toLowerCase() === "completed",
-//           };
-//         });
-
-//         console.log("✅ Tasks with progress:", tasksWithProgress);
-//         setTasks(tasksWithProgress);
-//       } catch (err) {
-//         console.error("❌ Error fetching challenge details:", err);
-//         setError("Failed to load challenge details. Please try again later.");
-//       } finally {
-//         setLoading(false);
-//       }
-//     };
-
-//     fetchChallengeDetails();
-//   }, [challengeId]);
-
-//   const handleToggleTaskCompletion = async (task: TaskWithProgress) => {
-//     if (!participant || !task.id) return;
-
-//     try {
-//       setUpdatingTask(task.id);
-
-//       if (task.progress) {
-//         // Update existing progress
-//         const newStatus = task.isCompleted ? "pending" : "completed";
-//         const updateData: ChallengeTaskProgressDTO = {
-//           participantId: participant.id,
-//           challengeTaskId: task.id,
-//           status: newStatus,
-//           completedAt: newStatus === "completed" ? new Date().toISOString() : undefined,
-//           pointsEarned: newStatus === "completed" ? task.points : 0,
-//         };
-
-//         await challengeService.updateChallengeTaskProgress(task.progress.id, updateData);
-
-//         // Update local state
-//         setTasks((prevTasks) =>
-//           prevTasks.map((t) =>
-//             t.id === task.id
-//               ? {
-//                   ...t,
-//                   isCompleted: !task.isCompleted,
-//                   progress: {
-//                     ...task.progress!,
-//                     status: newStatus,
-//                     completedAt: newStatus === "completed" ? new Date().toISOString() : undefined,
-//                     pointsEarned: newStatus === "completed" ? task.points : 0,
-//                   },
-//                 }
-//               : t
-//           )
-//         );
-//       } else {
-//         // Create new progress
-//         const newProgressData: ChallengeTaskProgressDTO = {
-//           participantId: participant.id,
-//           challengeTaskId: task.id,
-//           status: "completed",
-//           completedAt: new Date().toISOString(),
-//           pointsEarned: task.points,
-//         };
-
-//         const createdProgress = await challengeService.createChallengeTaskProgress(newProgressData);
-
-//         // Update local state
-//         setTasks((prevTasks) =>
-//           prevTasks.map((t) =>
-//             t.id === task.id
-//               ? {
-//                   ...t,
-//                   isCompleted: true,
-//                   progress: createdProgress,
-//                 }
-//               : t
-//           )
-//         );
-//       }
-
-//       // Update participant stats
-//       const completedCount = tasks.filter((t) =>
-//         t.id === task.id ? !task.isCompleted : t.isCompleted
-//       ).length;
-//       const totalPoints = tasks.reduce((sum, t) => {
-//         if (t.id === task.id) {
-//           return sum + (task.isCompleted ? 0 : task.points || 0);
-//         }
-//         return sum + (t.isCompleted ? t.points || 0 : 0);
-//       }, 0);
-//       const percentageCompleted = Math.round((completedCount / tasks.length) * 100);
-
-//       setParticipant((prev) =>
-//         prev
-//           ? {
-//               ...prev,
-//               totalPoints,
-//               percentageCompleted,
-//             }
-//           : null
-//       );
-
-//       console.log("✅ Task progress updated successfully");
-//     } catch (err) {
-//       console.error("❌ Error updating task progress:", err);
-//       alert("Failed to update task progress. Please try again.");
-//     } finally {
-//       setUpdatingTask(null);
-//     }
-//   };
-
-//   const getStatusColor = (status: string) => {
-//     switch (status.toLowerCase()) {
-//       case "ongoing":
-//       case "active":
-//         return "#10b981";
-//       case "upcoming":
-//       case "scheduled":
-//         return "#f59e0b";
-//       case "finished":
-//       case "completed":
-//       case "ended":
-//         return "#6b7280";
-//       default:
-//         return "#6b7280";
-//     }
-//   };
-
-//   const formatDate = (dateString: string | undefined) => {
-//     if (!dateString) return "N/A";
-//     const date = new Date(dateString);
-//     return date.toLocaleDateString("en-US", {
-//       year: "numeric",
-//       month: "short",
-//       day: "numeric",
-//     });
-//   };
-
-//   if (loading) {
-//     return (
-//       <div className="your-detail-page">
-//         <div className="detail-header">
-//           <button onClick={() => navigate("/your-challenges")} className="back-button">
-//             <ArrowLeft size={24} />
-//           </button>
-//           <h1 className="header-title">Challenge Details</h1>
-//         </div>
-//         <div style={{ textAlign: "center", padding: "40px", color: "#6b7280" }}>
-//           Loading challenge details...
-//         </div>
-//       </div>
-//     );
-//   }
-
-//   if (error || !challenge || !participant) {
-//     return (
-//       <div className="your-detail-page">
-//         <div className="detail-header">
-//           <button onClick={() => navigate("/your-challenges")} className="back-button">
-//             <ArrowLeft size={24} />
-//           </button>
-//           <h1 className="header-title">Challenge Details</h1>
-//         </div>
-//         <div style={{ textAlign: "center", padding: "40px", color: "#ef4444" }}>
-//           {error || "Challenge not found"}
-//         </div>
-//       </div>
-//     );
-//   }
-
-//   const completedTasksCount = tasks.filter((t) => t.isCompleted).length;
-//   const totalTasksCount = tasks.length;
-//   const progressPercentage = totalTasksCount > 0 
-//     ? Math.round((completedTasksCount / totalTasksCount) * 100) 
-//     : 0;
-
-//   return (
-//     <div className="your-detail-page">
-//       {/* Header */}
-//       <div className="detail-header">
-//         <button onClick={() => navigate("/your-challenges")} className="back-button">
-//           <ArrowLeft size={24} />
-//         </button>
-//         <h1 className="header-title">Challenge Details</h1>
-//       </div>
-
-//       {/* Hero Section */}
-//       <div className="detail-hero">
-//         <div className="hero-content">
-//           <h1 className="challenge-title">{challenge.title}</h1>
-//           <p className="challenge-subtitle">{challenge.taskSummary || challenge.category}</p>
-//           <div className="challenge-status-badge" style={{ backgroundColor: getStatusColor(challenge.status) }}>
-//             {challenge.status}
-//           </div>
-//         </div>
-//       </div>
-
-//       {/* Stats Overview */}
-//       <div className="stats-grid">
-//         <div className="stat-card">
-//           <div className="stat-icon" style={{ backgroundColor: "#dcfce7", color: "#10b981" }}>
-//             <Target size={24} />
-//           </div>
-//           <div className="stat-content">
-//             <div className="stat-label">Tasks Completed</div>
-//             <div className="stat-value">
-//               {completedTasksCount}/{totalTasksCount}
-//             </div>
-//           </div>
-//         </div>
-
-//         <div className="stat-card">
-//           <div className="stat-icon" style={{ backgroundColor: "#dbeafe", color: "#3b82f6" }}>
-//             <Trophy size={24} />
-//           </div>
-//           <div className="stat-content">
-//             <div className="stat-label">Total Points</div>
-//             <div className="stat-value">{participant.totalPoints || 0}</div>
-//           </div>
-//         </div>
-
-//         <div className="stat-card">
-//           <div className="stat-icon" style={{ backgroundColor: "#fef3c7", color: "#f59e0b" }}>
-//             <TrendingUp size={24} />
-//           </div>
-//           <div className="stat-content">
-//             <div className="stat-label">Progress</div>
-//             <div className="stat-value">{progressPercentage}%</div>
-//           </div>
-//         </div>
-
-//         <div className="stat-card">
-//           <div className="stat-icon" style={{ backgroundColor: "#fce7f3", color: "#ec4899" }}>
-//             <Star size={24} />
-//           </div>
-//           <div className="stat-content">
-//             <div className="stat-label">Current Streak</div>
-//             <div className="stat-value">{participant.currentStreak || 0} days</div>
-//           </div>
-//         </div>
-//       </div>
-
-//       {/* Overall Progress Bar */}
-//       <div className="progress-section">
-//         <div className="progress-header">
-//           <h2 className="section-title">Overall Progress</h2>
-//           <span className="progress-text">{progressPercentage}%</span>
-//         </div>
-//         <div className="progress-bar-container">
-//           <div 
-//             className="progress-bar-fill" 
-//             style={{ 
-//               width: `${progressPercentage}%`,
-//               backgroundColor: "#10b981"
-//             }}
-//           />
-//         </div>
-//       </div>
-
-//       {/* Challenge Info */}
-//       <div className="info-section">
-//         <h2 className="section-title">Challenge Information</h2>
-//         <div className="info-grid">
-//           <div className="info-item">
-//             <Calendar size={20} className="info-icon" />
-//             <div>
-//               <div className="info-label">Start Date</div>
-//               <div className="info-value">{formatDate(challenge.startAt)}</div>
-//             </div>
-//           </div>
-//           <div className="info-item">
-//             <Calendar size={20} className="info-icon" />
-//             <div>
-//               <div className="info-label">End Date</div>
-//               <div className="info-value">{formatDate(challenge.endAt)}</div>
-//             </div>
-//           </div>
-//           <div className="info-item">
-//             <Clock size={20} className="info-icon" />
-//             <div>
-//               <div className="info-label">Joined On</div>
-//               <div className="info-value">{formatDate(participant.joinedAt)}</div>
-//             </div>
-//           </div>
-//         </div>
-//       </div>
-
-//       {/* Tasks List */}
-//       <div className="tasks-section">
-//         <h2 className="section-title">Challenge Tasks</h2>
-//         {tasks.length === 0 ? (
-//           <p style={{ color: "#6b7280", fontStyle: "italic", padding: "20px 0" }}>
-//             No tasks available for this challenge.
-//           </p>
-//         ) : (
-//           <div className="tasks-list">
-//             {tasks.map((task) => (
-//               <div
-//                 key={task.id}
-//                 className={`task-card ${task.isCompleted ? "completed" : ""}`}
-//                 onClick={() => handleToggleTaskCompletion(task)}
-//                 style={{ cursor: updatingTask === task.id ? "wait" : "pointer" }}
-//               >
-//                 <div className="task-checkbox">
-//                   {task.isCompleted ? (
-//                     <CheckCircle size={24} color="#10b981" fill="#10b981" />
-//                   ) : (
-//                     <Circle size={24} color="#d1d5db" />
-//                   )}
-//                 </div>
-//                 <div className="task-content">
-//                   <h3 className={`task-name ${task.isCompleted ? "completed" : ""}`}>
-//                     {task.name}
-//                   </h3>
-//                   {task.description && (
-//                     <p className="task-description">{task.description}</p>
-//                   )}
-//                   <div className="task-meta">
-//                     {task.taskType && (
-//                       <span className="task-badge">{task.taskType}</span>
-//                     )}
-//                     {task.frequencyRule && (
-//                       <span className="task-badge">{task.frequencyRule}</span>
-//                     )}
-//                     {task.isRequired && (
-//                       <span className="task-badge required">Required</span>
-//                     )}
-//                   </div>
-//                 </div>
-//                 <div className="task-points">
-//                   <span className="points-value">{task.points || 0}</span>
-//                   <span className="points-label">pts</span>
-//                 </div>
-//               </div>
-//             ))}
-//           </div>
-//         )}
-//       </div>
-//     </div>
-//   );
-// };
-
-// export default YourDetailPage;

@@ -54,7 +54,7 @@ const AnimatedRoutes: React.FC = () => {
           <Route path="/your-challenges" element={<YourGamificationPage />} />
            <Route path="/challenge-detail/:challengeId" element={<YourDetailPage />} />
         <Route path="/event-detail/:eventId" element={<EventDetailPage />} />
-          <Route path="/leaderboard/:challengeId" element={<LeaderboardPage />} />
+        <Route path="/leaderboard/:missionId" element={<LeaderboardPage />} />
           <Route path="/pricing" element={<PricingPage />} />
           <Route path="/post-management" element={<ReviewPostPage />} />
           {/* <Route path="/event-management" element={<EventManagementPage/>} />  */}
@@ -78,6 +78,7 @@ const AnimatedRoutes: React.FC = () => {
         <Route path="/your-challenges" element={<YourGamificationPage />} />
         <Route path="/challenge-detail/:challengeId" element={<YourDetailPage />} />
         <Route path="/event-detail/:eventId" element={<EventDetailPage />} />
+        <Route path="/leaderboard/:missionId" element={<LeaderboardPage />} />
         <Route path="/leaderboard/:challengeId" element={<LeaderboardPage />} />
         <Route path="/pricing" element={<PricingPage />} />
         <Route path="/post-management" element={<ReviewPostPage />} />
