@@ -1,80 +1,76 @@
-      // authService.ts
-      import type {
-        ApiResponse,
-        LoginRequest,
-        LoginResponse,
-        RegisterRequest,
-        UpdateUserRequest,
-        UserModel,
-      } from "../models";
-      import { httpRequest } from "./httpClientRedux";
+// authService.ts
+import type {
+  ApiResponse,
+  LoginRequest,
+  LoginResponse,
+  RegisterRequest,
+  UpdateUserRequest,
+  UserModel,
+} from "../models";
+import { httpRequest } from "./httpClientRedux";
 
-      // Có thể tái dùng alias nếu bạn thích, không bắt buộc:
-      type RegisterResponse = ApiResponse<string>;
+type RegisterResponse = ApiResponse<string>;
 
 export const authService = {
-  /** Đăng nhập: backend trả { flag: boolean, message: string } */
+  /** Login: backend returns { flag: boolean, message: string } */
   async login(credentials: LoginRequest): Promise<LoginResponse> {
     return httpRequest<LoginResponse>("/auth/api/Authentication/login", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
       body: JSON.stringify(credentials),
+      skipAuth: true, // Don't send auth token for login
     });
   },
 
-  /** Làm mới token - refresh token now in httpOnly cookie */
+  /** Refresh token - refresh token now in httpOnly cookie */
   async refreshToken(): Promise<LoginResponse> {
     return httpRequest<LoginResponse>("/auth/api/Authentication/refresh", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
       skipAuth: true, // Skip auth header for refresh token request
       // No body needed - refresh token is in httpOnly cookie
     });
   },
 
-  /** Thu hồi refresh token đang dùng - refresh token now in httpOnly cookie */
+  /** Revoke refresh token - refresh token now in httpOnly cookie */
   async revokeToken(): Promise<ApiResponse<string>> {
     return httpRequest<ApiResponse<string>>("/auth/api/Authentication/revoke", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
       // No body needed - refresh token is in httpOnly cookie
     });
   },
 
-  /** Đăng ký: backend trả { flag, message } */
+  /** Register: backend returns { flag, message } */
   async register(data: RegisterRequest): Promise<RegisterResponse> {
     return httpRequest<RegisterResponse>("/auth/api/Authentication/register", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
       body: JSON.stringify(data),
+      skipAuth: true, // Don't send auth token for registration
     });
   },
 
-        /** Lấy 1 user theo id */
-        async getUser(id: string): Promise<UserModel> {
-          return httpRequest<UserModel>(`/auth/api/Authentication/${id}`, {
-            method: "GET",
-            skipAutoLogout: true, // Don't auto-logout if this fails
-          });
-        },
+  /** Get user by id */
+  async getUser(id: string): Promise<UserModel> {
+    return httpRequest<UserModel>(`/auth/api/Authentication/${id}`, {
+      method: "GET",
+      skipAutoLogout: true, // Don't auto-logout if this fails
+    });
+  },
 
-        /** Lấy danh sách user */
-        async getUsers(): Promise<UserModel[]> {
-          return httpRequest<UserModel[]>("/auth/api/Authentication", {
-            method: "GET",
-          });
-        },
+  /** Get all users */
+  async getUsers(): Promise<UserModel[]> {
+    return httpRequest<UserModel[]>("/auth/api/Authentication", {
+      method: "GET",
+    });
+  },
 
-        /** Cập nhật user: backend trả { flag, message } */
-        async updateUser(id: string, payload: UpdateUserRequest): Promise<ApiResponse<string>> {
-          return httpRequest<ApiResponse<string>>(`/auth/api/Authentication/${id}`, {
-            method: "PUT",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(payload),
-          });
-        },
+  /** Update user: backend returns { flag, message } */
+  async updateUser(id: string, payload: UpdateUserRequest): Promise<ApiResponse<string>> {
+    return httpRequest<ApiResponse<string>>(`/auth/api/Authentication/${id}`, {
+      method: "PUT",
+      body: JSON.stringify(payload),
+    });
+  },
 
-  /** Xoá user: backend trả { flag, message } */
+  /** Delete user: backend returns { flag, message } */
   async deleteUser(id: string): Promise<ApiResponse<string>> {
     return httpRequest<ApiResponse<string>>(`/auth/api/Authentication/${id}`, {
       method: "DELETE",
@@ -82,13 +78,13 @@ export const authService = {
   },
 
   /**
-   * 🆕 Refresh user info sau khi thanh toán thành công
-   * Lấy thông tin user mới nhất (bao gồm subscriptionPlanId đã được update)
-   * @param userId - ID của user cần refresh
-   * @returns User model với subscription mới
+   * Refresh user info after successful payment
+   * Get latest user info (including updated subscriptionPlanId)
+   * @param userId - ID of user to refresh
+   * @returns User model with new subscription
    */
   async refreshUserInfo(userId?: string): Promise<UserModel> {
-    // Nếu không truyền userId, lấy từ token hoặc state
+    // If no userId provided, get from token or state
     const actualUserId = userId || getUserIdFromStorage();
 
     if (!actualUserId) {
@@ -100,9 +96,6 @@ export const authService = {
         method: "GET",
       });
 
-      // Update user info trong Redux/Context sau khi lấy được
-      // Ví dụ: dispatch(updateUser(userData));
-
       return userData;
     } catch (error) {
       console.error("Failed to refresh user info:", error);
@@ -111,9 +104,9 @@ export const authService = {
   },
 
   /**
-   * 🆕 Lấy subscription plan hiện tại của user
-   * @param userId - ID của user
-   * @returns Subscription plan ID hoặc null
+   * Get current subscription plan of user
+   * @param userId - ID of user
+   * @returns Subscription plan ID or null
    */
   async getCurrentSubscription(userId?: string): Promise<string | null> {
     try {
@@ -127,10 +120,10 @@ export const authService = {
 };
 
 /**
- * Helper function để lấy userId từ localStorage hoặc sessionStorage
+ * Helper function to get userId from localStorage or sessionStorage
  */
 function getUserIdFromStorage(): string | null {
-  // Lấy từ localStorage nếu có lưu userInfo
+  // Get from localStorage if userInfo is saved
   const userInfoStr = localStorage.getItem("userInfo");
   if (userInfoStr) {
     try {
@@ -141,12 +134,12 @@ function getUserIdFromStorage(): string | null {
     }
   }
 
-  // Hoặc decode từ JWT token
+  // Or decode from JWT token
   const token = localStorage.getItem("token");
   if (token) {
     try {
       const payload = JSON.parse(atob(token.split(".")[1]));
-      // JWT claim cho user ID
+      // JWT claim for user ID
       return (
         payload["http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier"] ||
         payload.sub ||
