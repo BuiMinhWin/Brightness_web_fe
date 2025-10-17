@@ -34,6 +34,7 @@ const Navbar: React.FC<NavbarProps> = ({ currentPage = "home" }) => {
   }, [isAuthenticated, userId, userInfo, dispatch]);
 
   const handleLogout = async () => {
+    debugger;
     try {
       await dispatch(logoutUser()).unwrap();
 

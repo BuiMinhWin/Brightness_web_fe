@@ -404,3 +404,43 @@
     gap: 16px;
   }
 }
+/* Add these styles to your GamificationPage.css */
+
+/* Add these styles to your GamificationPage.css */
+
+/* Registered button styling */
+.view-details-btn.registered {
+  background-color: #f97316 !important;
+  border-color: #f97316 !important;
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.view-details-btn.registered:hover {
+  background-color: #ea580c !important;
+  border-color: #ea580c !important;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(249, 115, 22, 0.3);
+}
+
+.view-details-btn.registered svg {
+  flex-shrink: 0;
+}
+
+/* Registered card styling - slightly faded */
+.competition-card[style*="opacity: 0.9"] {
+  transition: all 0.3s ease;
+}
+
+.competition-card[style*="opacity: 0.9"]:hover {
+  opacity: 1 !important;
+}
+
+/* Ensure card positioning */
+.competition-card {
+  position: relative;
+}

@@ -1,164 +1,455 @@
-import React, { useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import React, { useState, useEffect } from "react";
+import { useParams, useNavigate } from "react-router-dom";
+import { useSelector } from "react-redux";
+import { selectUserId, selectIsAuthenticated } from "../../store/slices/authSlice";
+import {
+  ArrowLeft,
+  CheckCircle,
+  Circle,
+  Trophy,
+  Target,
+  Flame,
+  Users,
+  Gift,
+  Info,
+} from "lucide-react";
+import {
+  challengeService,
+  Challenge,
+  ChallengeTask,
+  ChallengeParticipant,
+  ChallengeTaskProgress,
+  ChallengeTaskProgressDTO,
+  ChallengeRule,
+  LeaderboardEntry as APILeaderboardEntry,
+} from "../../services/challengeService";
 import "./YourDetailPage.css";
-import GameFooter from "../../components/layout/GameFooter";
-import { ArrowLeft } from "lucide-react";
 
-interface Challenge {
-  id: number;
+interface TaskWithProgress extends ChallengeTask {
+  progress?: ChallengeTaskProgress;
+  isCompleted: boolean;
+}
+
+interface LeaderboardEntry {
+  id: string;
+  rank: number;
   name: string;
-  description: string;
-  status: "completed" | "in-progress" | "not-started";
-  icon: string;
+  points: number;
+  avatar: string;
+  isCurrentUser?: boolean;
 }
 
-interface MissionData {
-  id: number;
-  title: string;
-  duration: string;
-  participants: number;
-  streak: number;
-  tasksCompleted: number;
-  totalTasks: number;
-  overallProgress: number;
-  todayChallenge: Challenge;
-  allChallenges: Challenge[];
-}
+type TabType = "progress" | "leaderboard";
 
 const YourDetailPage: React.FC = () => {
+  const { challengeId } = useParams<{ challengeId: string }>();
   const navigate = useNavigate();
-  const { missionId } = useParams<{ missionId: string }>(); // lấy từ URL
-  const [activeTab, setActiveTab] = useState<"progress" | "leaderboard">("progress");
+  
+  // ✅ Get authenticated user ID from Redux instead of localStorage
+  const authenticatedUserId = useSelector(selectUserId);
+  const isAuthenticated = useSelector(selectIsAuthenticated);
 
-  // Mock data - trong app thực tế sẽ fetch theo missionId
-  const missionData: MissionData = {
-    id: Number(missionId) || 1,
-    title: "Summer Fitness Challenge",
-    duration: "30 Days",
-    participants: 156,
-    streak: 12,
-    tasksCompleted: 18,
-    totalTasks: 30,
-    overallProgress: 60,
-    todayChallenge: {
-      id: 1,
-      name: "Run 5K or Walk 10K",
-      description: "Complete your cardio goal for today",
-      status: "in-progress",
-      icon: "🏃",
-    },
-    allChallenges: [
-      {
-        id: 1,
-        name: "Morning Yoga Session",
-        description: "Complete 30-minute yoga routine",
-        status: "completed",
-        icon: "✓",
-      },
-      {
-        id: 2,
-        name: "Strength Training",
-        description: "Complete upper body workout",
-        status: "in-progress",
-        icon: "▶",
-      },
-      {
-        id: 3,
-        name: "Meditation Session",
-        description: "15-minute mindfulness practice",
-        status: "not-started",
-        icon: "○",
-      },
-    ],
+  console.log("🔐 Your Detail - Auth State:", { isAuthenticated, authenticatedUserId });
+  
+  const [challenge, setChallenge] = useState<Challenge | null>(null);
+  const [participant, setParticipant] = useState<ChallengeParticipant | null>(null);
+  const [tasks, setTasks] = useState<TaskWithProgress[]>([]);
+  const [rules, setRules] = useState<ChallengeRule | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [updatingTask, setUpdatingTask] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<TabType>("progress");
+
+  // ✅ Leaderboard state
+  const [leaderboardData, setLeaderboardData] = useState<LeaderboardEntry[]>([]);
+  const [loadingLeaderboard, setLoadingLeaderboard] = useState(false);
+  const [leaderboardError, setLeaderboardError] = useState<string | null>(null);
+
+  // Generate avatar URL
+  const getAvatarUrl = (userName: string, userId: string): string => {
+    const colors = ["4F46E5", "DC2626", "059669", "D97706", "7C3AED", "EC4899", "10B981"];
+    const colorIndex = userId.charCodeAt(0) % colors.length;
+    const initial = userName?.charAt(0).toUpperCase() || "U";
+    return `https://ui-avatars.com/api/?name=${initial}&background=${colors[colorIndex]}&color=fff&size=80&bold=true`;
   };
 
-  const handleMarkComplete = () => {
-    console.log("Marking challenge as complete");
+  // Format user display name
+  const formatUserName = (userId: string): string => {
+    return `User ${userId.substring(0, 8)}`;
   };
 
-  const handlePause = () => {
-    console.log("Pausing challenge");
-  };
+  useEffect(() => {
+    const fetchChallengeDetails = async () => {
+      if (!challengeId) {
+        console.error("❌ No challengeId from URL params");
+        setError("No challenge ID provided");
+        setLoading(false);
+        return;
+      }
 
-  const handleLeaderboardClick = () => {
-    setActiveTab("leaderboard");
-    navigate(`/leaderboard/${missionData.id}`); // 🔥 điều hướng bằng Router
-  };
+      // ✅ Check authentication before fetching
+      if (!isAuthenticated || !authenticatedUserId) {
+        console.error("❌ User not authenticated");
+        setError("Please log in to view your challenge details");
+        setLoading(false);
+        navigate("/auth?mode=signin");
+        return;
+      }
 
-  const getStatusIcon = (status: string) => {
-    switch (status) {
-      case "completed":
-        return "✓";
-      case "in-progress":
-        return "▶";
-      case "not-started":
-        return "○";
-      default:
-        return "○";
+      // Validate GUID format
+      const guidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+      if (!guidRegex.test(challengeId)) {
+        console.error("❌ Invalid challengeId format:", challengeId);
+        setError("Invalid challenge ID format");
+        setLoading(false);
+        return;
+      }
+
+      if (!guidRegex.test(authenticatedUserId)) {
+        console.error("❌ Invalid userId format (not a Guid):", authenticatedUserId);
+        setError("Invalid user ID format. Please try logging in again.");
+        setLoading(false);
+        return;
+      }
+
+      try {
+        setLoading(true);
+        setError(null);
+
+        console.log("🔍 ChallengeId from URL:", challengeId);
+        console.log("🔍 Authenticated UserId:", authenticatedUserId);
+
+        // Fetch challenge
+        const challengeData = await challengeService.getChallenge(challengeId);
+        console.log("✅ Challenge:", challengeData);
+        setChallenge(challengeData);
+
+        // Fetch challenge rules
+        try {
+          const rulesData = await challengeService.getRulesByChallengeId(challengeId);
+          if (rulesData && rulesData.length > 0) {
+            setRules(rulesData[0]);
+            console.log("✅ Challenge rules:", rulesData[0]);
+          }
+        } catch (err) {
+          console.warn("⚠️ Failed to fetch rules:", err);
+        }
+
+        // ✅ Fetch participants to get current AUTHENTICATED user's participant record
+        const allParticipants = await challengeService.getAllChallengeParticipants();
+        const userParticipant = allParticipants.find(
+          (p) => p.challengeId === challengeId && 
+                 p.userId.toLowerCase() === authenticatedUserId.toLowerCase()
+        );
+
+        if (!userParticipant) {
+          console.error("❌ User is not a participant of this challenge");
+          setError("You are not a participant of this challenge");
+          setLoading(false);
+          return;
+        }
+
+        console.log("✅ User participant:", userParticipant);
+        setParticipant(userParticipant);
+
+        // Fetch tasks
+        let tasksData: ChallengeTask[] = [];
+        try {
+          tasksData = await challengeService.getTasksByChallengeId(challengeId);
+          if (!tasksData || tasksData.length === 0) {
+            console.log("⚠️ No tasks from specific endpoint, trying to fetch all tasks...");
+            const allTasks = await challengeService.getAllChallengeTasks();
+            tasksData = allTasks.filter((t) => t.challengeId === challengeId);
+          }
+        } catch (err) {
+          console.warn("⚠️ Failed to fetch tasks:", err);
+          const allTasks = await challengeService.getAllChallengeTasks();
+          tasksData = allTasks.filter((t) => t.challengeId === challengeId);
+        }
+
+        console.log("✅ Tasks:", tasksData);
+
+        // Fetch task progress for THIS user
+        let progressData: ChallengeTaskProgress[] = [];
+        try {
+          progressData = await challengeService.getProgressByParticipantId(userParticipant.id);
+          console.log("✅ Task progress fetched:", progressData);
+        } catch (err) {
+          console.warn("⚠️ Failed to fetch progress:", err);
+          try {
+            const allProgress = await challengeService.getAllChallengeTaskProgresses();
+            progressData = allProgress.filter((p) => p.participantId === userParticipant.id);
+            console.log("✅ Filtered task progress:", progressData);
+          } catch (fallbackErr) {
+            console.error("❌ Fallback also failed:", fallbackErr);
+          }
+        }
+
+        // Combine tasks with progress
+        const tasksWithProgress: TaskWithProgress[] = tasksData.map((task) => {
+          const progress = progressData.find((p) => p.challengeTaskId === task.id);
+          return {
+            ...task,
+            progress,
+            isCompleted: progress?.status?.toLowerCase() === "completed",
+          };
+        });
+
+        console.log("✅ Tasks with progress:", tasksWithProgress);
+        setTasks(tasksWithProgress);
+      } catch (err) {
+        console.error("❌ Error fetching challenge details:", err);
+        setError("Failed to load challenge details. Please try again later.");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchChallengeDetails();
+  }, [challengeId, authenticatedUserId, isAuthenticated, navigate]);
+
+  // ✅ Fetch leaderboard when switching to leaderboard tab
+  useEffect(() => {
+    if (activeTab === "leaderboard" && challengeId && isAuthenticated && authenticatedUserId) {
+      fetchLeaderboardData();
+    }
+  }, [activeTab, challengeId, authenticatedUserId, isAuthenticated]);
+
+  const fetchLeaderboardData = async () => {
+    if (!challengeId) return;
+
+    try {
+      setLoadingLeaderboard(true);
+      setLeaderboardError(null);
+
+      console.log("🔍 Fetching leaderboard for challenge:", challengeId);
+
+      // Fetch leaderboard from API
+      let apiLeaderboard: APILeaderboardEntry[] = [];
+      try {
+        apiLeaderboard = await challengeService.getLeaderboard(challengeId);
+        console.log("✅ API Leaderboard response:", apiLeaderboard);
+      } catch (err) {
+        console.warn("⚠️ Failed to fetch leaderboard from API, falling back to participants:", err);
+        
+        // Fallback: Calculate from participants
+        const participants = await challengeService.getParticipantsByChallengeId(challengeId);
+        apiLeaderboard = participants
+          .sort((a, b) => (b.totalPoints || 0) - (a.totalPoints || 0))
+          .map((participant, index) => ({
+            userId: participant.userId,
+            userName: formatUserName(participant.userId),
+            totalPoints: participant.totalPoints || 0,
+            rank: index + 1,
+          }));
+        console.log("✅ Fallback leaderboard from participants:", apiLeaderboard);
+      }
+
+      // Transform API leaderboard to component format
+      const transformedLeaderboard: LeaderboardEntry[] = apiLeaderboard.map((entry) => ({
+        id: entry.userId,
+        rank: entry.rank,
+        name: entry.userName || formatUserName(entry.userId),
+        points: entry.totalPoints,
+        avatar: getAvatarUrl(entry.userName || formatUserName(entry.userId), entry.userId),
+        isCurrentUser: entry.userId.toLowerCase() === authenticatedUserId?.toLowerCase(),
+      }));
+
+      console.log("✅ Transformed leaderboard:", transformedLeaderboard);
+      setLeaderboardData(transformedLeaderboard);
+
+    } catch (err) {
+      console.error("❌ Error fetching leaderboard:", err);
+      setLeaderboardError("Failed to load leaderboard. Please try again later.");
+    } finally {
+      setLoadingLeaderboard(false);
     }
   };
 
-  const getStatusClass = (status: string) => {
-    switch (status) {
-      case "completed":
-        return "completed";
-      case "in-progress":
-        return "in-progress";
-      case "not-started":
-        return "not-started";
-      default:
-        return "not-started";
+  const handleMarkAsComplete = async (task: TaskWithProgress) => {
+    if (!participant || !task.id || task.isCompleted) return;
+
+    // ✅ Verify authentication before allowing task completion
+    if (!isAuthenticated || !authenticatedUserId) {
+      alert("Please log in to mark tasks as complete");
+      navigate("/auth?mode=signin");
+      return;
+    }
+
+    try {
+      setUpdatingTask(task.id);
+
+      if (task.progress) {
+        // Update existing progress
+        const updateData: ChallengeTaskProgressDTO = {
+          participantId: participant.id,
+          challengeTaskId: task.id,
+          status: "completed",
+          completedAt: new Date().toISOString(),
+          pointsEarned: task.points,
+        };
+
+        await challengeService.updateChallengeTaskProgress(task.progress.id, updateData);
+        console.log("✅ Task progress updated successfully");
+      } else {
+        // Create new progress
+        const newProgressData: ChallengeTaskProgressDTO = {
+          participantId: participant.id,
+          challengeTaskId: task.id,
+          status: "completed",
+          completedAt: new Date().toISOString(),
+          pointsEarned: task.points,
+        };
+
+        await challengeService.createChallengeTaskProgress(newProgressData);
+        console.log("✅ Task progress created successfully");
+      }
+
+      // Update local state
+      setTasks((prevTasks) =>
+        prevTasks.map((t) =>
+          t.id === task.id
+            ? {
+                ...t,
+                isCompleted: true,
+                progress: {
+                  ...(task.progress || {}),
+                  participantId: participant.id,
+                  challengeTaskId: task.id,
+                  status: "completed",
+                  completedAt: new Date().toISOString(),
+                  pointsEarned: task.points,
+                  id: task.progress?.id || "",
+                },
+              }
+            : t
+        )
+      );
+
+      // Update participant stats
+      const newCompletedCount = tasks.filter((t) =>
+        t.id === task.id ? true : t.isCompleted
+      ).length;
+      const newTotalPoints = tasks.reduce((sum, t) => {
+        if (t.id === task.id) {
+          return sum + (task.points || 0);
+        }
+        return sum + (t.isCompleted ? t.points || 0 : 0);
+      }, 0);
+      const newPercentageCompleted = Math.round((newCompletedCount / tasks.length) * 100);
+
+      setParticipant((prev) =>
+        prev
+          ? {
+              ...prev,
+              totalPoints: newTotalPoints,
+              percentageCompleted: newPercentageCompleted,
+            }
+          : null
+      );
+
+      console.log("✅ Task marked as complete successfully");
+    } catch (err) {
+      console.error("❌ Error marking task as complete:", err);
+      alert("Failed to mark task as complete. Please try again.");
+    } finally {
+      setUpdatingTask(null);
     }
   };
 
-  const getStatusBadgeClass = (status: string) => {
-    switch (status) {
-      case "completed":
-        return "done";
-      case "in-progress":
-        return "in-progress";
-      case "not-started":
-        return "not-started";
-      default:
-        return "not-started";
-    }
+  const formatDate = (dateString: string | undefined) => {
+    if (!dateString) return "N/A";
+    const date = new Date(dateString);
+    return date.toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+    });
   };
 
-  const getStatusText = (status: string) => {
-    switch (status) {
-      case "completed":
-        return "Done";
-      case "in-progress":
-        return "In Progress";
-      case "not-started":
-        return "Not Started";
-      default:
-        return "Not Started";
-    }
-  };
+  if (loading) {
+    return (
+      <div className="your-detail-page">
+        <div className="your-detail-content">
+          <div className="detail-header">
+            <button onClick={() => navigate("/your-challenges")} className="back-button">
+              <ArrowLeft size={24} />
+            </button>
+            <h1 className="header-title">Challenge Details</h1>
+          </div>
+          <div style={{ textAlign: "center", padding: "40px", color: "#6b7280" }}>
+            Loading challenge details...
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (error || !challenge || !participant) {
+    return (
+      <div className="your-detail-page">
+        <div className="your-detail-content">
+          <div className="detail-header">
+            <button onClick={() => navigate("/your-challenges")} className="back-button">
+              <ArrowLeft size={24} />
+            </button>
+            <h1 className="header-title">Challenge Details</h1>
+          </div>
+          <div style={{ textAlign: "center", padding: "40px", color: "#ef4444" }}>
+            {error || "Challenge not found"}
+            {error && error.includes("not authenticated") && (
+              <div style={{ marginTop: "20px" }}>
+                <button
+                  onClick={() => navigate("/auth?mode=signin")}
+                  style={{
+                    padding: "10px 20px",
+                    backgroundColor: "#3b82f6",
+                    color: "white",
+                    border: "none",
+                    borderRadius: "8px",
+                    cursor: "pointer",
+                  }}
+                >
+                  Go to Login
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  const completedTasksCount = tasks.filter((t) => t.isCompleted).length;
+  const inProgressTasksCount = tasks.filter((t) => !t.isCompleted && t.progress).length;
+  const notStartedTasksCount = tasks.filter((t) => !t.isCompleted && !t.progress).length;
+  const totalTasksCount = tasks.length;
+  const progressPercentage = totalTasksCount > 0 
+    ? Math.round((completedTasksCount / totalTasksCount) * 100) 
+    : 0;
+
+  const currentUserInLeaderboard = leaderboardData.find(entry => entry.isCurrentUser);
 
   return (
     <div className="your-detail-page">
-
-      {/* Back button */}
-
       <div className="your-detail-content">
         {/* Header */}
         <div className="detail-header">
-          <button onClick={() => navigate(`/your-missions`)} className="back-button">
+          <button onClick={() => navigate("/your-challenges")} className="back-button">
             <ArrowLeft size={24} />
           </button>
           <div className="header-info">
-            <h1 className="challenge-title">{missionData.title}</h1>
+            <h1 className="challenge-title">{challenge.title}</h1>
             <p className="challenge-meta">
-              {missionData.duration} • {missionData.participants} Participants
+              {challenge.taskSummary || `${totalTasksCount} Days • ${challenge.maxParticipants || 0} Participants`}
             </p>
           </div>
-
-          <div className="streak-badge">
-            <span className="streak-icon">🔥</span>
-            <span>{missionData.streak} Day Streak</span>
-          </div>
+          {participant.currentStreak && participant.currentStreak > 0 && (
+            <div className="streak-badge">
+              <Flame className="streak-icon" size={16} />
+              {participant.currentStreak} Day Streak
+            </div>
+          )}
         </div>
 
         {/* Tab Navigation */}
@@ -171,21 +462,22 @@ const YourDetailPage: React.FC = () => {
           </button>
           <button
             className={`tab-button ${activeTab === "leaderboard" ? "active" : ""}`}
-            onClick={handleLeaderboardClick}
+            onClick={() => setActiveTab("leaderboard")}
           >
             Leaderboard
           </button>
         </div>
 
+        {/* Progress Tab Content */}
         {activeTab === "progress" && (
           <>
-            {/* Progress Overview */}
+            {/* Progress Overview Card */}
             <div className="progress-overview">
               <div className="overview-header">
                 <h2 className="overview-title">Challenge Progress</h2>
                 <div className="task-counter">
                   <span className="task-count">
-                    {missionData.tasksCompleted}/{missionData.totalTasks}
+                    {completedTasksCount}/{totalTasksCount}
                   </span>
                   <span className="task-label">Tasks Completed</span>
                 </div>
@@ -194,86 +486,503 @@ const YourDetailPage: React.FC = () => {
               <div className="progress-bar-section">
                 <div className="progress-label">
                   <span className="progress-title">Overall Progress</span>
-                  <span className="progress-percentage">{missionData.overallProgress}%</span>
+                  <span className="progress-percentage">{progressPercentage}%</span>
                 </div>
                 <div className="progress-bar-container">
-                  <div
-                    className="progress-bar"
-                    style={{ width: `${missionData.overallProgress}%` }}
-                  ></div>
+                  <div className="progress-bar" style={{ width: `${progressPercentage}%` }} />
                 </div>
               </div>
 
               <div className="progress-stats">
                 <div className="stat-item">
-                  <span className="stat-number">18</span>
+                  <span className="stat-number">{completedTasksCount}</span>
                   <span className="stat-label">Completed</span>
                 </div>
                 <div className="stat-item">
-                  <span className="stat-number">5</span>
+                  <span className="stat-number">{inProgressTasksCount}</span>
                   <span className="stat-label">In Progress</span>
                 </div>
                 <div className="stat-item">
-                  <span className="stat-number">7</span>
+                  <span className="stat-number">{notStartedTasksCount}</span>
                   <span className="stat-label">Not Started</span>
                 </div>
               </div>
             </div>
 
-            {/* Today's Challenge */}
-            <div className="todays-challenge">
-              <div className="challenge-header">
-                <h3 className="challenge-section-title">Today's Challenge</h3>
-                <div className="time-remaining">18h 4m left</div>
-              </div>
+            {/* Challenge Info Cards */}
+            <div className="info-cards-grid">
+              {/* How to Participate */}
+              {rules && rules.howToParticipate && rules.howToParticipate.length > 0 && (
+                <div className="info-card">
+                  <div className="info-card-header">
+                    <Info size={20} />
+                    <h3>How to Participate</h3>
+                  </div>
+                  <ul className="info-list">
+                    {rules.howToParticipate.map((step, index) => (
+                      <li key={index}>{step}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
 
-              <div className="challenge-item">
-                <div className="challenge-icon">🏃</div>
-                <div className="challenge-details">
-                  <h4 className="challenge-name">{missionData.todayChallenge.name}</h4>
-                  <p className="challenge-description">{missionData.todayChallenge.description}</p>
+              {/* Prize Pool */}
+              {challenge.prizePool && challenge.prizePool > 0 && (
+                <div className="info-card">
+                  <div className="info-card-header">
+                    <Gift size={20} />
+                    <h3>Prize Pool</h3>
+                  </div>
+                  <div className="prize-amount">${challenge.prizePool.toLocaleString()}</div>
+                  <p className="prize-description">
+                    Compete with others to win your share of the prize pool!
+                  </p>
+                </div>
+              )}
+
+              {/* Challenge Stats */}
+              <div className="info-card">
+                <div className="info-card-header">
+                  <Users size={20} />
+                  <h3>Challenge Stats</h3>
+                </div>
+                <div className="stats-list">
+                  <div className="stat-row">
+                    <span>Status:</span>
+                    <span className="stat-value">{challenge.status}</span>
+                  </div>
+                  <div className="stat-row">
+                    <span>Start Date:</span>
+                    <span className="stat-value">{formatDate(challenge.startAt)}</span>
+                  </div>
+                  <div className="stat-row">
+                    <span>End Date:</span>
+                    <span className="stat-value">{formatDate(challenge.endAt)}</span>
+                  </div>
+                  <div className="stat-row">
+                    <span>Your Points:</span>
+                    <span className="stat-value">{participant.totalPoints || 0} pts</span>
+                  </div>
                 </div>
               </div>
 
-              <div className="action-buttons">
-                <button className="complete-button" onClick={handleMarkComplete}>
-                  Mark Complete
-                </button>
-                <button className="pause-button" onClick={handlePause}>
-                  Pause
-                </button>
-              </div>
+              {/* Rules */}
+              {rules && rules.ruleText && rules.ruleText.length > 0 && (
+                <div className="info-card">
+                  <div className="info-card-header">
+                    <Target size={20} />
+                    <h3>Challenge Rules</h3>
+                  </div>
+                  <ul className="info-list">
+                    {rules.ruleText.map((rule, index) => (
+                      <li key={index}>{rule}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
             </div>
+
+            {/* Today's Challenge */}
+            {tasks.filter((t) => !t.isCompleted).length > 0 && (
+              <div className="todays-challenge">
+                <div className="challenge-header">
+                  <h2 className="challenge-section-title">Today's Challenge</h2>
+                </div>
+                {tasks
+                  .filter((t) => !t.isCompleted)
+                  .slice(0, 1)
+                  .map((task) => (
+                    <div key={task.id} className="challenge-item">
+                      <div className="challenge-icon">
+                        <Target size={24} />
+                      </div>
+                      <div className="challenge-details">
+                        <h3 className="challenge-name">{task.name}</h3>
+                        {task.description && (
+                          <p className="challenge-description">{task.description}</p>
+                        )}
+                      </div>
+                      <div className="action-buttons">
+                        <button
+                          className="complete-button"
+                          onClick={() => handleMarkAsComplete(task)}
+                          disabled={updatingTask === task.id}
+                          style={{
+                            cursor: updatingTask === task.id ? "wait" : "pointer",
+                            opacity: updatingTask === task.id ? 0.7 : 1,
+                          }}
+                        >
+                          <CheckCircle size={20} />
+                          {updatingTask === task.id ? "Marking..." : "Mark as Complete"}
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+              </div>
+            )}
 
             {/* All Challenges */}
             <div className="all-challenges">
-              <h3 className="all-challenges-title">All Challenges</h3>
-              {missionData.allChallenges.map((challenge) => (
-                <div key={challenge.id} className="challenge-list-item">
-                  <div className={`status-icon ${getStatusClass(challenge.status)}`}>
-                    {getStatusIcon(challenge.status)}
+              <h2 className="all-challenges-title">All Challenges</h2>
+              {tasks.length === 0 ? (
+                <p style={{ color: "#6b7280", fontStyle: "italic" }}>
+                  No tasks available for this challenge.
+                </p>
+              ) : (
+                tasks.map((task) => (
+                  <div key={task.id} className="challenge-list-item">
+                    <div
+                      className={`status-icon ${
+                        task.isCompleted
+                          ? "completed"
+                          : task.progress
+                          ? "in-progress"
+                          : "not-started"
+                      }`}
+                    >
+                      {task.isCompleted ? (
+                        <CheckCircle size={20} />
+                      ) : (
+                        <Circle size={20} />
+                      )}
+                    </div>
+                    <div className="challenge-info">
+                      <h3 className="challenge-list-name">{task.name}</h3>
+                      {task.description && (
+                        <p className="challenge-list-description">{task.description}</p>
+                      )}
+                    </div>
+                    {task.isCompleted ? (
+                      <span className="status-badge done">Done</span>
+                    ) : (
+                      <button
+                        className="complete-button"
+                        onClick={() => handleMarkAsComplete(task)}
+                        disabled={updatingTask === task.id}
+                        style={{
+                          cursor: updatingTask === task.id ? "wait" : "pointer",
+                          opacity: updatingTask === task.id ? 0.7 : 1,
+                          fontSize: "14px",
+                          padding: "8px 16px",
+                        }}
+                      >
+                        {updatingTask === task.id ? "Marking..." : "Complete"}
+                      </button>
+                    )}
                   </div>
-                  <div className="challenge-info">
-                    <h4 className="challenge-list-name">{challenge.name}</h4>
-                    <p className="challenge-list-description">{challenge.description}</p>
-                  </div>
-                  <div className={`status-badge ${getStatusBadgeClass(challenge.status)}`}>
-                    {getStatusText(challenge.status)}
-                  </div>
-                </div>
-              ))}
+                ))
+              )}
             </div>
           </>
         )}
 
-        {activeTab === "leaderboard" && (
-          <div className="leaderboard-content">
-            <h3>Redirecting to leaderboard...</h3>
+        {/* ✅ Leaderboard Tab Content - NOW WITH REAL DATA */}
+{activeTab === "leaderboard" && (
+  <div className="all-challenges">
+    {/* Main Preview Card */}
+    <div style={{
+      backgroundColor: "white",
+      border: "1px solid #e5e7eb",
+      borderRadius: "16px",
+      padding: "40px",
+      textAlign: "center",
+    }}>
+      {loadingLeaderboard ? (
+        <div style={{ color: "#6b7280", padding: "20px" }}>
+          <div style={{
+            width: "48px",
+            height: "48px",
+            border: "3px solid #e5e7eb",
+            borderTop: "3px solid #3b82f6",
+            borderRadius: "50%",
+            margin: "0 auto 16px",
+            animation: "spin 1s linear infinite",
+          }} />
+          <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+          Loading leaderboard...
+        </div>
+      ) : leaderboardError ? (
+        <div>
+          <div style={{
+            fontSize: "48px",
+            marginBottom: "16px",
+          }}>😕</div>
+          <div style={{ color: "#ef4444", marginBottom: "20px" }}>
+            {leaderboardError}
           </div>
-        )}
-      </div>
+          <button
+            onClick={fetchLeaderboardData}
+            style={{
+              padding: "10px 20px",
+              backgroundColor: "#3b82f6",
+              color: "white",
+              border: "none",
+              borderRadius: "8px",
+              cursor: "pointer",
+            }}
+          >
+            Try Again
+          </button>
+        </div>
+      ) : (
+        <>
+          {/* Trophy Icon */}
+          <div style={{
+            width: "80px",
+            height: "80px",
+            borderRadius: "50%",
+            backgroundColor: "#FEF3C7",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            margin: "0 auto 24px",
+          }}>
+            <Trophy size={40} style={{ color: "#F59E0B" }} />
+          </div>
 
-      <GameFooter />
+          {/* Title */}
+          <h2 style={{
+            fontSize: "24px",
+            fontWeight: "bold",
+            marginBottom: "12px",
+            color: "#111827",
+          }}>
+            Challenge Leaderboard
+          </h2>
+
+          {/* Description */}
+          <p style={{
+            fontSize: "16px",
+            color: "#6b7280",
+            marginBottom: "32px",
+            maxWidth: "500px",
+            margin: "0 auto 32px",
+          }}>
+            See how you rank against other participants and compete for the top spots!
+          </p>
+
+          {/* Quick Stats Grid */}
+          {currentUserInLeaderboard ? (
+            <div style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(3, 1fr)",
+              gap: "20px",
+              marginBottom: "32px",
+              maxWidth: "600px",
+              margin: "0 auto 32px",
+            }}>
+              {/* Your Rank */}
+              <div style={{
+                padding: "20px",
+                backgroundColor: "#EFF6FF",
+                borderRadius: "12px",
+                border: "2px solid #3B82F6",
+              }}>
+                <div style={{
+                  fontSize: "32px",
+                  fontWeight: "bold",
+                  color: "#3B82F6",
+                  marginBottom: "4px",
+                }}>
+                  #{currentUserInLeaderboard.rank}
+                </div>
+                <div style={{ fontSize: "14px", color: "#1E40AF", fontWeight: "500" }}>
+                  Your Rank
+                </div>
+              </div>
+
+              {/* Your Points */}
+              <div style={{
+                padding: "20px",
+                backgroundColor: "#F0FDF4",
+                borderRadius: "12px",
+                border: "2px solid #10B981",
+              }}>
+                <div style={{
+                  fontSize: "32px",
+                  fontWeight: "bold",
+                  color: "#10B981",
+                  marginBottom: "4px",
+                }}>
+                  {currentUserInLeaderboard.points}
+                </div>
+                <div style={{ fontSize: "14px", color: "#065F46", fontWeight: "500" }}>
+                  Your Points
+                </div>
+              </div>
+
+              {/* Total Players */}
+              <div style={{
+                padding: "20px",
+                backgroundColor: "#FEF3C7",
+                borderRadius: "12px",
+                border: "2px solid #F59E0B",
+              }}>
+                <div style={{
+                  fontSize: "32px",
+                  fontWeight: "bold",
+                  color: "#F59E0B",
+                  marginBottom: "4px",
+                }}>
+                  {leaderboardData.length}
+                </div>
+                <div style={{ fontSize: "14px", color: "#92400E", fontWeight: "500" }}>
+                  Total Players
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div style={{
+              padding: "20px",
+              backgroundColor: "#FEF3C7",
+              borderRadius: "12px",
+              marginBottom: "32px",
+              maxWidth: "500px",
+              margin: "0 auto 32px",
+              border: "1px solid #FDE68A",
+            }}>
+              <div style={{ fontSize: "24px", marginBottom: "8px" }}>📊</div>
+              <p style={{ fontSize: "14px", color: "#92400E", margin: 0, fontWeight: "500" }}>
+                Complete tasks to appear on the leaderboard!
+              </p>
+            </div>
+          )}
+
+          {/* Main CTA Button */}
+          <button
+            onClick={() => navigate(`/leaderboard/${challengeId}`)}
+            style={{
+              padding: "16px 48px",
+              backgroundColor: "#3b82f6",
+              color: "white",
+              border: "none",
+              borderRadius: "12px",
+              cursor: "pointer",
+              fontSize: "16px",
+              fontWeight: "600",
+              boxShadow: "0 4px 6px rgba(59, 130, 246, 0.3)",
+              transition: "all 0.2s",
+              display: "inline-flex",
+              alignItems: "center",
+              gap: "8px",
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.backgroundColor = "#2563eb";
+              e.currentTarget.style.transform = "translateY(-2px)";
+              e.currentTarget.style.boxShadow = "0 6px 8px rgba(59, 130, 246, 0.4)";
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.backgroundColor = "#3b82f6";
+              e.currentTarget.style.transform = "translateY(0)";
+              e.currentTarget.style.boxShadow = "0 4px 6px rgba(59, 130, 246, 0.3)";
+            }}
+          >
+            View Full Leaderboard
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+              <path d="M7 3L14 10L7 17" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
+          </button>
+
+          {/* Top 3 Preview (Optional) */}
+          {leaderboardData.length >= 3 && (
+            <div style={{
+              marginTop: "40px",
+              paddingTop: "32px",
+              borderTop: "1px solid #e5e7eb",
+            }}>
+              <h3 style={{
+                fontSize: "18px",
+                fontWeight: "600",
+                marginBottom: "20px",
+                color: "#374151",
+              }}>
+                🏆 Current Top 3
+              </h3>
+              <div style={{
+                display: "flex",
+                gap: "16px",
+                justifyContent: "center",
+                flexWrap: "wrap",
+              }}>
+                {leaderboardData.slice(0, 3).map((entry, index) => (
+                  <div key={entry.id} style={{
+                    flex: "1",
+                    minWidth: "150px",
+                    maxWidth: "200px",
+                    padding: "20px",
+                    backgroundColor: index === 0 ? "#FEF3C7" : "#F9FAFB",
+                    borderRadius: "12px",
+                    border: entry.isCurrentUser ? "2px solid #3B82F6" : "1px solid #e5e7eb",
+                    position: "relative",
+                  }}>
+                    {/* Medal/Rank Badge */}
+                    <div style={{
+                      position: "absolute",
+                      top: "-12px",
+                      right: "-12px",
+                      width: "32px",
+                      height: "32px",
+                      borderRadius: "50%",
+                      backgroundColor: index === 0 ? "#FFD700" : index === 1 ? "#C0C0C0" : "#CD7F32",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      fontSize: "16px",
+                      fontWeight: "bold",
+                      color: "white",
+                      boxShadow: "0 2px 4px rgba(0,0,0,0.2)",
+                    }}>
+                      {index + 1}
+                    </div>
+
+                    <img
+                      src={entry.avatar}
+                      alt={entry.name}
+                      style={{
+                        width: "56px",
+                        height: "56px",
+                        borderRadius: "50%",
+                        margin: "0 auto 12px",
+                        display: "block",
+                        border: entry.isCurrentUser ? "3px solid #3B82F6" : "2px solid #e5e7eb",
+                      }}
+                    />
+                    <div style={{
+                      fontSize: "15px",
+                      fontWeight: "600",
+                      color: entry.isCurrentUser ? "#3B82F6" : "#374151",
+                      marginBottom: "4px",
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                      whiteSpace: "nowrap",
+                    }}>
+                      {entry.isCurrentUser ? "You 👋" : entry.name}
+                    </div>
+                    <div style={{
+                      fontSize: "18px",
+                      fontWeight: "bold",
+                      color: "#10B981",
+                    }}>
+                      {entry.points} pts
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <div style={{
+                marginTop: "16px",
+                fontSize: "13px",
+                color: "#6b7280",
+              }}>
+                Click "View Full Leaderboard" to see all rankings
+              </div>
+            </div>
+          )}
+        </>
+      )}
+    </div>
+  </div>
+)}
+      </div>
     </div>
   );
 };

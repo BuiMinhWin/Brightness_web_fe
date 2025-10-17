@@ -1,16 +1,16 @@
-// authService.ts
-import type {
-  ApiResponse,
-  LoginRequest,
-  LoginResponse,
-  RegisterRequest,
-  UpdateUserRequest,
-  UserModel,
-} from "../models";
-import { httpRequest } from "./httpClientRedux";
+      // authService.ts
+      import type {
+        ApiResponse,
+        LoginRequest,
+        LoginResponse,
+        RegisterRequest,
+        UpdateUserRequest,
+        UserModel,
+      } from "../models";
+      import { httpRequest } from "./httpClientRedux";
 
-// Có thể tái dùng alias nếu bạn thích, không bắt buộc:
-type RegisterResponse = ApiResponse<string>;
+      // Có thể tái dùng alias nếu bạn thích, không bắt buộc:
+      type RegisterResponse = ApiResponse<string>;
 
 export const authService = {
   /** Đăng nhập: backend trả { flag: boolean, message: string } */
@@ -50,29 +50,29 @@ export const authService = {
     });
   },
 
-  /** Lấy 1 user theo id */
-  async getUser(id: string): Promise<UserModel> {
-    return httpRequest<UserModel>(`/auth/api/Authentication/${id}`, {
-      method: "GET",
-      skipAutoLogout: true, // Don't auto-logout if this fails
-    });
-  },
+        /** Lấy 1 user theo id */
+        async getUser(id: string): Promise<UserModel> {
+          return httpRequest<UserModel>(`/auth/api/Authentication/${id}`, {
+            method: "GET",
+            skipAutoLogout: true, // Don't auto-logout if this fails
+          });
+        },
 
-  /** Lấy danh sách user */
-  async getUsers(): Promise<UserModel[]> {
-    return httpRequest<UserModel[]>("/auth/api/Authentication", {
-      method: "GET",
-    });
-  },
+        /** Lấy danh sách user */
+        async getUsers(): Promise<UserModel[]> {
+          return httpRequest<UserModel[]>("/auth/api/Authentication", {
+            method: "GET",
+          });
+        },
 
-  /** Cập nhật user: backend trả { flag, message } */
-  async updateUser(id: string, payload: UpdateUserRequest): Promise<ApiResponse<string>> {
-    return httpRequest<ApiResponse<string>>(`/auth/api/Authentication/${id}`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
-    });
-  },
+        /** Cập nhật user: backend trả { flag, message } */
+        async updateUser(id: string, payload: UpdateUserRequest): Promise<ApiResponse<string>> {
+          return httpRequest<ApiResponse<string>>(`/auth/api/Authentication/${id}`, {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload),
+          });
+        },
 
   /** Xoá user: backend trả { flag, message } */
   async deleteUser(id: string): Promise<ApiResponse<string>> {

@@ -78,6 +78,7 @@ const AuthPage: React.FC = () => {
   }, [isAuthenticated, userRole, isLoading, navigate, error, authMode]);
 
   const switchMode = (mode: AuthMode) => {
+    
     if (mode === authMode) return;
     setAuthMode(mode);
     setSearchParams({ mode });
