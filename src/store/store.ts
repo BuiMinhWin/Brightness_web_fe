@@ -1,39 +1,21 @@
 import { configureStore } from "@reduxjs/toolkit";
-import { persistStore, persistReducer } from "redux-persist";
-import storage from "redux-persist/lib/storage"; // defaults to localStorage
 import authReducer from "./slices/authSlice";
 import adminReducer from "./slices/adminSlice";
 
-// Redux Persist configuration
-const persistConfig = {
-  key: "brightnest-auth",
-  storage,
-};
-
-const persistedAuthReducer = persistReducer(persistConfig, authReducer);
-
+/**
+ * Redux store configuration
+ * 
+ * Note: Redux Persist has been removed for security reasons.
+ * - Access tokens are stored in memory only (Redux state)
+ * - Refresh tokens are stored in httpOnly cookies (backend-managed)
+ * - Auto-login is handled via silent token refresh on app initialization
+ */
 export const store = configureStore({
   reducer: {
-    auth: persistedAuthReducer,
+    auth: authReducer,
     admin: adminReducer,
   },
-  middleware: (getDefaultMiddleware) =>
-    getDefaultMiddleware({
-      serializableCheck: {
-        // Ignore redux-persist actions
-        ignoredActions: [
-          "persist/PERSIST",
-          "persist/REHYDRATE",
-          "persist/REGISTER",
-          "persist/PURGE",
-          "persist/FLUSH",
-          "persist/PAUSE",
-        ],
-      },
-    }),
 });
-
-export const persistor = persistStore(store);
 
 export type RootState = ReturnType<typeof store.getState>;
 export type AppDispatch = typeof store.dispatch;

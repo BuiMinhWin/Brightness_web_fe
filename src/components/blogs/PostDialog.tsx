@@ -1,14 +1,17 @@
 import React, { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 import {
-  StarFilledIcon,
-  StarIcon,
   ChatBubbleIcon,
   Share1Icon,
   HeartFilledIcon,
   HeartIcon,
   Cross2Icon,
 } from "@radix-ui/react-icons";
-import sampleComments from "../../assets/temps/sampleComments.json";
+import { socialService } from "../../services/socialService";
+import { useSelector } from "react-redux";
+import { selectUserId } from "../../store/slices/authSlice";
+import type { Comment as CommentType } from "../../models/social";
+import ImageViewer from "./ImageViewer";
 
 interface Comment {
   id: string;
@@ -26,10 +29,10 @@ interface PostData {
   user: {
     name: string;
     avatar: string;
-    rating: number;
   };
   timestamp: string;
   content: {
+    title?: string;
     text: string;
     media?: string[];
   };
@@ -38,15 +41,28 @@ interface PostData {
     retweets: number;
     likes: number;
   };
+  postId?: string; // Add postId to fetch comments and handle likes
 }
 
 interface PostDialogProps {
   post: PostData;
   isOpen: boolean;
   onClose: () => void;
+  onPostUpdated?: (postId: string, updates: { likes?: number; comments?: number; isLiked?: boolean }) => void;
 }
 
-const PostDialog: React.FC<PostDialogProps> = ({ post, isOpen, onClose }) => {
+const PostDialog: React.FC<PostDialogProps> = ({ post, isOpen, onClose, onPostUpdated }) => {
+  const userId = useSelector(selectUserId);
+  
+  const [comments, setComments] = useState<Comment[]>([]);
+  const [likedComments, setLikedComments] = useState<Set<string>>(new Set());
+  const [isPostLiked, setIsPostLiked] = useState(false);
+  const [postLikes, setPostLikes] = useState(post.interactions.likes || 0);
+  const [newComment, setNewComment] = useState("");
+  const [isSubmittingComment, setIsSubmittingComment] = useState(false);
+  const [loadingComments, setLoadingComments] = useState(false);
+  const [viewingImageIndex, setViewingImageIndex] = useState<number | null>(null);
+
   // Disable body scroll when dialog is open
   useEffect(() => {
     if (isOpen) {
@@ -61,20 +77,50 @@ const PostDialog: React.FC<PostDialogProps> = ({ post, isOpen, onClose }) => {
     };
   }, [isOpen]);
 
-  const [comments, setComments] = useState<Comment[]>(sampleComments);
+  // Fetch comments and vote status when dialog opens
+  useEffect(() => {
+    if (isOpen && post.postId) {
+      fetchComments();
+      fetchUserVoteStatus();
+    }
+  }, [isOpen, post.postId]);
 
-  const [likedComments, setLikedComments] = useState<Set<string>>(new Set());
+  const fetchUserVoteStatus = async () => {
+    if (!post.postId) return;
+    
+    try {
+      const voteStatus = await socialService.getUserVote(post.postId);
+      setIsPostLiked(voteStatus.hasVoted && voteStatus.voteType === "reaction");
+    } catch (err) {
+      console.error("Failed to fetch user vote status:", err);
+    }
+  };
 
-  const renderStars = (rating: number) => {
-    return Array.from({ length: 5 }, (_, index) => (
-      <span key={index} style={{ color: index < rating ? "#FFD700" : "#E5E5E5" }}>
-        {index < rating ? (
-          <StarFilledIcon width={14} height={14} />
-        ) : (
-          <StarIcon width={14} height={14} />
-        )}
-      </span>
-    ));
+  const fetchComments = async () => {
+    if (!post.postId) return;
+    
+    try {
+      setLoadingComments(true);
+      const fetchedComments = await socialService.getCommentsByPostId(post.postId);
+      
+      // Transform API comments to UI format
+      const transformedComments: Comment[] = fetchedComments.map(comment => ({
+        id: comment.id,
+        user: {
+          name: `User ${comment.userId.substring(0, 8)}`,
+          avatar: `https://ui-avatars.com/api/?name=User&background=random`,
+        },
+        text: comment.content,
+        timestamp: new Date(comment.createdAt).toLocaleString(),
+        likes: comment.reactionCount,
+      }));
+      
+      setComments(transformedComments);
+    } catch (err) {
+      console.error("Failed to fetch comments:", err);
+    } finally {
+      setLoadingComments(false);
+    }
   };
 
   const getMediaGridStyle = (mediaCount: number) => {
@@ -104,7 +150,39 @@ const PostDialog: React.FC<PostDialogProps> = ({ post, isOpen, onClose }) => {
     return {};
   };
 
+  const handlePostLike = async () => {
+    if (!post.postId || !userId) return;
+
+    try {
+      const newLikedState = !isPostLiked;
+      const newLikesCount = Math.max(0, isPostLiked ? postLikes - 1 : postLikes + 1);
+
+      if (isPostLiked) {
+        // Unlike the post
+        await socialService.cancelPostVote(post.postId);
+        setIsPostLiked(false);
+        setPostLikes(newLikesCount);
+      } else {
+        // Like the post
+        await socialService.votePost(post.postId, "reaction");
+        setIsPostLiked(true);
+        setPostLikes(newLikesCount);
+      }
+
+      // Notify parent to update the feed
+      if (onPostUpdated) {
+        onPostUpdated(post.postId, { 
+          likes: newLikesCount, 
+          isLiked: newLikedState 
+        });
+      }
+    } catch (err) {
+      console.error("Failed to toggle post like:", err);
+    }
+  };
+
   const handleCommentLike = (commentId: string) => {
+    // TODO: Implement comment voting API when available
     setLikedComments((prev) => {
       const newSet = new Set(prev);
       if (newSet.has(commentId)) {
@@ -114,6 +192,44 @@ const PostDialog: React.FC<PostDialogProps> = ({ post, isOpen, onClose }) => {
       }
       return newSet;
     });
+  };
+
+  const handleSubmitComment = async () => {
+    if (!newComment.trim() || !post.postId || !userId) return;
+
+    try {
+      setIsSubmittingComment(true);
+      const createdComment = await socialService.createComment(post.postId, {
+        content: newComment,
+      });
+
+      // Add new comment to the list
+      const newCommentData: Comment = {
+        id: createdComment.id,
+        user: {
+          name: `User ${userId.substring(0, 8)}`,
+          avatar: `https://ui-avatars.com/api/?name=User&background=random`,
+        },
+        text: createdComment.content,
+        timestamp: new Date(createdComment.createdAt).toLocaleString(),
+        likes: 0,
+      };
+
+      setComments(prev => [newCommentData, ...prev]);
+      setNewComment("");
+
+      // Notify parent to update comment count in feed
+      if (onPostUpdated && post.postId) {
+        onPostUpdated(post.postId, { 
+          comments: comments.length + 1 
+        });
+      }
+    } catch (err) {
+      console.error("Failed to post comment:", err);
+      alert("Failed to post comment. Please try again.");
+    } finally {
+      setIsSubmittingComment(false);
+    }
   };
 
   const renderComment = (comment: Comment, isReply: boolean = false) => {
@@ -317,41 +433,30 @@ const PostDialog: React.FC<PostDialogProps> = ({ post, isOpen, onClose }) => {
               <div
                 style={{
                   flex: 1,
-                  height: "48px",
                   display: "flex",
                   flexDirection: "column",
                   justifyContent: "center",
+                  gap: "6px",
                 }}
               >
                 <h3
                   style={{
                     margin: 0,
-                    fontSize: "16px",
+                    fontSize: "18px",
                     fontWeight: "600",
                     color: "#1a1a1a",
-                    marginBottom: "1px",
                     lineHeight: "1",
                   }}
                 >
                   {post.user.name}
                 </h3>
-                <div
-                  style={{
-                    display: "flex",
-                    gap: "2px",
-                    margin: 0,
-                  }}
-                >
-                  {renderStars(post.user.rating)}
-                </div>
                 <p
                   style={{
                     margin: 0,
-                    fontSize: "12px",
+                    fontSize: "13px",
                     color: "#666",
                     fontWeight: "400",
                     lineHeight: "1",
-                    marginTop: "1px",
                   }}
                 >
                   {post.timestamp}
@@ -361,6 +466,19 @@ const PostDialog: React.FC<PostDialogProps> = ({ post, isOpen, onClose }) => {
 
             {/* Content Section */}
             <div style={{ marginBottom: "24px" }}>
+              {post.content.title && (
+                <h2
+                  style={{
+                    margin: "0 0 12px 0",
+                    fontSize: "22px",
+                    fontWeight: "700",
+                    lineHeight: "1.3",
+                    color: "#1a1a1a",
+                  }}
+                >
+                  {post.content.title}
+                </h2>
+              )}
               <p
                 style={{
                   margin: 0,
@@ -368,28 +486,120 @@ const PostDialog: React.FC<PostDialogProps> = ({ post, isOpen, onClose }) => {
                   lineHeight: "1.5",
                   color: "#333",
                   marginBottom: post.content.media && post.content.media.length > 0 ? "12px" : "0",
+                  whiteSpace: "pre-wrap",
                 }}
               >
                 {post.content.text}
               </p>
 
               {post.content.media && post.content.media.length > 0 && (
-                <div style={getMediaGridStyle(post.content.media.length)}>
+                <div style={{
+                  display: "grid",
+                  gridTemplateColumns: post.content.media.length === 1 ? "1fr" : post.content.media.length === 2 ? "1fr 1fr" : "repeat(2, 1fr)",
+                  gap: "8px",
+                  marginTop: "12px",
+                }}>
                   {post.content.media.map((mediaUrl, index) => (
-                    <img
+                    <div
                       key={index}
-                      src={mediaUrl}
-                      alt={`Media ${index + 1}`}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setViewingImageIndex(index);
+                      }}
                       style={{
                         width: "100%",
-                        height: "200px",
-                        objectFit: "cover",
-                        gridRow: post.content.media!.length > 2 && index === 0 ? "1 / 3" : "auto",
+                        maxHeight: post.content.media!.length === 1 ? "400px" : "300px",
+                        overflow: "hidden",
+                        borderRadius: "8px",
+                        backgroundColor: "rgba(0, 0, 0, 0.05)",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        gridColumn: post.content.media!.length === 3 && index === 0 ? "1 / 3" : "auto",
+                        cursor: "pointer",
+                        transition: "transform 0.2s, box-shadow 0.2s",
+                        boxShadow: "0 2px 8px rgba(0, 0, 0, 0.1)",
                       }}
-                    />
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.transform = "scale(1.02)";
+                        e.currentTarget.style.boxShadow = "0 4px 16px rgba(0, 0, 0, 0.2)";
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.transform = "scale(1)";
+                        e.currentTarget.style.boxShadow = "0 2px 8px rgba(0, 0, 0, 0.1)";
+                      }}
+                    >
+                      <img
+                        src={mediaUrl}
+                        alt={`Media ${index + 1}`}
+                        style={{
+                          width: "100%",
+                          height: "auto",
+                          maxHeight: post.content.media!.length === 1 ? "400px" : "300px",
+                          objectFit: "contain",
+                          display: "block",
+                        }}
+                      />
+                    </div>
                   ))}
                 </div>
               )}
+            </div>
+
+            {/* Post Interactions */}
+            <div
+              style={{
+                borderTop: "1px solid rgba(0, 0, 0, 0.1)",
+                paddingTop: "12px",
+                display: "flex",
+                gap: "16px",
+              }}
+            >
+              <button
+                onClick={handlePostLike}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "6px",
+                  background: "none",
+                  border: "none",
+                  cursor: "pointer",
+                  fontSize: "14px",
+                  color: isPostLiked ? "#ef4444" : "#666",
+                  padding: "8px 12px",
+                  borderRadius: "8px",
+                  transition: "background 0.2s",
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background = "rgba(0, 0, 0, 0.05)";
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = "none";
+                }}
+              >
+                {isPostLiked ? (
+                  <HeartFilledIcon width={18} height={18} />
+                ) : (
+                  <HeartIcon width={18} height={18} />
+                )}
+                <span style={{ fontWeight: "500" }}>{postLikes}</span>
+              </button>
+              <button
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "6px",
+                  background: "none",
+                  border: "none",
+                  cursor: "pointer",
+                  fontSize: "14px",
+                  color: "#666",
+                  padding: "8px 12px",
+                }}
+              >
+                <ChatBubbleIcon width={18} height={18} />
+                <span style={{ fontWeight: "500" }}>{comments.length}</span>
+              </button>
             </div>
           </div>
 
@@ -412,7 +622,17 @@ const PostDialog: React.FC<PostDialogProps> = ({ post, isOpen, onClose }) => {
               Comments ({comments.length})
             </h3>
 
-            {comments.map((comment) => renderComment(comment))}
+            {loadingComments ? (
+              <div style={{ textAlign: "center", padding: "20px", color: "#666" }}>
+                Loading comments...
+              </div>
+            ) : comments.length === 0 ? (
+              <div style={{ textAlign: "center", padding: "20px", color: "#666" }}>
+                No comments yet. Be the first to comment!
+              </div>
+            ) : (
+              comments.map((comment) => renderComment(comment))
+            )}
           </div>
 
           {/* Sticky Add Comment Input */}
@@ -427,7 +647,10 @@ const PostDialog: React.FC<PostDialogProps> = ({ post, isOpen, onClose }) => {
             }}
           >
             <textarea
+              value={newComment}
+              onChange={(e) => setNewComment(e.target.value)}
               placeholder="Write a comment..."
+              disabled={!userId || isSubmittingComment}
               style={{
                 width: "100%",
                 minHeight: "60px",
@@ -439,25 +662,45 @@ const PostDialog: React.FC<PostDialogProps> = ({ post, isOpen, onClose }) => {
                 fontFamily: "inherit",
                 boxSizing: "border-box",
                 backgroundColor: "#D1F5D4",
+                opacity: !userId ? 0.6 : 1,
               }}
             />
             <button
+              onClick={handleSubmitComment}
+              disabled={!newComment.trim() || !userId || isSubmittingComment}
               style={{
                 marginTop: "8px",
                 padding: "8px 16px",
-                backgroundColor: "#007E85",
+                backgroundColor: newComment.trim() && userId && !isSubmittingComment ? "#007E85" : "#ccc",
                 color: "white",
                 border: "none",
                 borderRadius: "6px",
-                cursor: "pointer",
+                cursor: newComment.trim() && userId && !isSubmittingComment ? "pointer" : "not-allowed",
                 fontSize: "14px",
                 fontWeight: "500",
+                opacity: isSubmittingComment ? 0.7 : 1,
               }}
             >
-              Post Comment
+              {isSubmittingComment ? "Posting..." : "Post Comment"}
             </button>
+            {!userId && (
+              <p style={{ marginTop: "8px", fontSize: "12px", color: "#666" }}>
+                Please log in to comment
+              </p>
+            )}
           </div>
         </div>
+
+        {/* Image Viewer Modal - Render in portal */}
+        {viewingImageIndex !== null && post.content.media && createPortal(
+          <ImageViewer
+            images={post.content.media}
+            initialIndex={viewingImageIndex}
+            isOpen={viewingImageIndex !== null}
+            onClose={() => setViewingImageIndex(null)}
+          />,
+          document.body
+        )}
       </div>
     </>
   );

@@ -28,11 +28,12 @@ const getAuthData = async (): Promise<AuthData | null> => {
     return null;
   }
 
+  // Refresh token is now in httpOnly cookie, not in state
   return {
     accessToken: auth.accessToken,
-    refreshToken: auth.refreshToken || "",
+    refreshToken: "", // Not used - kept for type compatibility
     accessTokenExpiresAt: auth.accessTokenExpiresAt || "",
-    refreshTokenExpiresAt: auth.refreshTokenExpiresAt || "",
+    refreshTokenExpiresAt: "", // Not tracked - kept for type compatibility
   };
 };
 
@@ -55,15 +56,8 @@ let refreshPromise: Promise<AuthData | null> | null = null;
 const handleRefreshToken = async (): Promise<AuthData | null> => {
   const store = await getStore();
   const { refreshAuthToken, clearAuth } = await getAuthActions();
-  const state = store.getState();
-  const { auth } = state;
 
-  if (!auth.refreshToken) {
-    store.dispatch(clearAuth());
-    window.location.href = "/auth?mode=signin"; // Redirect to login
-    return Promise.reject(new Error("No refresh token available."));
-  }
-
+  // Refresh token is now in httpOnly cookie - no need to check state
   if (!isRefreshing) {
     isRefreshing = true;
     refreshPromise = store
@@ -117,47 +111,18 @@ export async function httpRequest<T>(path: string, options: RequestOptions = {})
   let auth = await getAuthData();
   const { skipContentType, skipAuth, skipAutoLogout, headers, ...rest } = options;
 
-  // Check if both tokens are expired
-  if (auth?.accessToken && auth?.refreshToken && !skipAuth) {
+  // Check if access token is expired and attempt refresh
+  if (auth?.accessToken && !skipAuth) {
     const isAccessExpired = isTokenExpired(auth.accessToken);
-    const isRefreshExpired = isTokenExpired(auth.refreshToken);
 
-    if (isAccessExpired && isRefreshExpired) {
-      // Both tokens expired - force logout
-      console.error("Both access and refresh tokens expired. Logging out.");
-      const { clearAuth: clearAuthAction } = await getAuthActions();
-      const storeInstance = await getStore();
-      storeInstance.dispatch(clearAuthAction());
-      window.location.href = "/auth?mode=signin";
-      return Promise.reject(new ApiError("Session expired. Please log in again.", 401));
-    }
-
-    if (isAccessExpired && !isRefreshExpired) {
-      // Access expired, refresh still valid - attempt refresh
+    if (isAccessExpired) {
+      // Access expired - attempt refresh (refresh token is in httpOnly cookie)
       const newAuth = await handleRefreshToken();
       if (newAuth) {
         auth = newAuth;
       } else {
         // Refresh failed, stop the request
         return Promise.reject(new ApiError("Session expired. Please log in again.", 401));
-      }
-    }
-
-    // Log warning if refresh token will expire soon (e.g., within 24 hours)
-    if (!isRefreshExpired && auth.refreshToken) {
-      try {
-        const decoded = jwtDecode(auth.refreshToken);
-        const currentTime = Date.now() / 1000;
-        const timeToExpiry = (decoded.exp ?? 0) - currentTime;
-        const hoursToExpiry = timeToExpiry / 3600;
-
-        if (hoursToExpiry <= 24 && hoursToExpiry > 0) {
-          console.warn(
-            `⚠️ Refresh token will expire in ${hoursToExpiry.toFixed(1)} hours. Consider re-login.`
-          );
-        }
-      } catch (error) {
-        console.error("Failed to check refresh token expiry:", error);
       }
     }
   }
