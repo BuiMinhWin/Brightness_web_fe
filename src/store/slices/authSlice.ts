@@ -15,11 +15,9 @@ interface DecodedToken {
 }
 
 interface AuthState {
-  // Auth data
+  // Auth data (access token only - refresh token in httpOnly cookie)
   accessToken: string | null;
-  refreshToken: string | null;
   accessTokenExpiresAt: string | null;
-  refreshTokenExpiresAt: string | null;
 
   // User info
   userId: string | null;
@@ -33,13 +31,16 @@ interface AuthState {
 
   // Token refresh
   isRefreshing: boolean;
+
+  // Session management
+  lastActivity: number | null; // Timestamp of last user activity
+  sessionStartTime: number | null; // Timestamp when session started
+  isTabActive: boolean; // Whether the current tab is active/visible
 }
 
 const initialState: AuthState = {
   accessToken: null,
-  refreshToken: null,
   accessTokenExpiresAt: null,
-  refreshTokenExpiresAt: null,
   userId: null,
   userRole: null,
   userInfo: null,
@@ -47,6 +48,9 @@ const initialState: AuthState = {
   isLoading: false,
   error: null,
   isRefreshing: false,
+  lastActivity: null,
+  sessionStartTime: null,
+  isTabActive: true,
 };
 
 // Helper function to decode token and extract user info
@@ -190,19 +194,13 @@ export const registerUser = createAsyncThunk(
   }
 );
 
-// Async thunk for token refresh
+// Async thunk for token refresh (refresh token now in httpOnly cookie)
 export const refreshAuthToken = createAsyncThunk(
   "auth/refreshToken",
-  async (_, { getState, rejectWithValue }) => {
+  async (_, { rejectWithValue }) => {
     try {
-      const state = getState() as { auth: AuthState };
-      const { refreshToken } = state.auth;
-
-      if (!refreshToken) {
-        return rejectWithValue("No refresh token available");
-      }
-
-      const response = await authService.refreshToken(refreshToken);
+      // Refresh token is now in httpOnly cookie - backend reads it automatically
+      const response = await authService.refreshToken();
 
       if (!response.flag || !response.data) {
         return rejectWithValue("Failed to refresh token");
@@ -247,20 +245,16 @@ export const fetchUserInfo = createAsyncThunk(
   }
 );
 
-// Async thunk for logout
+// Async thunk for logout (refresh token in httpOnly cookie)
 export const logoutUser = createAsyncThunk(
   "auth/logoutUser",
-  async (_, { getState, rejectWithValue }) => {
+  async (_, { rejectWithValue }) => {
     try {
-      const state = getState() as { auth: AuthState };
-      const refreshToken = state.auth.refreshToken;
-
-      if (refreshToken) {
-        try {
-          await authService.revokeToken(refreshToken);
-        } catch (err) {
-          console.warn("Failed to revoke refresh token:", err);
-        }
+      // Refresh token is in httpOnly cookie - backend will read it
+      try {
+        await authService.revokeToken();
+      } catch (err) {
+        console.warn("Failed to revoke refresh token:", err);
       }
 
       return true;
@@ -270,55 +264,7 @@ export const logoutUser = createAsyncThunk(
   }
 );
 
-// Async thunk to load auth state from localStorage (for app initialization)
-export const loadAuthFromStorage = createAsyncThunk(
-  "auth/loadFromStorage",
-  async (_, { rejectWithValue }) => {
-    try {
-      console.log("📦 Checking storage for auth...");
-      console.log("📦 All localStorage keys:", Object.keys(localStorage));
-      console.log("📦 All sessionStorage keys:", Object.keys(sessionStorage));
-
-      // Try sessionStorage first, then localStorage
-      let authJson = sessionStorage.getItem("auth") || localStorage.getItem("auth");
-      console.log("📦 Auth data from storage:", authJson ? "FOUND" : "NOT FOUND");
-
-      if (!authJson) {
-        return rejectWithValue("No auth data in storage");
-      }
-
-      const authData: AuthData = JSON.parse(authJson);
-
-      // Check if token is still valid
-      if (isTokenExpired(authData.accessToken)) {
-        return rejectWithValue("Token expired");
-      }
-
-      const { role, userId } = decodeToken(authData.accessToken);
-
-      // Fetch user info if we have userId
-      let userInfo: UserModel | null = null;
-      if (userId) {
-        try {
-          userInfo = await authService.getUser(userId);
-        } catch (error) {
-          console.warn("Failed to fetch user info:", error);
-        }
-      }
-
-      return {
-        authData,
-        role,
-        userId,
-        userInfo,
-      };
-    } catch (error) {
-      return rejectWithValue(
-        error instanceof Error ? error.message : "Failed to load auth from storage"
-      );
-    }
-  }
-);
+// Note: loadAuthFromStorage has been removed - auto-login now uses silent token refresh via httpOnly cookies
 
 const authSlice = createSlice({
   name: "auth",
@@ -329,9 +275,7 @@ const authSlice = createSlice({
     },
     clearAuth: (state) => {
       state.accessToken = null;
-      state.refreshToken = null;
       state.accessTokenExpiresAt = null;
-      state.refreshTokenExpiresAt = null;
       state.userId = null;
       state.userRole = null;
       state.userInfo = null;
@@ -339,10 +283,20 @@ const authSlice = createSlice({
       state.error = null;
       state.isRefreshing = false;
       state.isLoading = false;
-      // Note: Redux Persist will automatically sync this to storage
+      state.lastActivity = null;
+      state.sessionStartTime = null;
     },
     setUserInfo: (state, action: PayloadAction<UserModel>) => {
       state.userInfo = action.payload;
+    },
+    updateLastActivity: (state) => {
+      state.lastActivity = Date.now();
+    },
+    setTabActive: (state, action: PayloadAction<boolean>) => {
+      state.isTabActive = action.payload;
+    },
+    setSessionStartTime: (state, action: PayloadAction<number>) => {
+      state.sessionStartTime = action.payload;
     },
   },
   extraReducers: (builder) => {
@@ -360,14 +314,14 @@ const authSlice = createSlice({
 
         const { authData, role, userId, userInfo } = action.payload;
         state.accessToken = authData.accessToken;
-        state.refreshToken = authData.refreshToken;
         state.accessTokenExpiresAt = authData.accessTokenExpiresAt;
-        state.refreshTokenExpiresAt = authData.refreshTokenExpiresAt;
         state.userRole = role;
         state.userId = userId;
         state.userInfo = userInfo;
-
-        // Note: Redux Persist automatically handles localStorage persistence
+        
+        // Set session tracking
+        state.sessionStartTime = Date.now();
+        state.lastActivity = Date.now();
       })
       .addCase(loginUser.rejected, (state, action) => {
         state.isLoading = false;
@@ -388,14 +342,14 @@ const authSlice = createSlice({
 
         const { authData, role, userId, userInfo } = action.payload;
         state.accessToken = authData.accessToken;
-        state.refreshToken = authData.refreshToken;
         state.accessTokenExpiresAt = authData.accessTokenExpiresAt;
-        state.refreshTokenExpiresAt = authData.refreshTokenExpiresAt;
         state.userRole = role;
         state.userId = userId;
         state.userInfo = userInfo;
-
-        // Note: Redux Persist automatically handles localStorage persistence
+        
+        // Set session tracking
+        state.sessionStartTime = Date.now();
+        state.lastActivity = Date.now();
       })
       .addCase(registerUser.rejected, (state, action) => {
         state.isLoading = false;
@@ -414,13 +368,13 @@ const authSlice = createSlice({
 
         const { authData, role, userId } = action.payload;
         state.accessToken = authData.accessToken;
-        state.refreshToken = authData.refreshToken;
         state.accessTokenExpiresAt = authData.accessTokenExpiresAt;
-        state.refreshTokenExpiresAt = authData.refreshTokenExpiresAt;
         state.userRole = role;
         state.userId = userId;
-
-        // Note: Redux Persist automatically handles storage
+        state.isAuthenticated = true;
+        
+        // Update activity on successful refresh
+        state.lastActivity = Date.now();
       })
       .addCase(refreshAuthToken.rejected, (state, action) => {
         state.isRefreshing = false;
@@ -433,33 +387,6 @@ const authSlice = createSlice({
       // Logout cases
       .addCase(logoutUser.fulfilled, (state) => {
         authSlice.caseReducers.clearAuth(state);
-      })
-
-      // Load from storage cases
-      .addCase(loadAuthFromStorage.pending, (state) => {
-        console.log("🔄 Loading auth from storage...");
-        state.isLoading = true;
-      })
-      .addCase(loadAuthFromStorage.fulfilled, (state, action) => {
-        console.log("✅ Auth loaded from storage:", action.payload);
-        state.isLoading = false;
-        state.isAuthenticated = true;
-        state.error = null;
-
-        const { authData, role, userId, userInfo } = action.payload;
-        state.accessToken = authData.accessToken;
-        state.refreshToken = authData.refreshToken;
-        state.accessTokenExpiresAt = authData.accessTokenExpiresAt;
-        state.refreshTokenExpiresAt = authData.refreshTokenExpiresAt;
-        state.userRole = role;
-        state.userId = userId;
-        state.userInfo = userInfo;
-      })
-      .addCase(loadAuthFromStorage.rejected, (state, action) => {
-        console.log("❌ Failed to load auth from storage:", action.payload);
-        state.isLoading = false;
-        state.isAuthenticated = false;
-        state.error = null; // Don't show error for failed storage load
       })
 
       // Fetch user info cases
@@ -475,22 +402,11 @@ const authSlice = createSlice({
         console.log("⚠️ Failed to fetch user info (non-critical):", action.payload);
         // Don't set error - failing to fetch user info shouldn't break the app
         // User will just see a placeholder avatar
-      })
-
-      // Handle Redux Persist REHYDRATE action (must be after all addCase calls)
-      .addMatcher(
-        (action) => action.type === "persist/REHYDRATE",
-        (state) => {
-          console.log("🔄 REHYDRATE action caught, resetting loading state");
-          // Always reset loading state after rehydration
-          state.isLoading = false;
-          state.error = null;
-        }
-      );
+      });
   },
 });
 
-export const { clearError, clearAuth, setUserInfo } = authSlice.actions;
+export const { clearError, clearAuth, setUserInfo, updateLastActivity, setTabActive, setSessionStartTime } = authSlice.actions;
 
 // Selectors
 export const selectAuth = (state: { auth: AuthState }) => state.auth;
@@ -499,9 +415,11 @@ export const selectUserRole = (state: { auth: AuthState }) => state.auth.userRol
 export const selectUserId = (state: { auth: AuthState }) => state.auth.userId;
 export const selectUserInfo = (state: { auth: AuthState }) => state.auth.userInfo;
 export const selectAccessToken = (state: { auth: AuthState }) => state.auth.accessToken;
-export const selectRefreshToken = (state: { auth: AuthState }) => state.auth.refreshToken;
 export const selectIsLoading = (state: { auth: AuthState }) => state.auth.isLoading;
 export const selectAuthError = (state: { auth: AuthState }) => state.auth.error;
 export const selectIsRefreshing = (state: { auth: AuthState }) => state.auth.isRefreshing;
+export const selectLastActivity = (state: { auth: AuthState }) => state.auth.lastActivity;
+export const selectSessionStartTime = (state: { auth: AuthState }) => state.auth.sessionStartTime;
+export const selectIsTabActive = (state: { auth: AuthState }) => state.auth.isTabActive;
 
 export default authSlice.reducer;
