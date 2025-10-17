@@ -125,8 +125,9 @@ export async function httpRequest<T>(path: string, options: RequestOptions = {})
     if (isAccessExpired && isRefreshExpired) {
       // Both tokens expired - force logout
       console.error("Both access and refresh tokens expired. Logging out.");
-      const store = await getStore();                // ✅ Lấy store runtime
-      const { clearAuth } = await getAuthActions(); 
+      const { clearAuth: clearAuthAction } = await getAuthActions();
+      const storeInstance = await getStore();
+      storeInstance.dispatch(clearAuthAction());
       window.location.href = "/auth?mode=signin";
       return Promise.reject(new ApiError("Session expired. Please log in again.", 401));
     }

@@ -53,8 +53,43 @@ const initialState: AuthState = {
 const decodeToken = (token: string) => {
   try {
     const decoded = jwtDecode<DecodedToken>(token);
-    const role = decoded["http://schemas.microsoft.com/ws/2008/06/identity/claims/role"];
-    const userId = decoded["http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier"];
+
+    const takeClaimValue = (value: unknown) => {
+      if (value === undefined || value === null) {
+        return null;
+      }
+      if (Array.isArray(value)) {
+        const [first] = value;
+        return first !== undefined && first !== null ? String(first) : null;
+      }
+      return String(value);
+    };
+
+    const pickClaim = (keys: string[]) => {
+      for (const key of keys) {
+        const value = takeClaimValue(decoded[key]);
+        if (value) {
+          return value;
+        }
+      }
+      return null;
+    };
+
+    const role = pickClaim([
+      "http://schemas.microsoft.com/ws/2008/06/identity/claims/role",
+      "role",
+      "roles",
+    ]);
+
+    const userId = pickClaim([
+      "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier",
+      "sub",
+      "userId",
+      "UserId",
+      "uid",
+      "nameid",
+    ]);
+
     return { role, userId };
   } catch (error) {
     console.error("Failed to decode token:", error);
@@ -213,15 +248,27 @@ export const fetchUserInfo = createAsyncThunk(
 );
 
 // Async thunk for logout
-export const logoutUser = createAsyncThunk("auth/logoutUser", async (_, { rejectWithValue }) => {
-  try {
-    // Here you could call a logout endpoint if your API has one
-    // For now, we just clear the local state
-    return true;
-  } catch (error) {
-    return rejectWithValue(error instanceof Error ? error.message : "Logout failed");
+export const logoutUser = createAsyncThunk(
+  "auth/logoutUser",
+  async (_, { getState, rejectWithValue }) => {
+    try {
+      const state = getState() as { auth: AuthState };
+      const refreshToken = state.auth.refreshToken;
+
+      if (refreshToken) {
+        try {
+          await authService.revokeToken(refreshToken);
+        } catch (err) {
+          console.warn("Failed to revoke refresh token:", err);
+        }
+      }
+
+      return true;
+    } catch (error) {
+      return rejectWithValue(error instanceof Error ? error.message : "Logout failed");
+    }
   }
-});
+);
 
 // Async thunk to load auth state from localStorage (for app initialization)
 export const loadAuthFromStorage = createAsyncThunk(

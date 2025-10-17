@@ -4,10 +4,11 @@ import { httpRequest } from "./httpClient";
 import type {
   InvoiceResponse,
   PaymentSessionResponse,
+  PaymentStatusResponse,
   CreateInvoicePayload,
   InitiatePaymentPayload,
-  ApiResponse,
 } from "../models/billing";
+import type { ApiResponse } from "../models/common";
 
 // Định nghĩa các đường dẫn API cơ sở
 const plansBaseUrl = "/billing/api/plans";
@@ -15,9 +16,21 @@ const invoicesBaseUrl = "/billing/api/billing/invoices";
 const paymentsBaseUrl = "/billing/api/billing/payments";
 
 export const billingService = {
-  //Lấy danh sách tất cả các gói cước.
+  /**
+   * Lấy danh sách tất cả các gói cước.
+   */
   listPlans() {
     return httpRequest<any[]>(plansBaseUrl, { method: "GET" });
+  },
+
+  /**
+   * Lấy chi tiết một gói cước theo ID
+   * @param planId - ID của gói cước
+   */
+  async getPlanById(planId: string): Promise<any> {
+    return httpRequest<any>(`${plansBaseUrl}/${planId}`, {
+      method: "GET",
+    });
   },
 
   /**
@@ -104,12 +117,55 @@ export const billingService = {
     throw new Error("Invalid response: Payment session data missing or in unknown format");
   },
 
-  //Lấy lịch sử hóa đơn của người dùng.
+  /**
+   * 🆕 Check và update payment status từ PayOS
+   * Backend sẽ gọi PayOS API để lấy trạng thái mới nhất và update database
+   * @param paymentId - ID của payment session
+   * @returns Thông tin trạng thái thanh toán đã được cập nhật
+   */
+  async checkAndUpdatePaymentStatus(paymentId: string): Promise<PaymentStatusResponse> {
+    try {
+      const response = await httpRequest<PaymentStatusResponse>(
+        `${paymentsBaseUrl}/${paymentId}/check-status`,
+        {
+          method: "POST",
+        }
+      );
+
+      return response;
+    } catch (error) {
+      console.error(`Error checking payment status ${paymentId}:`, error);
+      throw error;
+    }
+  },
+
+  /**
+   * 🆕 Lấy payment status hiện tại (không query PayOS)
+   * Chỉ lấy thông tin từ database
+   * @param paymentId - ID của payment session
+   * @returns Thông tin trạng thái thanh toán hiện tại
+   */
+  async getPaymentStatus(paymentId: string): Promise<PaymentStatusResponse> {
+    try {
+      const response = await httpRequest<PaymentStatusResponse>(
+        `${paymentsBaseUrl}/${paymentId}/status`,
+        {
+          method: "GET",
+        }
+      );
+
+      return response;
+    } catch (error) {
+      console.error(`Error getting payment status ${paymentId}:`, error);
+      throw error;
+    }
+  },
+
+  /**
+   * Lấy lịch sử hóa đơn của người dùng.
+   */
   async listUserInvoices(): Promise<InvoiceResponse[]> {
     const response = await httpRequest<InvoiceResponse[]>(invoicesBaseUrl, { method: "GET" });
-
-    // Giả sử listUserInvoices trả về array trực tiếp, không có wrapper
-    // Nếu có wrapper thì cần handle tương tự như createInvoice
     return response;
   },
 
@@ -150,78 +206,30 @@ export const billingService = {
   },
 
   /**
+   * @deprecated Use checkAndUpdatePaymentStatus instead
    * Verify trạng thái thanh toán với cổng thanh toán
-   * @param paymentId - ID của payment session
-   * @returns Thông tin trạng thái thanh toán đã được cập nhật
    */
   async verifyPayment(paymentId: string): Promise<any> {
-    try {
-      const response = await httpRequest<any>(`${paymentsBaseUrl}/${paymentId}/verify`, {
-        method: "POST",
-      });
-
-      // Xử lý nhiều định dạng response có thể có
-      if (response && typeof response === "object") {
-        // Trường hợp 1: Standard API response với flag và data
-        if ("flag" in response) {
-          if (!response.flag) {
-            throw new Error(response.message || "Failed to verify payment");
-          }
-          return response.data || response;
-        }
-
-        // Trường hợp 2: Object trực tiếp
-        return response;
-      }
-
-      throw new Error("Invalid response from payment verification");
-    } catch (error) {
-      console.error(`Error verifying payment ${paymentId}:`, error);
-      throw error;
-    }
+    console.warn("verifyPayment is deprecated. Use checkAndUpdatePaymentStatus instead.");
+    return this.checkAndUpdatePaymentStatus(paymentId);
   },
 
   /**
+   * @deprecated Không còn sử dụng - Backend tự động update qua webhook hoặc check-status
    * Xử lý callback từ cổng thanh toán sau khi thanh toán thành công
-   * @param params - Query parameters từ URL return
-   * @returns Thông tin hóa đơn đã được cập nhật
    */
   async handlePaymentCallback(params: Record<string, string>): Promise<InvoiceResponse> {
-    try {
-      // Gọi API để verify và cập nhật trạng thái thanh toán
-      const response = await httpRequest<any>(`${paymentsBaseUrl}/callback`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(params),
-      });
+    console.warn(
+      "⚠️ handlePaymentCallback is DEPRECATED and should not be called. " +
+        "Payment status is updated automatically via webhook. " +
+        "Use checkAndUpdatePaymentStatus() and getInvoiceById() instead."
+    );
 
-      // Xử lý nhiều định dạng response có thể có
-      if (response && typeof response === "object") {
-        // Trường hợp 1: Standard API response với flag và data
-        if ("flag" in response) {
-          if (!response.flag) {
-            throw new Error(response.message || "Payment verification failed");
-          }
-          if (response.data) {
-            return response.data;
-          }
-        }
-
-        // Trường hợp 2: Object trực tiếp
-        if (response.id) {
-          return response as InvoiceResponse;
-        }
-
-        // Trường hợp 3: Data trong response
-        if ("data" in response && response.data && response.data.id) {
-          return response.data;
-        }
-      }
-
-      throw new Error("Invalid response from payment callback");
-    } catch (error) {
-      console.error("Error handling payment callback:", error);
-      throw error;
+    // Fallback: Nếu có invoiceId, lấy thông tin invoice
+    if (params.invoiceId) {
+      return this.getInvoiceById(params.invoiceId);
     }
+
+    throw new Error("Invoice ID not found in callback parameters. This method is deprecated.");
   },
 };

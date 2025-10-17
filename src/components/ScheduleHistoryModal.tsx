@@ -56,8 +56,8 @@ const ScheduleHistoryModal: React.FC<ScheduleHistoryModalProps> = ({ isOpen, onC
     setIsLoading(true);
     try {
       const response = await personalCoachService.getScheduleHistory(userId);
-      setVersions(response.versions || []);
-      setAnalytics(response.analytics || null);
+      setVersions((response as any).versions || []);
+      setAnalytics((response as any).analytics || null);
     } catch (error) {
       console.error("Failed to load schedule history:", error);
     } finally {

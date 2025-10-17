@@ -1,7 +1,7 @@
 // File: src/services/subscriptionPlanService.ts
 
 import { httpRequest } from "./httpClient";
-import type { ApiResponse } from "../models/billing";
+import type { ApiResponse } from "../models/common";
 import type {
   SubscriptionPlan,
   SubscriptionPlanPayload,

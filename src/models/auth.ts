@@ -1,7 +1,4 @@
-export interface ApiResponse<T = string> {
-  flag: boolean;
-  message: T;
-}
+import type { ApiResponse } from "./common";
 
 export interface LoginRequest {
   email: string;
@@ -14,11 +11,7 @@ export interface AuthData {
   refreshTokenExpiresAt: string;
 }
 
-export interface LoginResponse {
-  flag: boolean;
-  message: string;
-  data?: AuthData;
-}
+export type LoginResponse = ApiResponse<AuthData>;
 
 /** Register / Update / User */
 export interface RegisterRequest {

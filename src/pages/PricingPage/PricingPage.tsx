@@ -141,11 +141,13 @@ const PricingPage: React.FC = () => {
         const dueDate = today.toISOString().split("T")[0]; // Format: YYYY-MM-DD
 
         const invoicePayload: CreateInvoicePayload = {
-          userExternalId: userId,
+          userId: userId,
           subscriptionPlanId: pendingPlan.id,
           dueDate: dueDate,
           notes: `Invoice for plan ${subscriptionPlan.name || pendingPlan.id}`,
         };
+        console.log("invoicePayload: ", invoicePayload);
+        console.log("Creating invoice with payload:", invoicePayload.userId);
 
         // Bây giờ invoice sẽ có đúng structure với id
         const invoice = await billingService.createInvoice(invoicePayload);
@@ -159,8 +161,8 @@ const PricingPage: React.FC = () => {
         const paymentSession = await billingService.initiatePayment({
           invoiceId: invoice.id,
           gateway: 2, // 2 = PayOS
-          returnUrl: `${window.location.origin}/payment-success?invoiceId=${invoice.id}`,
-          cancelUrl: `${window.location.origin}/pricing`,
+          returnUrl: `http://localhost:3000/payment-success?invoiceId=${invoice.id}`,
+          cancelUrl: `http://localhost:3000/pricing`,
         });
 
         // Bước 3: Kiểm tra và chuyển hướng người dùng.
@@ -226,31 +228,26 @@ const PricingPage: React.FC = () => {
     <div className="pricing-page">
       <div className="pricing-content">
         {/* Header */}
-        <div className="pricing-header">
-          <div className="flex justify-between items-center w-full">
-            <button className="back-button" onClick={() => navigate("/your-missions")}>
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-                <polyline points="15,18 9,12 15,6" stroke="currentColor" strokeWidth="2" />
-              </svg>
-            </button>
-          </div>
+        <div className="pricing-hero">
+          <button className="pricing-back" onClick={() => navigate("/your-missions")}>
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+              <polyline points="15,18 9,12 15,6" stroke="currentColor" strokeWidth="2" />
+            </svg>
+          </button>
 
-          <div className="header-content">
-            <h1 className="pricing-title flex justify-between items-center w-full">
-              Plans & Pricing
-            </h1>
-            <p className="pricing-subtitle">
-              Whether your time-saving automation needs are large or small, we're here to help you
-              scale.
+          <div className="pricing-hero-text">
+            <h1 className="pricing-hero-title">Plans &amp; Pricing</h1>
+            <p className="pricing-hero-subtitle flex justify-center items-center">
+              Whether your time-saving automation needs are large or small, we&apos;re here to help
+              you scale.
             </p>
           </div>
-        </div>
 
-        {/* Premium Trial Button */}
-        <div className="trial-section">
-          <button className="trial-button" onClick={handlePremiumTrial}>
-            3-Day Premium Trial
-          </button>
+          <div className="trial-pill">
+            <button className="trial-pill-button" onClick={handlePremiumTrial}>
+              3-Day Premium Trial
+            </button>
+          </div>
         </div>
 
         {/* Loading State */}
@@ -262,140 +259,115 @@ const PricingPage: React.FC = () => {
         )}
 
         {/* Pricing Cards */}
-        <div className="pricing-cards">
-          {pricingPlans.map((plan) => (
-            <div
-              key={plan.id}
-              className={`pricing-card ${plan.id === "free" ? "free-plan" : ""} ${plan.isBestValue ? "best-value" : ""} ${selectedPlan === plan.id ? "selected" : ""}`}
-              onMouseEnter={() => {
-                if (selectedPlan === plan.id && plan.id !== "free") {
-                  // Add special hover effect for selected plans
-                  const card = document.querySelector(`[data-plan-id="${plan.id}"]`);
-                  if (card) {
-                    card.classList.add("selected-hover");
-                  }
-                }
-              }}
-              onMouseLeave={() => {
-                const card = document.querySelector(`[data-plan-id="${plan.id}"]`);
-                if (card) {
-                  card.classList.remove("selected-hover");
-                }
-              }}
-              data-plan-id={plan.id}
-            >
-              {plan.isBestValue && <div className="best-value-badge">BEST VALUE</div>}
-
-              <div className="card-header">
-                <div className="price-section">
-                  {plan.price ? (
-                    <>
-                      <span className="price">{plan.price}</span>
-                      <span className="price-subtitle">{plan.subtitle}</span>
-                    </>
-                  ) : (
-                    <span className="free-title">{plan.title}</span>
-                  )}
-                </div>
-              </div>
-
-              <div className="features-section">
-                {plan.features.map((feature, index) => (
-                  <div key={index} className="feature-item">
-                    <div className="feature-check">
-                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-                        <polyline points="20,6 9,17 4,12" stroke="currentColor" strokeWidth="2" />
-                      </svg>
-                    </div>
-                    <span className="feature-text">{feature}</span>
-                  </div>
-                ))}
-              </div>
-
-              <button
-                className={`plan-button ${plan.isCurrentPlan ? "current-plan" : "choose-plan"}`}
-                onClick={() => handlePlanSelection(plan.id)}
-                disabled={plan.isCurrentPlan}
+        <div className="pricing-cards-shell">
+          <div className="pricing-cards">
+            {pricingPlans.map((plan) => (
+              <div
+                key={plan.id}
+                className={`pricing-card ${plan.id === "free" ? "free-plan" : ""} ${plan.isBestValue ? "best-value" : ""} ${selectedPlan === plan.id ? "selected" : ""}`}
+                data-plan-id={plan.id}
               >
-                {plan.buttonText}
-              </button>
-            </div>
-          ))}
+                <div className="card-header">
+                  {plan.isBestValue && <span className="best-value-badge">BEST VALUE</span>}
+                  <div className="price-section">
+                    {plan.price ? (
+                      <>
+                        <span className="price">{plan.price}</span>
+                        <span className="price-subtitle">{plan.subtitle}</span>
+                      </>
+                    ) : (
+                      <span className="free-title">{plan.title}</span>
+                    )}
+                  </div>
+                </div>
+
+                <div className="features-section">
+                  {plan.features.map((feature, index) => (
+                    <div key={index} className="feature-item">
+                      <div className="feature-check">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                          <polyline points="20,6 9,17 4,12" stroke="currentColor" strokeWidth="2" />
+                        </svg>
+                      </div>
+                      <span className="feature-text">{feature}</span>
+                    </div>
+                  ))}
+                </div>
+
+                <button
+                  className={`plan-button ${plan.isCurrentPlan ? "current-plan" : "choose-plan"}`}
+                  onClick={() => handlePlanSelection(plan.id)}
+                  disabled={plan.isCurrentPlan}
+                >
+                  {plan.buttonText}
+                </button>
+              </div>
+            ))}
+          </div>
         </div>
 
         {/* Confirmation Modal */}
         {showConfirmModal && pendingPlan && (
           <div className="modal-overlay" onClick={handleCancelPurchase}>
             <div className="confirmation-modal" onClick={(e) => e.stopPropagation()}>
-              <div className="modal-header">
-                <h2 className="modal-title">Confirm Purchase</h2>
-                <button className="close-button" onClick={handleCancelPurchase}>
-                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-                    <line x1="18" y1="6" x2="6" y2="18" stroke="currentColor" strokeWidth="2" />
-                    <line x1="6" y1="6" x2="18" y2="18" stroke="currentColor" strokeWidth="2" />
+              <h2 className="modal-title flex justify-center items-center">Confirm Purchase</h2>
+              <div className="plan-summary">
+                <div className="plan-icon">
+                  <svg width="48" height="48" viewBox="0 0 24 24" fill="none">
+                    <path
+                      d="M12 1L15.09 8.26L22 9L17 14.74L18.18 22L12 18.27L5.82 22L7 14.74L2 9L8.91 8.26L12 1Z"
+                      fill="currentColor"
+                    />
                   </svg>
-                </button>
+                </div>
+                <h3 className="plan-name">{pendingPlan.title} Plan</h3>
+                <div className="plan-price">
+                  <span className="price-large">{pendingPlan.price}</span>
+                  <span className="price-period">{pendingPlan.subtitle}</span>
+                </div>
               </div>
 
-              <div className="modal-content">
-                <div className="plan-summary">
-                  <div className="plan-icon">
-                    <svg width="48" height="48" viewBox="0 0 24 24" fill="none">
-                      <path
-                        d="M12 1L15.09 8.26L22 9L17 14.74L18.18 22L12 18.27L5.82 22L7 14.74L2 9L8.91 8.26L12 1Z"
-                        fill="currentColor"
-                      />
-                    </svg>
-                  </div>
-                  <h3 className="plan-name">{pendingPlan.title} Plan</h3>
-                  <div className="plan-price">
-                    <span className="price-large">{pendingPlan.price}</span>
-                    <span className="price-period">{pendingPlan.subtitle}</span>
-                  </div>
+              <div className="confirmation-text">
+                <p>Are you sure you want to upgrade to this subscription plan?</p>
+                <div className="plan-features mt-3">
+                  <p className="text-sm font-semibold mb-2">This plan includes:</p>
+                  <ul className="text-sm">
+                    {pendingPlan.features.slice(0, 3).map((feature, index) => (
+                      <li key={index} className="flex items-center mb-1">
+                        <svg
+                          className="w-4 h-4 mr-2 text-green-500"
+                          viewBox="0 0 20 20"
+                          fill="currentColor"
+                        >
+                          <path
+                            fillRule="evenodd"
+                            d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                            clipRule="evenodd"
+                          />
+                        </svg>
+                        {feature}
+                      </li>
+                    ))}
+                    {pendingPlan.features.length > 3 && (
+                      <li className="text-sm text-gray-500 mt-1">
+                        ...and {pendingPlan.features.length - 3} more features
+                      </li>
+                    )}
+                  </ul>
                 </div>
+                <p className="billing-note text-sm mt-3">
+                  You will be charged {pendingPlan.price}/{pendingPlan.subtitle.replace("/", "")}{" "}
+                  for this subscription.
+                </p>
+              </div>
 
-                <div className="confirmation-text">
-                  <p>Are you sure you want to upgrade to this subscription plan?</p>
-                  <div className="plan-features mt-3">
-                    <p className="text-sm font-semibold mb-2">This plan includes:</p>
-                    <ul className="text-sm">
-                      {pendingPlan.features.slice(0, 3).map((feature, index) => (
-                        <li key={index} className="flex items-center mb-1">
-                          <svg
-                            className="w-4 h-4 mr-2 text-green-500"
-                            viewBox="0 0 20 20"
-                            fill="currentColor"
-                          >
-                            <path
-                              fillRule="evenodd"
-                              d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-                              clipRule="evenodd"
-                            />
-                          </svg>
-                          {feature}
-                        </li>
-                      ))}
-                      {pendingPlan.features.length > 3 && (
-                        <li className="text-sm text-gray-500 mt-1">
-                          ...and {pendingPlan.features.length - 3} more features
-                        </li>
-                      )}
-                    </ul>
-                  </div>
-                  <p className="billing-note text-sm mt-3">
-                    You will be charged {pendingPlan.price} {pendingPlan.subtitle.replace("/", "")}{" "}
-                    for this subscription.
-                  </p>
-                </div>
-
-                <div className="modal-actions">
-                  <button className="cancel-button" onClick={handleCancelPurchase}>
-                    Cancel
-                  </button>
-                  <button className="confirm-button" onClick={handleConfirmPurchase}>
-                    Confirm Purchase
-                  </button>
-                </div>
+              <div className="modal-actions">
+                <button className="cancel-button" onClick={handleCancelPurchase}>
+                  Cancel
+                </button>
+                <button className="confirm-button" onClick={handleConfirmPurchase}>
+                  Confirm Purchase
+                </button>
               </div>
             </div>
           </div>

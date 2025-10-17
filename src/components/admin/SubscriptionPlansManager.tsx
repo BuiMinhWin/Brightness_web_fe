@@ -48,8 +48,8 @@ export const SubscriptionPlansManager: React.FC = () => {
       setLoading(true);
       const response = await subscriptionPlanService.getPlans(filter);
       setPlans(response.items);
-      setTotalCount(response.totalCount);
-      setTotalPages(response.totalPages);
+      setTotalCount(response.totalCount || 0);
+      setTotalPages(response.totalPages || 0);
       setError(null);
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : "Failed to load subscription plans";
