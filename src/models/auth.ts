@@ -3,6 +3,7 @@ import type { ApiResponse } from "./common";
 export interface LoginRequest {
   email: string;
   password: string;
+  rememberMe?: boolean;
 }
 export interface AuthData {
   accessToken: string;

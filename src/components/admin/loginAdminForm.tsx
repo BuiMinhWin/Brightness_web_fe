@@ -1,14 +1,53 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
+import { useAppDispatch } from "@/store/hooks";
+import { loginUser } from "@/store/slices/authSlice";
+import type { LoginRequest } from "@/models";
 
 export function LoginForm({ className, ...props }: React.ComponentProps<"form">) {
+  const dispatch = useAppDispatch();
+  const navigate = useNavigate();
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [rememberMe, setRememberMe] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      const loginPayload: LoginRequest = {
+        email: email.trim(),
+        password: password,
+        rememberMe: rememberMe,
+      };
+      
+      const result = await dispatch(loginUser(loginPayload));
+      
+      if (loginUser.fulfilled.match(result)) {
+        // Login successful - navigate to admin dashboard
+        navigate("/admin", { replace: true });
+      } else {
+        // Login failed
+        setError(result.payload as string || "Login failed. Please check your credentials.");
+      }
+    } catch (err) {
+      setError("An unexpected error occurred. Please try again.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   return (
-    <form className={cn("flex flex-col gap-6 bg-white p-4 rounded-lg", className)} {...props}>
+    <form onSubmit={handleSubmit} className={cn("flex flex-col gap-6 bg-white p-4 rounded-lg", className)} {...props}>
       <div className="flex flex-col items-center gap-4 text-center">
         <img
           src="/assets/LogoWhite_Text.svg"
@@ -25,13 +64,31 @@ export function LoginForm({ className, ...props }: React.ComponentProps<"form">)
         </p>
       </div>
       <div className="grid gap-6">
+        {error && (
+          <div className="bg-red-50 text-red-600 p-3 rounded-md text-sm">
+            {error}
+          </div>
+        )}
         <div className="grid gap-3">
           <Label htmlFor="email">Email</Label>
-          <Input id="email" type="email" placeholder="@example.com" required />
+          <Input 
+            id="email" 
+            type="email" 
+            placeholder="@example.com" 
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            required 
+          />
         </div>
         <div className="grid gap-3">
           <Label htmlFor="password">Password</Label>
-          <Input id="password" type="password" required />
+          <Input 
+            id="password" 
+            type="password" 
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            required 
+          />
         </div>
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-2">
@@ -44,7 +101,7 @@ export function LoginForm({ className, ...props }: React.ComponentProps<"form">)
               onCheckedChange={(checked) => setRememberMe(checked === true)}
             />
             <Label htmlFor="remember-me" className="text-md">
-              Remember me
+              Keep me logged in for 30 days
             </Label>
           </div>
           <a href="#" className="text-md underline-offset-4 hover:underline">
@@ -52,8 +109,12 @@ export function LoginForm({ className, ...props }: React.ComponentProps<"form">)
           </a>
         </div>
         <div className="flex justify-center">
-          <Button type="submit" className="w-96 bg-emerald-800">
-            Login
+          <Button 
+            type="submit" 
+            className="w-96 bg-emerald-800"
+            disabled={isLoading}
+          >
+            {isLoading ? "Logging in..." : "Login"}
           </Button>
         </div>
         <div className="after:border-border relative text-center text-sm after:absolute after:inset-0 after:top-1/2 after:z-0 after:flex after:items-center after:border-t">

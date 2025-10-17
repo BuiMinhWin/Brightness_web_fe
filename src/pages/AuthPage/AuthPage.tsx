@@ -50,6 +50,7 @@ const AuthPage: React.FC = () => {
   });
   const [showPassword, setShowPassword] = useState(false);
   const [agreeTerms, setAgreeTerms] = useState(false);
+  const [rememberMe, setRememberMe] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -83,6 +84,7 @@ const AuthPage: React.FC = () => {
     setFormValues({ ...INITIAL_FORM_VALUES });
     setShowPassword(false);
     setAgreeTerms(false);
+    setRememberMe(false);
   };
 
   const handleInputChange = (event: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
@@ -124,6 +126,7 @@ const AuthPage: React.FC = () => {
       const loginPayload: LoginRequest = {
         email: trimmedEmail,
         password: formValues.password,
+        rememberMe: rememberMe,
       };
       console.log("Dispatching login:", loginPayload);
       const result = await dispatch(loginUser(loginPayload));
@@ -217,6 +220,18 @@ const AuthPage: React.FC = () => {
                 >
                   {showPassword ? "Hide" : "Show"}
                 </button>
+              </div>
+              <div className="remember-me-container" style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px' }}>
+                <input
+                  type="checkbox"
+                  id="remember-me"
+                  checked={rememberMe}
+                  onChange={(e) => setRememberMe(e.target.checked)}
+                  style={{ cursor: 'pointer' }}
+                />
+                <label htmlFor="remember-me" style={{ cursor: 'pointer', fontSize: '14px', color: '#666' }}>
+                  Keep me logged in for 30 days
+                </label>
               </div>
               <a href="#" className="forgot-password">
                 Forgot your password?
