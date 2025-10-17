@@ -112,8 +112,6 @@ const AuthPage: React.FC = () => {
         ...(trimmedFullName ? { fullName: trimmedFullName } : {}),
         ...(formValues.gender ? { gender: formValues.gender } : {}),
         ...(formValues.dateOfBirth ? { dateOfBirth: formValues.dateOfBirth } : {}),
-        role: "user",
-        status: "active",
       };
 
       console.log("Dispatching registration:", registerPayload);
