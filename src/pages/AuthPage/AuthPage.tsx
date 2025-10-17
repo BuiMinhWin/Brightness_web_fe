@@ -63,14 +63,18 @@ const AuthPage: React.FC = () => {
   useEffect(() => {
     console.log("🔐 Auth state changed:", { isAuthenticated, userRole, isLoading, error });
     if (isAuthenticated && userRole && !isLoading) {
-      console.log("✅ Navigating to:", userRole === "admin" ? "/admin" : "/home");
-      if (userRole === "admin") {
-        navigate("/admin", { replace: true });
-      } else if (userRole === "user") {
-        navigate("/home", { replace: true });
+      if (authMode === "signup") {
+        navigate("/fitness", { replace: true });
+      } else {
+        console.log("✅ Navigating to:", userRole === "admin" ? "/admin" : "/home");
+        if (userRole === "admin") {
+          navigate("/admin", { replace: true });
+        } else if (userRole === "user") {
+          navigate("/home", { replace: true });
+        }
       }
     }
-  }, [isAuthenticated, userRole, isLoading, navigate, error]);
+  }, [isAuthenticated, userRole, isLoading, navigate, error, authMode]);
 
   const switchMode = (mode: AuthMode) => {
     if (mode === authMode) return;
@@ -108,6 +112,8 @@ const AuthPage: React.FC = () => {
         ...(trimmedFullName ? { fullName: trimmedFullName } : {}),
         ...(formValues.gender ? { gender: formValues.gender } : {}),
         ...(formValues.dateOfBirth ? { dateOfBirth: formValues.dateOfBirth } : {}),
+        role: "user",
+        status: "active",
       };
 
       console.log("Dispatching registration:", registerPayload);
