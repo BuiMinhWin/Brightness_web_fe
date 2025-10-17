@@ -1,10 +1,8 @@
 import { jwtDecode } from "jwt-decode";
 import type { AuthData } from "../models";
-import { authService } from "./authService";
 import { store } from "../store/store";
 import {
   selectAccessToken,
-  selectRefreshToken,
   loginUser,
   clearAuth,
   refreshAuthToken,
@@ -12,21 +10,27 @@ import {
 
 const API_BASE_URL = import.meta.env.VITE_API_URL;
 
+/**
+ * DEPRECATED: This file is kept for backward compatibility.
+ * New code should use httpClientRedux.ts instead.
+ * 
+ * Note: This has been updated to work with cookie-based authentication.
+ */
+
 // --- Helper functions for Auth --- //
 
 const getAuthData = (): AuthData | null => {
-  // Get tokens from Redux store instead of localStorage
+  // Get access token from Redux store (refresh token is in httpOnly cookie)
   const state = store.getState();
   const accessToken = selectAccessToken(state);
-  const refreshToken = selectRefreshToken(state);
 
-  if (!accessToken || !refreshToken) {
+  if (!accessToken) {
     return null;
   }
 
   return {
     accessToken,
-    refreshToken,
+    refreshToken: "", // Not used - in httpOnly cookie
     accessTokenExpiresAt: "", // Not used in token validation
     refreshTokenExpiresAt: "", // Not used in token validation
   };
@@ -85,40 +89,21 @@ let isRefreshing = false;
 let refreshPromise: Promise<AuthData | null> | null = null;
 
 const handleRefreshToken = async (): Promise<AuthData | null> => {
-  const auth = getAuthData();
-  if (!auth?.refreshToken) {
-    store.dispatch(clearAuth());
-    window.location.href = "/auth?mode=signin"; // Redirect to login
-    return Promise.reject(new Error("No refresh token available."));
-  }
-
+  // Refresh token is now in httpOnly cookie - no need to check state
   if (!isRefreshing) {
     isRefreshing = true;
-    refreshPromise = authService
-      .refreshToken(auth.refreshToken)
-      .then((response) => {
-        if (!response.flag || !response.data) {
+    refreshPromise = store
+      .dispatch(refreshAuthToken())
+      .then((result: any) => {
+        if (refreshAuthToken.fulfilled.match(result)) {
+          const { authData } = result.payload;
+          return authData;
+        } else {
           throw new Error("Failed to refresh token");
         }
-
-        // Update Redux store with new tokens
-        store.dispatch(
-          refreshAuthToken.fulfilled(
-            {
-              authData: response.data,
-              role: "", // These will be filled by the reducer using decodeToken
-              userId: "",
-            },
-            "",
-            undefined
-          )
-        );
-
-        return response.data;
       })
-      .catch((error) => {
+      .catch((error: any) => {
         console.error("Refresh token failed, logging out:", error);
-        // Clear Redux auth state
         store.dispatch(clearAuth());
         window.location.href = "/auth?mode=signin"; // Redirect to login
         return null;

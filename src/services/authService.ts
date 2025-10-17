@@ -22,22 +22,22 @@ export const authService = {
     });
   },
 
-        /** Làm mới token */
-        async refreshToken(refreshToken: string): Promise<LoginResponse> {
-          return httpRequest<LoginResponse>("/auth/api/Authentication/refresh", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ refreshToken }),
-            skipAuth: true, // Skip auth header for refresh token request
-          });
-        },
+  /** Làm mới token - refresh token now in httpOnly cookie */
+  async refreshToken(): Promise<LoginResponse> {
+    return httpRequest<LoginResponse>("/auth/api/Authentication/refresh", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      skipAuth: true, // Skip auth header for refresh token request
+      // No body needed - refresh token is in httpOnly cookie
+    });
+  },
 
-  /** Thu hồi refresh token đang dùng */
-  async revokeToken(refreshToken: string): Promise<ApiResponse<string>> {
+  /** Thu hồi refresh token đang dùng - refresh token now in httpOnly cookie */
+  async revokeToken(): Promise<ApiResponse<string>> {
     return httpRequest<ApiResponse<string>>("/auth/api/Authentication/revoke", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ refreshToken }),
+      // No body needed - refresh token is in httpOnly cookie
     });
   },
 
