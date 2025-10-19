@@ -1,12 +1,18 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import "./AuthPage.css";
-// import yogaImg from "/assets/yoga_register.png";
 import logoImg from "/assets/logo_color.png";
 import { useAppDispatch, useAppSelector } from "../../store/hooks";
 import { loginUser, registerUser, loginWithExternalProvider } from "../../store/slices/authSlice";
 import type { LoginRequest, RegisterRequest } from "../../models";
 import { Snackbar, Alert } from "@mui/material";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 type AuthMode = "signin" | "signup";
 
@@ -20,11 +26,11 @@ type AuthFormValues = {
 };
 
 const GENDER_OPTIONS = [
-  { value: "", label: "Select gender" },
   { value: "male", label: "Male" },
   { value: "female", label: "Female" },
   { value: "other", label: "Other" },
 ] as const;
+
 const INITIAL_FORM_VALUES: AuthFormValues = {
   email: "",
   userName: "",
@@ -99,14 +105,13 @@ const AuthPage: React.FC = () => {
     }
   }, [searchParams]);
 
-  // Handle navigation after successful login
   useEffect(() => {
-    console.log("🔐 Auth state changed:", { isAuthenticated, userRole, isLoading, error });
+    console.log(" Auth state changed:", { isAuthenticated, userRole, isLoading, error });
     if (isAuthenticated && userRole && !isLoading) {
       if (authMode === "signup") {
         navigate("/fitness", { replace: true });
       } else {
-        console.log("✅ Navigating to:", userRole === "admin" ? "/admin" : "/home");
+        console.log(" Navigating to:", userRole === "admin" ? "/admin" : "/home");
         if (userRole === "admin") {
           navigate("/admin", { replace: true });
         } else if (userRole === "user") {
@@ -146,8 +151,8 @@ const AuthPage: React.FC = () => {
           err instanceof Error
             ? err.message
             : typeof err === "string"
-            ? err
-            : "Google authentication failed. Please try again.";
+              ? err
+              : "Google authentication failed. Please try again.";
         setToast({
           open: true,
           message: errorMessage,
@@ -191,7 +196,9 @@ const AuthPage: React.FC = () => {
       return;
     }
 
-    const existingScript = document.getElementById("google-identity-services") as HTMLScriptElement | null;
+    const existingScript = document.getElementById(
+      "google-identity-services"
+    ) as HTMLScriptElement | null;
     if (existingScript) {
       const onLoad = () => initializeGoogleAccounts();
       existingScript.addEventListener("load", onLoad);
@@ -228,7 +235,6 @@ const AuthPage: React.FC = () => {
   }, [googleClientId, initializeGoogleAccounts, setToast]);
 
   const switchMode = (mode: AuthMode) => {
-    
     if (mode === authMode) return;
     setAuthMode(mode);
     setSearchParams({ mode });
@@ -238,9 +244,13 @@ const AuthPage: React.FC = () => {
     setRememberMe(false);
   };
 
-  const handleInputChange = (event: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+  const handleInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = event.target;
     setFormValues((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const handleGenderChange = (value: string) => {
+    setFormValues((prev) => ({ ...prev, gender: value }));
   };
 
   const handleSubmit = async (event: React.FormEvent) => {
@@ -271,7 +281,6 @@ const AuthPage: React.FC = () => {
       const result = await dispatch(registerUser(registerPayload));
       console.log("Registration dispatch result:", result);
     } else {
-      // Sign in
       const loginPayload: LoginRequest = {
         email: trimmedEmail,
         password: formValues.password,
@@ -281,9 +290,8 @@ const AuthPage: React.FC = () => {
       const result = await dispatch(loginUser(loginPayload));
       console.log("Login dispatch result:", result);
 
-      // Check if login failed
       if (loginUser.rejected.match(result)) {
-        console.error(" Login failed:", result.payload);
+        console.error("Login failed:", result.payload);
         setToast({
           open: true,
           message: (result.payload as string) || "Login failed. Please check your credentials.",
@@ -319,7 +327,8 @@ const AuthPage: React.FC = () => {
         setIsGoogleLoading(false);
         setToast({
           open: true,
-          message: "Google sign-in could not be displayed. Please check your pop-up blocker and try again.",
+          message:
+            "Google sign-in could not be displayed. Please check your pop-up blocker and try again.",
           severity: "error",
         });
       } else if (notification?.isSkippedMoment?.()) {
@@ -372,7 +381,15 @@ const AuthPage: React.FC = () => {
         <div className="forms-container">
           <div className="signin-signup">
             <form className="sign-in-form" onSubmit={handleSubmit}>
-              <h2 className="title">Sign in</h2>
+              <div className="signin-header flex items-center flex-row justify-center gap-3 mb-5">
+                <div
+                  className="signin-logo"
+                  style={{ backgroundImage: `url(${logoImg})`, marginBottom: 0 }}
+                />
+                <h2 className="title" style={{ marginBottom: 0 }}>
+                  Sign in
+                </h2>
+              </div>
               <div className="input-field">
                 <input
                   name="email"
@@ -402,21 +419,58 @@ const AuthPage: React.FC = () => {
                   {showPassword ? "Hide" : "Show"}
                 </button>
               </div>
-              <div className="remember-me-container" style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px' }}>
-                <input
-                  type="checkbox"
-                  id="remember-me"
-                  checked={rememberMe}
-                  onChange={(e) => setRememberMe(e.target.checked)}
-                  style={{ cursor: 'pointer' }}
-                />
-                <label htmlFor="remember-me" style={{ cursor: 'pointer', fontSize: '14px', color: '#666' }}>
-                  Keep me logged in for 30 days
-                </label>
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  width: "100%",
+                  maxWidth: "380px",
+                  marginBottom: "20px",
+                }}
+              >
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    width: "100%",
+                    maxWidth: "380px",
+                    marginBottom: "20px",
+                    gap: "30px",
+                  }}
+                >
+                  <div
+                    className="remember-me-container"
+                    style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "0" }}
+                  >
+                    <input
+                      type="checkbox"
+                      id="remember-me"
+                      checked={rememberMe}
+                      onChange={(e) => setRememberMe(e.target.checked)}
+                      style={{ cursor: "pointer" }}
+                    />
+                    <label
+                      htmlFor="remember-me"
+                      style={{
+                        cursor: "pointer",
+                        fontSize: "14px",
+                        color: "#666",
+                        whiteSpace: "nowrap",
+                      }}
+                    >
+                      Remember me for 30 days
+                    </label>
+                  </div>
+                  <a
+                    href="#"
+                    className="forgot-password"
+                    style={{ margin: 0, whiteSpace: "nowrap", marginLeft: "auto" }}
+                  >
+                    Forgot your password?
+                  </a>
+                </div>
               </div>
-              <a href="#" className="forgot-password">
-                Forgot your password?
-              </a>
               <input
                 type="submit"
                 value={isLoading ? "Signing in..." : "Login"}
@@ -433,9 +487,44 @@ const AuthPage: React.FC = () => {
                   disabled={googleButtonDisabled}
                   aria-busy={isGoogleLoading}
                 >
-                  {googleButtonLabel}
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    viewBox="0 0 488 512"
+                    width="26"
+                    height="26"
+                    style={{ marginRight: 8 }}
+                  >
+                    <path
+                      fill="#EA4335"
+                      d="M488 261.8c0-17.4-1.4-34-4.1-50.3H249v95.1h134c-5.8 30-23.2 55.4-49.2 72.4v59h79.3c46.5-42.8 74-106 74-176.2z"
+                    ></path>
+                    <path
+                      fill="#34A853"
+                      d="M249 492c66.3 0 121.8-21.9 162.5-59.1l-79.3-59c-22.1 14.9-50.2 23.8-83.2 23.8-63.9 0-118-43.1-137.4-101.1H30v63.4C70.9 437 153.6 492 249 492z"
+                    ></path>
+                    <path
+                      fill="#4A90E2"
+                      d="M111.6 296.6c-4.8-14.3-7.6-29.6-7.6-45.6s2.7-31.3 7.6-45.6V142H30c-15.6 31.3-24.6 66.7-24.6 108s9 76.7 24.6 108l81.6-61.4z"
+                    ></path>
+                    <path
+                      fill="#FBBC05"
+                      d="M249 97.8c36 0 68.1 12.4 93.6 36.6l70-70C370.8 25 315.3 0 249 0 153.6 0 70.9 55 30 142l81.6 63.4C131 140.9 185.1 97.8 249 97.8z"
+                    ></path>
+                  </svg>
+                  Google
                 </button>
+
                 <button type="button" className="social-icon" onClick={handleFacebookAuth}>
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    viewBox="0 0 320 512"
+                    width="26"
+                    height="26"
+                    fill="#1877F2"
+                    style={{ marginRight: 8 }}
+                  >
+                    <path d="M279.14 288l14.22-92.66h-88.91v-60.13c0-25.35 12.42-50.06 52.24-50.06H293V6.26S259.5 0 225.36 0C141.09 0 89.09 54.42 89.09 153.31v68.03H0v92.66h89.09V512h107.83V288z"></path>
+                  </svg>
                   Facebook
                 </button>
               </div>
@@ -445,9 +534,14 @@ const AuthPage: React.FC = () => {
               className="sign-up-form mt-10 overscroll-y-auto no-scrollbar"
               onSubmit={handleSubmit}
             >
-              <div className="signup-header flex items-center flex-col mt-65 ">
-                <div className="signup-logo" style={{ backgroundImage: `url(${logoImg})` }} />
-                <h2 className="title">Create account</h2>
+              <div className="signup-header flex items-center flex-row justify-center gap-3 mt-50 mb-5">
+                <div
+                  className="signup-logo"
+                  style={{ backgroundImage: `url(${logoImg})`, marginBottom: 0 }}
+                />
+                <h2 className="title" style={{ marginBottom: 0 }}>
+                  Create account
+                </h2>
               </div>
               <p className="subtitle">Join Brightness to track your wellness journey.</p>
 
@@ -501,28 +595,23 @@ const AuthPage: React.FC = () => {
                 </button>
               </div>
               <div className="flex justify-between gap-20">
-                {/* Gender Field */}
+                {/* Gender Field with shadcn/ui Select */}
                 <div className="flex flex-col w-1/2">
                   <label htmlFor="gender" className="mb-1 text-sm font-medium text-gray-700">
                     Gender
                   </label>
-                  <select
-                    id="gender"
-                    name="gender"
-                    value={formValues.gender}
-                    onChange={handleInputChange}
-                    className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-gray-700 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 outline-none transition-all"
-                  >
-                    {GENDER_OPTIONS.map((option) => (
-                      <option
-                        key={option.value || "gender-placeholder"}
-                        value={option.value}
-                        disabled={option.value === ""}
-                      >
-                        {option.label}
-                      </option>
-                    ))}
-                  </select>
+                  <Select value={formValues.gender} onValueChange={handleGenderChange}>
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder="Select gender" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {GENDER_OPTIONS.map((option) => (
+                        <SelectItem key={option.value} value={option.value}>
+                          {option.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
 
                 {/* Date of Birth Field */}
@@ -576,9 +665,44 @@ const AuthPage: React.FC = () => {
                   disabled={googleButtonDisabled}
                   aria-busy={isGoogleLoading}
                 >
-                  {googleButtonLabel}
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    viewBox="0 0 488 512"
+                    width="26"
+                    height="26"
+                    style={{ marginRight: 8 }}
+                  >
+                    <path
+                      fill="#EA4335"
+                      d="M488 261.8c0-17.4-1.4-34-4.1-50.3H249v95.1h134c-5.8 30-23.2 55.4-49.2 72.4v59h79.3c46.5-42.8 74-106 74-176.2z"
+                    ></path>
+                    <path
+                      fill="#34A853"
+                      d="M249 492c66.3 0 121.8-21.9 162.5-59.1l-79.3-59c-22.1 14.9-50.2 23.8-83.2 23.8-63.9 0-118-43.1-137.4-101.1H30v63.4C70.9 437 153.6 492 249 492z"
+                    ></path>
+                    <path
+                      fill="#4A90E2"
+                      d="M111.6 296.6c-4.8-14.3-7.6-29.6-7.6-45.6s2.7-31.3 7.6-45.6V142H30c-15.6 31.3-24.6 66.7-24.6 108s9 76.7 24.6 108l81.6-61.4z"
+                    ></path>
+                    <path
+                      fill="#FBBC05"
+                      d="M249 97.8c36 0 68.1 12.4 93.6 36.6l70-70C370.8 25 315.3 0 249 0 153.6 0 70.9 55 30 142l81.6 63.4C131 140.9 185.1 97.8 249 97.8z"
+                    ></path>
+                  </svg>
+                  Google
                 </button>
+
                 <button type="button" className="social-icon" onClick={handleFacebookAuth}>
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    viewBox="0 0 320 512"
+                    width="26"
+                    height="26"
+                    fill="#1877F2"
+                    style={{ marginRight: 8 }}
+                  >
+                    <path d="M279.14 288l14.22-92.66h-88.91v-60.13c0-25.35 12.42-50.06 52.24-50.06H293V6.26S259.5 0 225.36 0C141.09 0 89.09 54.42 89.09 153.31v68.03H0v92.66h89.09V512h107.83V288z"></path>
+                  </svg>
                   Facebook
                 </button>
               </div>
@@ -588,29 +712,31 @@ const AuthPage: React.FC = () => {
 
         <div className="panels-container">
           <div className="panel left-panel">
-            <div className="content">
-              <h3>New here?</h3>
-              <p>Join Brightness to track your goals and stay motivated.</p>
-              <button className="btn transparent" onClick={() => switchMode("signup")}>
-                Sign up
-              </button>
+            <div className="panel-blur">
+              <div className="content">
+                <h3>New here?</h3>
+                <p>Join Brightness to track your goals and stay motivated.</p>
+                <button className="btn transparent" onClick={() => switchMode("signup")}>
+                  Sign up
+                </button>
+              </div>
             </div>
-            {/* <img src={yogaImg} className="image" alt="Yoga" /> */}
           </div>
+
           <div className="panel right-panel">
-            <div className="content">
-              <h3>One of us?</h3>
-              <p>Sign in to access your personalized fitness dashboard.</p>
-              <button className="btn transparent" onClick={() => switchMode("signin")}>
-                Sign in
-              </button>
+            <div className="panel-blur">
+              <div className="content">
+                <h3>One of us?</h3>
+                <p>Sign in to continue your wellness journey.</p>
+                <button className="btn transparent" onClick={() => switchMode("signin")}>
+                  Sign in
+                </button>
+              </div>
             </div>
-            {/* <img src={yogaImg} className="image" alt="Yoga" /> */}
           </div>
         </div>
       </div>
 
-      {/* Toast Notification */}
       <Snackbar
         open={toast.open}
         autoHideDuration={4000}
