@@ -39,9 +39,9 @@ const Navbar: React.FC<NavbarProps> = ({ currentPage = "home" }) => {
     try {
       await dispatch(logoutUser()).unwrap();
 
-      // Purge persisted state
-      const { persistor } = await import("@/store/store");
-      await persistor.purge();
+      // // Purge persisted state
+      // const { persistor } = await import("@/store/store");
+      // await persistor.purge();
 
       navigate("/auth");
     } catch (error) {

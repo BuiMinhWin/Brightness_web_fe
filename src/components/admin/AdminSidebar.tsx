@@ -46,8 +46,8 @@ export default function AdminSidebar() {
       await dispatch(logoutUser()).unwrap();
 
       // Purge persisted state
-      const { persistor } = await import("@/store/store");
-      await persistor.purge();
+      // const { persistor } = await import("@/store/store");
+      // await persistor.purge();
 
       navigate("/auth");
     } catch (error) {
