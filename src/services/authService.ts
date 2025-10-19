@@ -1,6 +1,7 @@
 // authService.ts
 import type {
   ApiResponse,
+  ExternalLoginRequest,
   LoginRequest,
   LoginResponse,
   RegisterRequest,
@@ -44,6 +45,15 @@ export const authService = {
       method: "POST",
       body: JSON.stringify(data),
       skipAuth: true, // Don't send auth token for registration
+    });
+  },
+
+  /** External provider login (e.g., Google) */
+  async externalLogin(data: ExternalLoginRequest): Promise<LoginResponse> {
+    return httpRequest<LoginResponse>("/auth/api/Authentication/external-login", {
+      method: "POST",
+      body: JSON.stringify(data),
+      skipAuth: true,
     });
   },
 

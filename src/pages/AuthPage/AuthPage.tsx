@@ -1,11 +1,10 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import "./AuthPage.css";
 // import yogaImg from "/assets/yoga_register.png";
 import logoImg from "/assets/logo_color.png";
 import { useAppDispatch, useAppSelector } from "../../store/hooks";
-import { loginUser, registerUser } from "../../store/slices/authSlice";
-import { authService } from "../../services";
+import { loginUser, registerUser, loginWithExternalProvider } from "../../store/slices/authSlice";
 import type { LoginRequest, RegisterRequest } from "../../models";
 import { Snackbar, Alert } from "@mui/material";
 
@@ -35,6 +34,38 @@ const INITIAL_FORM_VALUES: AuthFormValues = {
   dateOfBirth: "",
 };
 
+interface GoogleCredentialResponse {
+  credential?: string;
+  select_by?: string;
+}
+
+interface GooglePromptNotification {
+  isNotDisplayed?: () => boolean;
+  getNotDisplayedReason?: () => string;
+  isSkippedMoment?: () => boolean;
+  getSkippedReason?: () => string;
+}
+
+declare global {
+  interface Window {
+    google?: {
+      accounts?: {
+        id?: {
+          initialize: (options: {
+            client_id: string;
+            callback: (response: GoogleCredentialResponse) => void;
+            ux_mode?: "popup" | "redirect";
+            auto_select?: boolean;
+            context?: "signin" | "signup" | "use";
+          }) => void;
+          prompt: (momentListener?: (notification: GooglePromptNotification) => void) => void;
+          renderButton?: (element: HTMLElement, options: Record<string, unknown>) => void;
+        };
+      };
+    };
+  }
+}
+
 const AuthPage: React.FC = () => {
   const dispatch = useAppDispatch();
   const { isAuthenticated, userRole, isLoading, error } = useAppSelector((state) => state.auth);
@@ -52,6 +83,14 @@ const AuthPage: React.FC = () => {
   const [agreeTerms, setAgreeTerms] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
   const navigate = useNavigate();
+  const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
+  const [isGoogleLoading, setIsGoogleLoading] = useState(false);
+  const [isGoogleReady, setIsGoogleReady] = useState(false);
+  const googleScriptInitialized = useRef(false);
+
+  useEffect(() => {
+    console.log("Origin:", window.location.origin);
+  }, []);
 
   useEffect(() => {
     const mode = searchParams.get("mode") as AuthMode;
@@ -76,6 +115,117 @@ const AuthPage: React.FC = () => {
       }
     }
   }, [isAuthenticated, userRole, isLoading, navigate, error, authMode]);
+
+  const handleGoogleCredentialResponse = useCallback(
+    async (response: GoogleCredentialResponse) => {
+      if (!response?.credential) {
+        setIsGoogleLoading(false);
+        setToast({
+          open: true,
+          message: "Google did not provide a credential. Please try again.",
+          severity: "error",
+        });
+        return;
+      }
+
+      try {
+        await dispatch(
+          loginWithExternalProvider({
+            provider: "Google",
+            token: response.credential,
+          })
+        ).unwrap();
+
+        setToast({
+          open: true,
+          message: `Successfully ${authMode === "signup" ? "signed up" : "signed in"} with Google.`,
+          severity: "success",
+        });
+      } catch (err) {
+        const errorMessage =
+          err instanceof Error
+            ? err.message
+            : typeof err === "string"
+            ? err
+            : "Google authentication failed. Please try again.";
+        setToast({
+          open: true,
+          message: errorMessage,
+          severity: "error",
+        });
+      } finally {
+        setIsGoogleLoading(false);
+      }
+    },
+    [authMode, dispatch, setToast]
+  );
+
+  const initializeGoogleAccounts = useCallback(() => {
+    if (!googleClientId || !googleClientId.trim() || !window.google?.accounts?.id) {
+      return;
+    }
+
+    window.google.accounts.id.initialize({
+      client_id: googleClientId,
+      callback: handleGoogleCredentialResponse,
+      ux_mode: "popup",
+      auto_select: false,
+      context: authMode === "signup" ? "signup" : "signin",
+    });
+
+    setIsGoogleReady(true);
+  }, [authMode, googleClientId, handleGoogleCredentialResponse]);
+
+  useEffect(() => {
+    if (!googleClientId || !googleClientId.trim()) {
+      setIsGoogleReady(false);
+      return;
+    }
+
+    if (window.google?.accounts?.id) {
+      initializeGoogleAccounts();
+      return;
+    }
+
+    if (googleScriptInitialized.current) {
+      return;
+    }
+
+    const existingScript = document.getElementById("google-identity-services") as HTMLScriptElement | null;
+    if (existingScript) {
+      const onLoad = () => initializeGoogleAccounts();
+      existingScript.addEventListener("load", onLoad);
+      googleScriptInitialized.current = true;
+
+      return () => {
+        existingScript.removeEventListener("load", onLoad);
+      };
+    }
+
+    const script = document.createElement("script");
+    script.id = "google-identity-services";
+    script.src = "https://accounts.google.com/gsi/client";
+    script.async = true;
+    script.defer = true;
+    script.onload = () => {
+      initializeGoogleAccounts();
+    };
+    script.onerror = () => {
+      setIsGoogleReady(false);
+      setToast({
+        open: true,
+        message: "Unable to load Google authentication. Please try again later.",
+        severity: "error",
+      });
+    };
+
+    document.head.appendChild(script);
+    googleScriptInitialized.current = true;
+
+    return () => {
+      script.onload = null;
+    };
+  }, [googleClientId, initializeGoogleAccounts, setToast]);
 
   const switchMode = (mode: AuthMode) => {
     
@@ -143,13 +293,41 @@ const AuthPage: React.FC = () => {
     }
   };
 
-  const handleGoogleAuth = () => {
-    setToast({
-      open: true,
-      message: `Google ${authMode === "signup" ? "sign up" : "sign in"} not implemented yet`,
-      severity: "info",
+  const handleGoogleAuth = useCallback(() => {
+    if (!googleClientId || !googleClientId.trim()) {
+      setToast({
+        open: true,
+        message: "Google sign-in is not configured. Please contact support.",
+        severity: "error",
+      });
+      return;
+    }
+
+    if (!window.google?.accounts?.id || !isGoogleReady) {
+      setToast({
+        open: true,
+        message: "Google authentication is still initializing. Please try again shortly.",
+        severity: "info",
+      });
+      return;
+    }
+
+    setIsGoogleLoading(true);
+    window.google.accounts.id.prompt((notification) => {
+      if (notification?.isNotDisplayed?.()) {
+        console.warn("Google prompt not displayed:", notification.getNotDisplayedReason?.());
+        setIsGoogleLoading(false);
+        setToast({
+          open: true,
+          message: "Google sign-in could not be displayed. Please check your pop-up blocker and try again.",
+          severity: "error",
+        });
+      } else if (notification?.isSkippedMoment?.()) {
+        console.warn("Google prompt skipped:", notification.getSkippedReason?.());
+        setIsGoogleLoading(false);
+      }
     });
-  };
+  }, [googleClientId, isGoogleReady, setToast]);
 
   const handleFacebookAuth = () => {
     setToast({
@@ -167,6 +345,10 @@ const AuthPage: React.FC = () => {
     authMode === "signup"
       ? Boolean(formValues.email && formValues.password && agreeTerms)
       : Boolean(formValues.email && formValues.password);
+
+  const googleButtonLabel = isGoogleLoading ? "Processing..." : "Google";
+  const googleButtonDisabled =
+    isGoogleLoading || !isGoogleReady || !googleClientId || !googleClientId.trim();
 
   return (
     <div className="auth-page">
@@ -244,8 +426,14 @@ const AuthPage: React.FC = () => {
 
               <p className="social-text">Or Sign in with social platforms</p>
               <div className="social-media">
-                <button type="button" className="social-icon" onClick={handleGoogleAuth}>
-                  Google
+                <button
+                  type="button"
+                  className="social-icon"
+                  onClick={handleGoogleAuth}
+                  disabled={googleButtonDisabled}
+                  aria-busy={isGoogleLoading}
+                >
+                  {googleButtonLabel}
                 </button>
                 <button type="button" className="social-icon" onClick={handleFacebookAuth}>
                   Facebook
@@ -381,8 +569,14 @@ const AuthPage: React.FC = () => {
               </div>
 
               <div className="social-media">
-                <button type="button" className="social-icon" onClick={handleGoogleAuth}>
-                  Google
+                <button
+                  type="button"
+                  className="social-icon"
+                  onClick={handleGoogleAuth}
+                  disabled={googleButtonDisabled}
+                  aria-busy={isGoogleLoading}
+                >
+                  {googleButtonLabel}
                 </button>
                 <button type="button" className="social-icon" onClick={handleFacebookAuth}>
                   Facebook

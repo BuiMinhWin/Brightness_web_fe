@@ -31,6 +31,11 @@ export interface RegisterRequest {
   paymentCustomerRef?: string;
 }
 
+export interface ExternalLoginRequest {
+  provider: string;
+  token: string;
+}
+
 export interface UpdateUserRequest {
   email?: string;
   userName?: string;
