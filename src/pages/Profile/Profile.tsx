@@ -120,6 +120,7 @@ const Profile: React.FC = () => {
       setAvatarPreview(null);
       setAvatarError(null);
       alert("Profile updated successfully!");
+      window.location.reload();
     } catch (error) {
       console.error("Error updating profile:", error);
       alert("Error updating profile. Please try again.");
