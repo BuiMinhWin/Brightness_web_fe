@@ -2,17 +2,28 @@ import React, { useState, useEffect } from "react";
 import { authService } from "../../services";
 import { UserModel, UpdateUserRequest } from "../../models";
 import { useAppSelector } from "../../store/hooks";
+import { resolveApiAssetUrl } from "@/utils/media";
 import "./Profile.css";
 
 const Profile: React.FC = () => {
+  const AVATAR_MAX_SIZE_BYTES = 2 * 1024 * 1024; // 2MB
   const [profileData, setProfileData] = useState<UserModel | null>(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [editFormData, setEditFormData] = useState<UpdateUserRequest>({});
   const [isLoading, setIsLoading] = useState(false);
+  const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
+  const [avatarError, setAvatarError] = useState<string | null>(null);
 
   // Lấy thông tin user từ Redux store
   const { userInfo, userId } = useAppSelector((state) => state.auth);
   const currentUserId = userId || "";
+  const resolvedProfileAvatar = resolveApiAssetUrl(
+    profileData?.profilePicture ?? userInfo?.profilePicture ?? null
+  );
+  const displayAvatar = avatarPreview || resolvedProfileAvatar;
+  const fallbackUser = profileData || userInfo;
+  const avatarFallback = fallbackUser?.fullName || fallbackUser?.userName || "B";
+  const avatarInitial = avatarFallback.charAt(0).toUpperCase();
 
   useEffect(() => {
     if (currentUserId) {
@@ -45,7 +56,11 @@ const Profile: React.FC = () => {
         phoneNumber: currentUser.phoneNumber || "",
         gender: currentUser.gender || "",
         dateOfBirth: currentUser.dateOfBirth || "",
+        profilePicture: currentUser.profilePicture || "",
       });
+      const existingAvatar = resolveApiAssetUrl(currentUser.profilePicture);
+      setAvatarPreview(existingAvatar || null);
+      setAvatarError(null);
       setIsEditModalOpen(true);
     }
   };
@@ -58,6 +73,40 @@ const Profile: React.FC = () => {
     }));
   };
 
+  const handleAvatarChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) {
+      return;
+    }
+
+    if (!file.type.startsWith("image/")) {
+      setAvatarError("Please select an image file (JPG, PNG, or WEBP).");
+      event.target.value = "";
+      return;
+    }
+
+    if (file.size > AVATAR_MAX_SIZE_BYTES) {
+      setAvatarError("Avatar must be smaller than 2MB.");
+      event.target.value = "";
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      if (typeof reader.result === "string") {
+        const base64Image = reader.result;
+        setAvatarPreview(base64Image);
+        setEditFormData((prev) => ({
+          ...prev,
+          profilePicture: base64Image,
+        }));
+        setAvatarError(null);
+      }
+    };
+    reader.readAsDataURL(file);
+    event.target.value = "";
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!currentUserId) return;
@@ -67,6 +116,9 @@ const Profile: React.FC = () => {
       await authService.updateUser(currentUserId, editFormData);
       await loadUserInfo(); // Reload user info
       setIsEditModalOpen(false);
+      setEditFormData({});
+      setAvatarPreview(null);
+      setAvatarError(null);
       alert("Profile updated successfully!");
     } catch (error) {
       console.error("Error updating profile:", error);
@@ -79,6 +131,8 @@ const Profile: React.FC = () => {
   const handleCloseModal = () => {
     setIsEditModalOpen(false);
     setEditFormData({});
+    setAvatarPreview(null);
+    setAvatarError(null);
   };
 
   return (
@@ -89,7 +143,13 @@ const Profile: React.FC = () => {
           <div className="pf-title">Profile</div>
 
           <div className="pf-card pf-header">
-            <div className="pf-avatar" />
+            <div className="pf-avatar">
+              {displayAvatar ? (
+                <img src={displayAvatar} alt="Ảnh đại diện" />
+              ) : (
+                <span className="pf-avatar-placeholder">{avatarInitial}</span>
+              )}
+            </div>
             <div>
               <div className="pf-name">
                 {(profileData || userInfo)?.fullName ||
@@ -178,11 +238,29 @@ const Profile: React.FC = () => {
             <div className="modal-header">
               <h2>Edit Profile</h2>
               <button className="close-btn" onClick={handleCloseModal}>
-                ×
+                X
               </button>
             </div>
 
             <form onSubmit={handleSubmit} className="edit-form">
+              <div className="avatar-section">
+                <div className="avatar-preview">
+                  {avatarPreview || displayAvatar ? (
+                    <img src={avatarPreview || displayAvatar} alt="Avatar preview" />
+                  ) : (
+                    <span className="pf-avatar-placeholder avatar-preview-initial">
+                      {avatarInitial}
+                    </span>
+                  )}
+                </div>
+                <label className="avatar-upload-btn">
+                  <input type="file" accept="image/*" onChange={handleAvatarChange} />
+                  Choose Image
+                </label>
+                <p className="avatar-hint">Supports JPG, PNG, WEBP. Maximum size 2MB.</p>
+                {avatarError && <p className="avatar-error">{avatarError}</p>}
+              </div>
+
               <div className="form-group">
                 <label htmlFor="fullName">Full Name</label>
                 <input

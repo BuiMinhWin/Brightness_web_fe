@@ -12,6 +12,7 @@ import {
   fetchUserInfo,
 } from "@/store/slices/authSlice";
 import { NavUser } from "@/components/ui/nav-user";
+import { resolveApiAssetUrl } from "@/utils/media";
 
 interface NavbarProps {
   currentPage?: string; // giữ lại nếu bạn muốn highlight
@@ -119,7 +120,7 @@ const Navbar: React.FC<NavbarProps> = ({ currentPage = "home" }) => {
               user={{
                 name: userInfo.fullName || userInfo.userName || "User",
                 email: userInfo.email || "user@brightnest.com",
-                avatar: userInfo.profilePicture || "https://github.com/shadcn.png",
+                avatar: resolveApiAssetUrl(userInfo.profilePicture) || "https://github.com/shadcn.png",
                 onLogout: handleLogout,
                 onProfile: handleProfileClick,
               }}
