@@ -8,6 +8,7 @@ import { socialService } from "../../services/socialService";
 import { authService } from "../../services/authService";
 import type { Post } from "../../models/social";
 import type { UserModel } from "../../models";
+import { resolveApiAssetUrl } from "@/utils/media";
 
 const Blogs: React.FC = () => {
   const [allPosts, setAllPosts] = useState<Post[]>([]);
@@ -184,7 +185,10 @@ const Blogs: React.FC = () => {
 
     // Transform the API Post to the format PostDialog expects
     const displayName = post.userData?.userName || `User ${post.userId.substring(0, 8)}`;
-    const avatarUrl = post.userData?.profilePicture || `https://ui-avatars.com/api/?name=${encodeURIComponent(displayName)}&background=random`;
+    const resolvedAvatar = resolveApiAssetUrl(post.userData?.profilePicture);
+    const avatarUrl =
+      resolvedAvatar ||
+      `https://ui-avatars.com/api/?name=${encodeURIComponent(displayName)}&background=random`;
 
     const transformedPost = {
       user: {
@@ -389,7 +393,10 @@ const Blogs: React.FC = () => {
                   .map(img => img.imageUrl!) || [];
 
                 const displayName = post.userData?.userName || `User ${post.userId.substring(0, 8)}`;
-                const avatarUrl = post.userData?.profilePicture || `https://ui-avatars.com/api/?name=${encodeURIComponent(displayName)}&background=random`;
+                const resolvedAvatar = resolveApiAssetUrl(post.userData?.profilePicture);
+                const avatarUrl =
+                  resolvedAvatar ||
+                  `https://ui-avatars.com/api/?name=${encodeURIComponent(displayName)}&background=random`;
 
                 return (
                   <BlogPost

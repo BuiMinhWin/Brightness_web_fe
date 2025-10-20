@@ -3,6 +3,7 @@ import { jwtDecode } from "jwt-decode";
 import { authService } from "../../services/authService";
 import type {
   AuthData,
+  ExternalLoginRequest,
   LoginRequest,
   LoginResponse,
   UserModel,
@@ -143,6 +144,39 @@ export const loginUser = createAsyncThunk(
     } catch (error) {
       console.error("❌ Login error:", error);
       return rejectWithValue(error instanceof Error ? error.message : "Login failed");
+    }
+  }
+);
+
+// Async thunk for external provider login (e.g., Google)
+export const loginWithExternalProvider = createAsyncThunk(
+  "auth/loginWithExternalProvider",
+  async (payload: ExternalLoginRequest, { rejectWithValue }) => {
+    try {
+      console.log("[Auth] Attempting external login...", payload.provider);
+      const response = await authService.externalLogin(payload);
+      console.log("[Auth] External login response:", response);
+
+      if (!response.flag || !response.data) {
+        console.error("[Auth] External login failed:", response.message);
+        return rejectWithValue(response.message || "External login failed");
+      }
+
+      const { accessToken } = response.data;
+      const { role, userId } = decodeToken(accessToken);
+      console.log("[Auth] External login decoded token:", { role, userId });
+
+      const userInfo: UserModel | null = null;
+
+      return {
+        authData: response.data,
+        role,
+        userId,
+        userInfo,
+      };
+    } catch (error) {
+      console.error("[Auth] External login error:", error);
+      return rejectWithValue(error instanceof Error ? error.message : "External login failed");
     }
   }
 );
@@ -324,6 +358,32 @@ const authSlice = createSlice({
         state.lastActivity = Date.now();
       })
       .addCase(loginUser.rejected, (state, action) => {
+        state.isLoading = false;
+        state.isAuthenticated = false;
+        state.error = action.payload as string;
+      })
+
+      // External login cases
+      .addCase(loginWithExternalProvider.pending, (state) => {
+        state.isLoading = true;
+        state.error = null;
+      })
+      .addCase(loginWithExternalProvider.fulfilled, (state, action) => {
+        state.isLoading = false;
+        state.isAuthenticated = true;
+        state.error = null;
+
+        const { authData, role, userId, userInfo } = action.payload;
+        state.accessToken = authData.accessToken;
+        state.accessTokenExpiresAt = authData.accessTokenExpiresAt;
+        state.userRole = role;
+        state.userId = userId;
+        state.userInfo = userInfo;
+
+        state.sessionStartTime = Date.now();
+        state.lastActivity = Date.now();
+      })
+      .addCase(loginWithExternalProvider.rejected, (state, action) => {
         state.isLoading = false;
         state.isAuthenticated = false;
         state.error = action.payload as string;

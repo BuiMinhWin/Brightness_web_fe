@@ -21,6 +21,7 @@ import {
 } from "@/store/slices/authSlice";
 import { useNavigate } from "react-router-dom";
 import { useEffect } from "react";
+import { resolveApiAssetUrl } from "@/utils/media";
 
 export default function AdminSidebar() {
   const location = useLocation();
@@ -45,8 +46,8 @@ export default function AdminSidebar() {
       await dispatch(logoutUser()).unwrap();
 
       // Purge persisted state
-      const { persistor } = await import("@/store/store");
-      await persistor.purge();
+      // const { persistor } = await import("@/store/store");
+      // await persistor.purge();
 
       navigate("/auth");
     } catch (error) {
@@ -60,7 +61,7 @@ export default function AdminSidebar() {
       userInfo?.userName ||
       (isAuthenticated && userId ? "Loading..." : "Admin User"),
     email: userInfo?.email || (isAuthenticated && userId ? "Loading..." : "admin@brightnest.com"),
-    avatar: userInfo?.profilePicture || "https://github.com/shadcn.png",
+    avatar: resolveApiAssetUrl(userInfo?.profilePicture) || "https://github.com/shadcn.png",
     onLogout: handleLogout, // Pass logout handler to NavUser
     onProfile: () => navigate("/profile"), // Add profile handler
   };
