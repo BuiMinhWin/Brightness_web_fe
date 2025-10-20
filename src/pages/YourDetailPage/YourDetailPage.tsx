@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useSelector } from "react-redux";
@@ -12,6 +13,9 @@ import {
   Users,
   Gift,
   Info,
+  Calendar,
+  Clock,
+  AlertTriangle,
 } from "lucide-react";
 import {
   challengeService,
@@ -28,6 +32,10 @@ import "./YourDetailPage.css";
 interface TaskWithProgress extends ChallengeTask {
   progress?: ChallengeTaskProgress;
   isCompleted: boolean;
+  startDate?: string; // Task start date
+  endDate?: string; // Task end date
+  taskStatus?: 'upcoming' | 'available' | 'overdue'; // Task status based on date
+  penaltyPercentage?: number; // Penalty if late
 }
 
 interface LeaderboardEntry {
@@ -45,7 +53,6 @@ const YourDetailPage: React.FC = () => {
   const { challengeId } = useParams<{ challengeId: string }>();
   const navigate = useNavigate();
   
-  // ✅ Get authenticated user ID from Redux instead of localStorage
   const authenticatedUserId = useSelector(selectUserId);
   const isAuthenticated = useSelector(selectIsAuthenticated);
 
@@ -60,7 +67,6 @@ const YourDetailPage: React.FC = () => {
   const [updatingTask, setUpdatingTask] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<TabType>("progress");
 
-  // ✅ Leaderboard state
   const [leaderboardData, setLeaderboardData] = useState<LeaderboardEntry[]>([]);
   const [loadingLeaderboard, setLoadingLeaderboard] = useState(false);
   const [leaderboardError, setLeaderboardError] = useState<string | null>(null);
@@ -78,6 +84,91 @@ const YourDetailPage: React.FC = () => {
     return `User ${userId.substring(0, 8)}`;
   };
 
+  // ✅ NEW: Calculate task status based on startDate and endDate
+  const getTaskStatus = (task: ChallengeTask): {
+    status: 'upcoming' | 'available' | 'overdue';
+    penaltyPercentage: number;
+  } => {
+    if (!task.startDate || !task.endDate) {
+      return { status: 'available', penaltyPercentage: 0 };
+    }
+
+    const now = new Date();
+    now.setHours(0, 0, 0, 0); // Reset to start of day for accurate comparison
+
+    const startDate = new Date(task.startDate);
+    startDate.setHours(0, 0, 0, 0);
+
+    const endDate = new Date(task.endDate);
+    endDate.setHours(23, 59, 59, 999); // End of the end date
+
+    if (now < startDate) {
+      // Before start date - upcoming
+      return { status: 'upcoming', penaltyPercentage: 0 };
+    } else if (now >= startDate && now <= endDate) {
+      // Between start and end date - available
+      return { status: 'available', penaltyPercentage: 0 };
+    } else {
+      // After end date - overdue with 50% penalty
+      return { status: 'overdue', penaltyPercentage: 50 };
+    }
+  };
+
+  // ✅ NEW: Format date range for display
+  const formatTaskDateRange = (startDate: string | undefined, endDate: string | undefined): string => {
+    if (!startDate || !endDate) return "No date set";
+    
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const startDay = new Date(start);
+    startDay.setHours(0, 0, 0, 0);
+    const endDay = new Date(end);
+    endDay.setHours(0, 0, 0, 0);
+
+    // Check if task is today only
+    if (startDay.getTime() === today.getTime() && endDay.getTime() === today.getTime()) {
+      return "Today";
+    }
+
+    // Check if task starts today
+    if (startDay.getTime() === today.getTime()) {
+      const daysUntilEnd = Math.ceil((endDay.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+      if (daysUntilEnd === 0) return "Today";
+      if (daysUntilEnd === 1) return "Today - Tomorrow";
+      return `Today - ${daysUntilEnd} days`;
+    }
+
+    // Check if task ends today
+    if (endDay.getTime() === today.getTime()) {
+      return "Due Today";
+    }
+
+    const diffToStart = Math.ceil((startDay.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+    const diffToEnd = Math.ceil((endDay.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+
+    // Future task
+    if (diffToStart > 0) {
+      if (diffToStart === 1) return "Starts Tomorrow";
+      if (diffToStart <= 7) return `Starts in ${diffToStart} days`;
+      return start.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+    }
+
+    // Overdue task
+    if (diffToEnd < 0) {
+      const daysOverdue = Math.abs(diffToEnd);
+      if (daysOverdue === 1) return "1 day overdue";
+      if (daysOverdue <= 7) return `${daysOverdue} days overdue`;
+      return `Overdue since ${end.toLocaleDateString("en-US", { month: "short", day: "numeric" })}`;
+    }
+
+    // Active task (between start and end)
+    if (diffToEnd === 1) return "Due Tomorrow";
+    if (diffToEnd <= 7) return `Due in ${diffToEnd} days`;
+    return `Due ${end.toLocaleDateString("en-US", { month: "short", day: "numeric" })}`;
+  };
+
   useEffect(() => {
     const fetchChallengeDetails = async () => {
       if (!challengeId) {
@@ -87,7 +178,6 @@ const YourDetailPage: React.FC = () => {
         return;
       }
 
-      // ✅ Check authentication before fetching
       if (!isAuthenticated || !authenticatedUserId) {
         console.error("❌ User not authenticated");
         setError("Please log in to view your challenge details");
@@ -96,7 +186,6 @@ const YourDetailPage: React.FC = () => {
         return;
       }
 
-      // Validate GUID format
       const guidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
       if (!guidRegex.test(challengeId)) {
         console.error("❌ Invalid challengeId format:", challengeId);
@@ -119,12 +208,10 @@ const YourDetailPage: React.FC = () => {
         console.log("🔍 ChallengeId from URL:", challengeId);
         console.log("🔍 Authenticated UserId:", authenticatedUserId);
 
-        // Fetch challenge
         const challengeData = await challengeService.getChallenge(challengeId);
         console.log("✅ Challenge:", challengeData);
         setChallenge(challengeData);
 
-        // Fetch challenge rules
         try {
           const rulesData = await challengeService.getRulesByChallengeId(challengeId);
           if (rulesData && rulesData.length > 0) {
@@ -135,7 +222,6 @@ const YourDetailPage: React.FC = () => {
           console.warn("⚠️ Failed to fetch rules:", err);
         }
 
-        // ✅ Fetch participants to get current AUTHENTICATED user's participant record
         const allParticipants = await challengeService.getAllChallengeParticipants();
         const userParticipant = allParticipants.find(
           (p) => p.challengeId === challengeId && 
@@ -152,7 +238,6 @@ const YourDetailPage: React.FC = () => {
         console.log("✅ User participant:", userParticipant);
         setParticipant(userParticipant);
 
-        // Fetch tasks
         let tasksData: ChallengeTask[] = [];
         try {
           tasksData = await challengeService.getTasksByChallengeId(challengeId);
@@ -169,7 +254,6 @@ const YourDetailPage: React.FC = () => {
 
         console.log("✅ Tasks:", tasksData);
 
-        // Fetch task progress for THIS user
         let progressData: ChallengeTaskProgress[] = [];
         try {
           progressData = await challengeService.getProgressByParticipantId(userParticipant.id);
@@ -185,17 +269,30 @@ const YourDetailPage: React.FC = () => {
           }
         }
 
-        // Combine tasks with progress
+        // ✅ NEW: Combine tasks with progress and calculate status based on startDate/endDate
         const tasksWithProgress: TaskWithProgress[] = tasksData.map((task) => {
           const progress = progressData.find((p) => p.challengeTaskId === task.id);
+          const { status, penaltyPercentage } = getTaskStatus(task);
+          
           return {
             ...task,
             progress,
             isCompleted: progress?.status?.toLowerCase() === "completed",
+            startDate: task.startDate,
+            endDate: task.endDate,
+            taskStatus: status,
+            penaltyPercentage,
           };
         });
 
-        console.log("✅ Tasks with progress:", tasksWithProgress);
+        // Sort tasks by start date
+        tasksWithProgress.sort((a, b) => {
+          if (!a.startDate) return 1;
+          if (!b.startDate) return -1;
+          return new Date(a.startDate).getTime() - new Date(b.startDate).getTime();
+        });
+
+        console.log("✅ Tasks with progress and status:", tasksWithProgress);
         setTasks(tasksWithProgress);
       } catch (err) {
         console.error("❌ Error fetching challenge details:", err);
@@ -208,7 +305,6 @@ const YourDetailPage: React.FC = () => {
     fetchChallengeDetails();
   }, [challengeId, authenticatedUserId, isAuthenticated, navigate]);
 
-  // ✅ Fetch leaderboard when switching to leaderboard tab
   useEffect(() => {
     if (activeTab === "leaderboard" && challengeId && isAuthenticated && authenticatedUserId) {
       fetchLeaderboardData();
@@ -224,7 +320,6 @@ const YourDetailPage: React.FC = () => {
 
       console.log("🔍 Fetching leaderboard for challenge:", challengeId);
 
-      // Fetch leaderboard from API
       let apiLeaderboard: APILeaderboardEntry[] = [];
       try {
         apiLeaderboard = await challengeService.getLeaderboard(challengeId);
@@ -232,7 +327,6 @@ const YourDetailPage: React.FC = () => {
       } catch (err) {
         console.warn("⚠️ Failed to fetch leaderboard from API, falling back to participants:", err);
         
-        // Fallback: Calculate from participants
         const participants = await challengeService.getParticipantsByChallengeId(challengeId);
         apiLeaderboard = participants
           .sort((a, b) => (b.totalPoints || 0) - (a.totalPoints || 0))
@@ -245,7 +339,6 @@ const YourDetailPage: React.FC = () => {
         console.log("✅ Fallback leaderboard from participants:", apiLeaderboard);
       }
 
-      // Transform API leaderboard to component format
       const transformedLeaderboard: LeaderboardEntry[] = apiLeaderboard.map((entry) => ({
         id: entry.userId,
         rank: entry.rank,
@@ -266,43 +359,66 @@ const YourDetailPage: React.FC = () => {
     }
   };
 
+  // ✅ MODIFIED: Handle task completion with date validation and penalty
   const handleMarkAsComplete = async (task: TaskWithProgress) => {
     if (!participant || !task.id || task.isCompleted) return;
 
-    // ✅ Verify authentication before allowing task completion
     if (!isAuthenticated || !authenticatedUserId) {
       alert("Please log in to mark tasks as complete");
       navigate("/auth?mode=signin");
       return;
     }
 
+    // ✅ NEW: Check if task is upcoming (not yet at start date)
+    if (task.taskStatus === 'upcoming') {
+      alert(`This task is not available yet. It will be available starting ${formatTaskDateRange(task.startDate, task.endDate)}.`);
+      return;
+    }
+
+    // ✅ NEW: Warn user about penalty if overdue (past end date)
+    if (task.taskStatus === 'overdue') {
+      const confirmComplete = window.confirm(
+        `⚠️ This task is overdue!\n\n` +
+        `The deadline was ${task.endDate ? new Date(task.endDate).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) : 'passed'}.\n\n` +
+        `You will receive only 50% of the points (${Math.floor((task.points || 0) * 0.5)} points instead of ${task.points || 0}).\n\n` +
+        `Do you want to mark it as complete anyway?`
+      );
+      
+      if (!confirmComplete) {
+        return;
+      }
+    }
+
     try {
       setUpdatingTask(task.id);
 
+      // ✅ NEW: Calculate points with penalty
+      const earnedPoints = task.taskStatus === 'overdue' 
+        ? Math.floor((task.points || 0) * 0.5) 
+        : (task.points || 0);
+
       if (task.progress) {
-        // Update existing progress
         const updateData: ChallengeTaskProgressDTO = {
           participantId: participant.id,
           challengeTaskId: task.id,
           status: "completed",
           completedAt: new Date().toISOString(),
-          pointsEarned: task.points,
+          pointsEarned: earnedPoints,
         };
 
         await challengeService.updateChallengeTaskProgress(task.progress.id, updateData);
-        console.log("✅ Task progress updated successfully");
+        console.log("✅ Task progress updated successfully with penalty:", { original: task.points, earned: earnedPoints });
       } else {
-        // Create new progress
         const newProgressData: ChallengeTaskProgressDTO = {
           participantId: participant.id,
           challengeTaskId: task.id,
           status: "completed",
           completedAt: new Date().toISOString(),
-          pointsEarned: task.points,
+          pointsEarned: earnedPoints,
         };
 
         await challengeService.createChallengeTaskProgress(newProgressData);
-        console.log("✅ Task progress created successfully");
+        console.log("✅ Task progress created successfully with penalty:", { original: task.points, earned: earnedPoints });
       }
 
       // Update local state
@@ -318,7 +434,7 @@ const YourDetailPage: React.FC = () => {
                   challengeTaskId: task.id,
                   status: "completed",
                   completedAt: new Date().toISOString(),
-                  pointsEarned: task.points,
+                  pointsEarned: earnedPoints,
                   id: task.progress?.id || "",
                 },
               }
@@ -332,9 +448,9 @@ const YourDetailPage: React.FC = () => {
       ).length;
       const newTotalPoints = tasks.reduce((sum, t) => {
         if (t.id === task.id) {
-          return sum + (task.points || 0);
+          return sum + earnedPoints;
         }
-        return sum + (t.isCompleted ? t.points || 0 : 0);
+        return sum + (t.isCompleted ? t.progress?.pointsEarned || t.points || 0 : 0);
       }, 0);
       const newPercentageCompleted = Math.round((newCompletedCount / tasks.length) * 100);
 
@@ -347,6 +463,13 @@ const YourDetailPage: React.FC = () => {
             }
           : null
       );
+
+      // ✅ NEW: Show success message with points earned
+      if (task.taskStatus === 'overdue') {
+        alert(`✅ Task completed!\nYou earned ${earnedPoints} points (50% penalty applied)`);
+      } else {
+        alert(`✅ Task completed!\nYou earned ${earnedPoints} points`);
+      }
 
       console.log("✅ Task marked as complete successfully");
     } catch (err) {
@@ -429,6 +552,9 @@ const YourDetailPage: React.FC = () => {
     : 0;
 
   const currentUserInLeaderboard = leaderboardData.find(entry => entry.isCurrentUser);
+
+  // ✅ NEW: Get today's available task (not completed, status is 'available')
+  const todaysTask = tasks.find((t) => !t.isCompleted && t.taskStatus === 'available');
 
   return (
     <div className="your-detail-page">
@@ -582,46 +708,60 @@ const YourDetailPage: React.FC = () => {
               )}
             </div>
 
-            {/* Today's Challenge */}
-            {tasks.filter((t) => !t.isCompleted).length > 0 && (
+            {/* ✅ MODIFIED: Today's Challenge with date check */}
+            {todaysTask && (
               <div className="todays-challenge">
                 <div className="challenge-header">
                   <h2 className="challenge-section-title">Today's Challenge</h2>
                 </div>
-                {tasks
-                  .filter((t) => !t.isCompleted)
-                  .slice(0, 1)
-                  .map((task) => (
-                    <div key={task.id} className="challenge-item">
-                      <div className="challenge-icon">
-                        <Target size={24} />
-                      </div>
-                      <div className="challenge-details">
-                        <h3 className="challenge-name">{task.name}</h3>
-                        {task.description && (
-                          <p className="challenge-description">{task.description}</p>
-                        )}
-                      </div>
-                      <div className="action-buttons">
-                        <button
-                          className="complete-button"
-                          onClick={() => handleMarkAsComplete(task)}
-                          disabled={updatingTask === task.id}
-                          style={{
-                            cursor: updatingTask === task.id ? "wait" : "pointer",
-                            opacity: updatingTask === task.id ? 0.7 : 1,
-                          }}
-                        >
-                          <CheckCircle size={20} />
-                          {updatingTask === task.id ? "Marking..." : "Mark as Complete"}
-                        </button>
-                      </div>
+                <div key={todaysTask.id} className="challenge-item">
+                  <div className="challenge-icon">
+                    <Target size={24} />
+                  </div>
+                  <div className="challenge-details">
+                    <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "4px" }}>
+                      <h3 className="challenge-name">{todaysTask.name}</h3>
+                      <span style={{
+                        display: "inline-flex",
+                        alignItems: "center",
+                        gap: "4px",
+                        padding: "4px 8px",
+                        backgroundColor: "#DBEAFE",
+                        color: "#1E40AF",
+                        borderRadius: "6px",
+                        fontSize: "12px",
+                        fontWeight: "600",
+                      }}>
+                        <Calendar size={12} />
+                        {formatTaskDateRange(todaysTask.startDate, todaysTask.endDate)}
+                      </span>
                     </div>
-                  ))}
+                    {todaysTask.description && (
+                      <p className="challenge-description">{todaysTask.description}</p>
+                    )}
+                    <div style={{ marginTop: "8px", fontSize: "14px", color: "#059669", fontWeight: "600" }}>
+                      {todaysTask.points} points
+                    </div>
+                  </div>
+                  <div className="action-buttons">
+                    <button
+                      className="complete-button"
+                      onClick={() => handleMarkAsComplete(todaysTask)}
+                      disabled={updatingTask === todaysTask.id}
+                      style={{
+                        cursor: updatingTask === todaysTask.id ? "wait" : "pointer",
+                        opacity: updatingTask === todaysTask.id ? 0.7 : 1,
+                      }}
+                    >
+                      <CheckCircle size={20} />
+                      {updatingTask === todaysTask.id ? "Marking..." : "Mark as Complete"}
+                    </button>
+                  </div>
+                </div>
               </div>
             )}
 
-            {/* All Challenges */}
+            {/* ✅ MODIFIED: All Challenges with date badges and status indicators */}
             <div className="all-challenges">
               <h2 className="all-challenges-title">All Challenges</h2>
               {tasks.length === 0 ? (
@@ -630,7 +770,11 @@ const YourDetailPage: React.FC = () => {
                 </p>
               ) : (
                 tasks.map((task) => (
-                  <div key={task.id} className="challenge-list-item">
+                  <div key={task.id} className="challenge-list-item" style={{
+                    backgroundColor: task.taskStatus === 'overdue' && !task.isCompleted ? '#FEF2F2' : 'white',
+                    border: task.taskStatus === 'upcoming' ? '1px solid #E5E7EB' : task.taskStatus === 'overdue' && !task.isCompleted ? '1px solid #FEE2E2' : '1px solid #E5E7EB',
+                    opacity: task.taskStatus === 'upcoming' ? 0.6 : 1,
+                  }}>
                     <div
                       className={`status-icon ${
                         task.isCompleted
@@ -646,27 +790,128 @@ const YourDetailPage: React.FC = () => {
                         <Circle size={20} />
                       )}
                     </div>
-                    <div className="challenge-info">
-                      <h3 className="challenge-list-name">{task.name}</h3>
+                    <div className="challenge-info" style={{ flex: 1 }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
+                        <h3 className="challenge-list-name">{task.name}</h3>
+                        
+                        {/* ✅ Date Badge */}
+                        {task.startDate && task.endDate && (
+                          <span style={{
+                            display: "inline-flex",
+                            alignItems: "center",
+                            gap: "4px",
+                            padding: "4px 8px",
+                            backgroundColor: task.taskStatus === 'upcoming' ? '#F3F4F6' : 
+                                           task.taskStatus === 'available' ? '#DBEAFE' : '#FEE2E2',
+                            color: task.taskStatus === 'upcoming' ? '#6B7280' : 
+                                   task.taskStatus === 'available' ? '#1E40AF' : '#991B1B',
+                            borderRadius: "6px",
+                            fontSize: "12px",
+                            fontWeight: "600",
+                          }}>
+                            <Calendar size={12} />
+                            {formatTaskDateRange(task.startDate, task.endDate)}
+                          </span>
+                        )}
+
+                        {/* ✅ Status Badge */}
+                        {task.taskStatus === 'upcoming' && !task.isCompleted && (
+                          <span style={{
+                            display: "inline-flex",
+                            alignItems: "center",
+                            gap: "4px",
+                            padding: "4px 8px",
+                            backgroundColor: '#FEF3C7',
+                            color: '#92400E',
+                            borderRadius: "6px",
+                            fontSize: "11px",
+                            fontWeight: "600",
+                          }}>
+                            <Clock size={11} />
+                            Not Yet Available
+                          </span>
+                        )}
+
+                        {task.taskStatus === 'overdue' && !task.isCompleted && (
+                          <span style={{
+                            display: "inline-flex",
+                            alignItems: "center",
+                            gap: "4px",
+                            padding: "4px 8px",
+                            backgroundColor: '#FEE2E2',
+                            color: '#991B1B',
+                            borderRadius: "6px",
+                            fontSize: "11px",
+                            fontWeight: "600",
+                          }}>
+                            <AlertTriangle size={11} />
+                            Overdue - 50% Points
+                          </span>
+                        )}
+                      </div>
+                      
                       {task.description && (
                         <p className="challenge-list-description">{task.description}</p>
                       )}
+                      
+                      {/* ✅ Points Display */}
+                      <div style={{ marginTop: "8px", display: "flex", alignItems: "center", gap: "8px" }}>
+                        <span style={{ 
+                          fontSize: "14px", 
+                          color: task.isCompleted ? "#10B981" : "#059669", 
+                          fontWeight: "600" 
+                        }}>
+                          {task.isCompleted 
+                            ? `${task.progress?.pointsEarned || task.points} points earned`
+                            : task.taskStatus === 'overdue'
+                            ? `${Math.floor((task.points || 0) * 0.5)} points (50% penalty)`
+                            : `${task.points} points`
+                          }
+                        </span>
+                        {!task.isCompleted && task.taskStatus === 'overdue' && (
+                          <span style={{ 
+                            fontSize: "12px", 
+                            color: "#6B7280", 
+                            textDecoration: "line-through" 
+                          }}>
+                            {task.points} pts
+                          </span>
+                        )}
+                      </div>
                     </div>
+                    
+                    {/* ✅ Action Button */}
                     {task.isCompleted ? (
                       <span className="status-badge done">Done</span>
                     ) : (
                       <button
                         className="complete-button"
                         onClick={() => handleMarkAsComplete(task)}
-                        disabled={updatingTask === task.id}
+                        disabled={updatingTask === task.id || task.taskStatus === 'upcoming'}
                         style={{
-                          cursor: updatingTask === task.id ? "wait" : "pointer",
-                          opacity: updatingTask === task.id ? 0.7 : 1,
+                          cursor: task.taskStatus === 'upcoming' ? 'not-allowed' : 
+                                 updatingTask === task.id ? "wait" : "pointer",
+                          opacity: task.taskStatus === 'upcoming' ? 0.5 : 
+                                  updatingTask === task.id ? 0.7 : 1,
                           fontSize: "14px",
                           padding: "8px 16px",
+                          backgroundColor: task.taskStatus === 'overdue' ? '#DC2626' : '#3B82F6',
                         }}
+                        title={task.taskStatus === 'upcoming' 
+                          ? `Available starting ${task.startDate ? new Date(task.startDate).toLocaleDateString() : 'soon'}`
+                          : task.taskStatus === 'overdue'
+                          ? `Deadline was ${task.endDate ? new Date(task.endDate).toLocaleDateString() : 'passed'} - 50% penalty applies`
+                          : 'Complete task for full points'
+                        }
                       >
-                        {updatingTask === task.id ? "Marking..." : "Complete"}
+                        {updatingTask === task.id 
+                          ? "Marking..." 
+                          : task.taskStatus === 'upcoming'
+                          ? "Locked"
+                          : task.taskStatus === 'overdue'
+                          ? "Complete (-50%)"
+                          : "Complete"
+                        }
                       </button>
                     )}
                   </div>

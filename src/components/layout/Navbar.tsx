@@ -90,6 +90,14 @@ const Navbar: React.FC<NavbarProps> = ({ currentPage = "home" }) => {
             Gamification
           </NavLink>
 
+          
+          <NavLink
+            to="/schedule"
+            className={({ isActive }) => `navbar-link ${isActive ? "active" : ""}`}
+          >
+            Schedule
+          </NavLink>
+
           <NavLink
             to="/first-aid"
             className={({ isActive }) => `navbar-link ${isActive ? "active" : ""}`}

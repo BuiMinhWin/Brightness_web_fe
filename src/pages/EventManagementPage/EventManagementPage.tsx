@@ -1173,9 +1173,9 @@ const handleSaveEvent = async () => {
     {eventModal.isOpen && (
     <div
     className="modal-overlay"
-    onClick={() => setEventModal({ isOpen: false, type: "create", event: null })}
+    // onClick={() => setEventModal({ isOpen: false, type: "create", event: null })} onClick={(e) => e.stopPropagation()}
     >
-    <div className="event-modal" onClick={(e) => e.stopPropagation()}>
+    <div className="event-modal" >
       <div className="event-modal-header">
         <h2 className="event-modal-title">
           {eventModal.type === "create" ? "Create New Challenge" : "Edit Challenge"}
