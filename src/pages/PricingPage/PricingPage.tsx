@@ -229,7 +229,7 @@ const PricingPage: React.FC = () => {
       <div className="pricing-content">
         {/* Header */}
         <div className="pricing-hero">
-          <button className="pricing-back" onClick={() => navigate("/your-missions")}>
+          <button className="pricing-back" onClick={() => navigate("/your-challenges")}>
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
               <polyline points="15,18 9,12 15,6" stroke="currentColor" strokeWidth="2" />
             </svg>
