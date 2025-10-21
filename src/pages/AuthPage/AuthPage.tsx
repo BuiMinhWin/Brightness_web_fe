@@ -55,10 +55,8 @@ interface GoogleCredentialResponse {
 }
 
 interface GooglePromptNotification {
-  isNotDisplayed?: () => boolean;
-  getNotDisplayedReason?: () => string;
-  isSkippedMoment?: () => boolean;
-  getSkippedReason?: () => string;
+  isDismissed?: () => boolean;
+  getDismissedReason?: () => string;
 }
 
 declare global {
@@ -72,6 +70,7 @@ declare global {
             ux_mode?: "popup" | "redirect";
             auto_select?: boolean;
             context?: "signin" | "signup" | "use";
+            use_fedcm_for_prompt?: boolean;
           }) => void;
           prompt: (momentListener?: (notification: GooglePromptNotification) => void) => void;
           renderButton?: (element: HTMLElement, options: Record<string, unknown>) => void;
@@ -185,6 +184,7 @@ const AuthPage: React.FC = () => {
       ux_mode: "popup",
       auto_select: false,
       context: authMode === "signup" ? "signup" : "signin",
+      use_fedcm_for_prompt: true,
     });
 
     setIsGoogleReady(true);
@@ -331,18 +331,24 @@ const AuthPage: React.FC = () => {
 
     setIsGoogleLoading(true);
     window.google.accounts.id.prompt((notification) => {
-      if (notification?.isNotDisplayed?.()) {
-        console.warn("Google prompt not displayed:", notification.getNotDisplayedReason?.());
+      if (notification.isDismissed?.()) {
+        const dismissedReason = notification.getDismissedReason?.();
+        console.warn(`Google prompt dismissed. Reason: ${dismissedReason}`);
         setIsGoogleLoading(false);
-        setToast({
-          open: true,
-          message:
-            "Google sign-in could not be displayed. Please check your pop-up blocker and try again.",
-          severity: "error",
-        });
-      } else if (notification?.isSkippedMoment?.()) {
-        console.warn("Google prompt skipped:", notification.getSkippedReason?.());
-        setIsGoogleLoading(false);
+
+        // Only show a toast if the prompt was not displayed due to a browser issue.
+        if (
+          dismissedReason === "browser_not_supported" ||
+          dismissedReason === "suppressed_by_user"
+        ) {
+          setToast({
+            open: true,
+            message:
+              "Google sign-in could not be displayed. Please check your browser settings or pop-up blocker and try again.",
+            severity: "warning",
+          });
+        }
+        // For other dismiss reasons (e.g., user closed the prompt), we don't need to show a message.
       }
     });
   }, [googleClientId, isGoogleReady, setToast]);
