@@ -1,7 +1,8 @@
 /* Gamification Page Styles */
 .gamification-page {
   min-height: 100vh;
-  background: linear-gradient(135deg, #a7f3d0 0%, #bfdbfe 50%, #a7f3d0 100%);
+  /* background: linear-gradient(135deg, #a7f3d0 0%, #bfdbfe 50%, #a7f3d0 100%); */
+  background: linear-gradient(135deg, #76e99eeb 17%, rgba(255, 124, 23, 0.308) 54%, #09979e 91%);
 }
 
 .gamification-content {

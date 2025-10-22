@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from "react";
 import { authService } from "../../services";
+import { socialService } from "../../services/socialService";
 import { UserModel, UpdateUserRequest } from "../../models";
+import type { Post } from "../../models/social";
 import { useAppSelector } from "../../store/hooks";
 import { resolveApiAssetUrl } from "@/utils/media";
 import "./Profile.css";
@@ -13,6 +15,11 @@ const Profile: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
   const [avatarError, setAvatarError] = useState<string | null>(null);
+  
+  // Posts state
+  const [userPosts, setUserPosts] = useState<Post[]>([]);
+  const [loadingPosts, setLoadingPosts] = useState(false);
+  const [activePostMenu, setActivePostMenu] = useState<string | null>(null);
 
   // Lấy thông tin user từ Redux store
   const { userInfo, userId } = useAppSelector((state) => state.auth);
@@ -28,6 +35,7 @@ const Profile: React.FC = () => {
   useEffect(() => {
     if (currentUserId) {
       loadUserInfo();
+      loadUserPosts();
     }
   }, [currentUserId]);
 
@@ -45,8 +53,78 @@ const Profile: React.FC = () => {
     }
   };
 
+  const loadUserPosts = async () => {
+    if (!currentUserId) return;
+
+    try {
+      setLoadingPosts(true);
+      const allPosts = await socialService.getPosts();
+      
+      // Filter posts by current user
+      const userPostsFiltered = allPosts.filter(post => post.userId === currentUserId);
+      
+      // Fetch images for each post
+      const postsWithImages = await Promise.all(
+        userPostsFiltered.map(async (post) => {
+          try {
+            const imagesMeta = await socialService.getPostImages(post.id);
+            
+            const imagesWithData = await Promise.all(
+              imagesMeta.map(async (imgMeta) => {
+                try {
+                  const imgDetail = await socialService.getPostImageById(imgMeta.id);
+                  return {
+                    ...imgMeta,
+                    imageUrl: imgDetail?.imageData 
+                      ? `data:${imgMeta.contentType || 'image/jpeg'};base64,${imgDetail.imageData}`
+                      : null
+                  };
+                } catch (err) {
+                  console.error(`Failed to load image ${imgMeta.id}:`, err);
+                  return { ...imgMeta, imageUrl: null };
+                }
+              })
+            );
+            
+            return { ...post, images: imagesMeta, imagesWithData };
+          } catch (err) {
+            console.error(`Failed to fetch images for post ${post.id}:`, err);
+            return { ...post, images: [], imagesWithData: [] };
+          }
+        })
+      );
+      
+      // Sort by newest first
+      const sortedPosts = postsWithImages.sort((a, b) => 
+        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+      );
+      
+      setUserPosts(sortedPosts);
+    } catch (error) {
+      console.error("Error loading user posts:", error);
+    } finally {
+      setLoadingPosts(false);
+    }
+  };
+
+  const handleDeletePost = async (postId: string) => {
+    if (!window.confirm("Are you sure you want to delete this post?")) {
+      return;
+    }
+
+    try {
+      await socialService.deletePost(postId);
+      // Remove the deleted post from state
+      setUserPosts(prev => prev.filter(post => post.id !== postId));
+      setActivePostMenu(null);
+      alert("Post deleted successfully!");
+    } catch (error) {
+      console.error("Error deleting post:", error);
+      alert("Failed to delete post. Please try again.");
+    }
+  };
+
   const handleEditClick = () => {
-    // Sử dụng profileData hoặc userInfo từ Redux store
     const currentUser = profileData || userInfo;
     if (currentUser) {
       setEditFormData({
@@ -114,7 +192,7 @@ const Profile: React.FC = () => {
     try {
       setIsLoading(true);
       await authService.updateUser(currentUserId, editFormData);
-      await loadUserInfo(); // Reload user info
+      await loadUserInfo();
       setIsEditModalOpen(false);
       setEditFormData({});
       setAvatarPreview(null);
@@ -134,6 +212,16 @@ const Profile: React.FC = () => {
     setEditFormData({});
     setAvatarPreview(null);
     setAvatarError(null);
+  };
+
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    const hours = date.getHours().toString().padStart(2, '0');
+    const minutes = date.getMinutes().toString().padStart(2, '0');
+    const day = date.getDate().toString().padStart(2, '0');
+    const month = (date.getMonth() + 1).toString().padStart(2, '0');
+    const year = date.getFullYear();
+    return `${hours}:${minutes}, ${day}/${month}/${year}`;
   };
 
   return (
@@ -167,11 +255,13 @@ const Profile: React.FC = () => {
           <div className="pf-stats">
             <div className="pf-stat-box">
               <div>
-                <div className="pf-stat-num">15</div>
+                <div className="pf-stat-num">{userPosts.length}</div>
                 <div className="pf-stat-label">Post</div>
               </div>
               <div>
-                <div className="pf-stat-num">567</div>
+                <div className="pf-stat-num">
+                  {userPosts.reduce((sum, post) => sum + post.reactionCount, 0)}
+                </div>
                 <div className="pf-stat-label">Like</div>
               </div>
             </div>
@@ -209,28 +299,178 @@ const Profile: React.FC = () => {
           </div>
         </section>
 
-        {/* Right column Recent post */}
-        <aside className="pf-post">
+        {/* Right column Recent posts */}
+        <aside className="pf-post" style={{
+          maxHeight: "calc(100vh - 40px)",
+          overflowY: "auto",
+          scrollbarWidth: "none", /* Firefox */
+          msOverflowStyle: "none", /* IE and Edge */
+        }}>
+          <style>
+            {`
+              .pf-post::-webkit-scrollbar {
+                display: none; /* Chrome, Safari, Opera */
+              }
+            `}
+          </style>
           <div className="pf-post-head">
-            <div className="pf-post-title">Recent post</div>
-            <div className="pf-post-date">hh:mm, dd/mm/yyyy</div>
+            <div className="pf-post-title">Recent posts</div>
           </div>
-          <div className="pf-post-body">
-            Lorem ipsum dolor sit amet consecte tur adipiscing elit semper dalaracc lacus vel
-            facilisis volutpat est velitolm. Lorem ipsum dolor sit amet consecte tur adipiscing elit
-            semper dalaracc lacus vel facilisis volutpat est velitolm. Lorem ipsum dolor sit amet
-            consecte tur adipiscing elit semper dalaracc lacus vel facilisis volutpat est velitolm.
-          </div>
-          <div className="pf-grid">
-            <div className="pf-ph" />
-            <div className="pf-ph" />
-            <div className="pf-ph" />
-            <div className="pf-ph" />
-          </div>
-          <div className="pf-post-actions">💬 28 🔁 15 🤍 31</div>
-          <div className="pf-hr" />
+          
+          {loadingPosts ? (
+            <div style={{ padding: "20px", textAlign: "center", color: "#666" }}>
+              Loading posts...
+            </div>
+          ) : userPosts.length === 0 ? (
+            <div style={{ padding: "20px", textAlign: "center", color: "#666" }}>
+              No posts yet
+            </div>
+          ) : (
+            userPosts.map((post) => {
+              const imageUrls = post.imagesWithData
+                ?.filter(img => img.imageUrl !== null)
+                .map(img => img.imageUrl!) || [];
+
+              return (
+                <div key={post.id} style={{ marginBottom: "20px" }}>
+                  <div className="pf-post-head" style={{ position: "relative" }}>
+                    <div className="pf-post-date">{formatDate(post.createdAt)}</div>
+                    
+                    {/* Three-dot menu button */}
+                    <button
+                      onClick={() => setActivePostMenu(activePostMenu === post.id ? null : post.id)}
+                      style={{
+                        position: "absolute",
+                        right: "10px",
+                        top: "50%",
+                        transform: "translateY(-50%)",
+                        background: "none",
+                        border: "none",
+                        fontSize: "20px",
+                        cursor: "pointer",
+                        padding: "5px 10px",
+                        color: "#666",
+                      }}
+                    >
+                      ⋮
+                    </button>
+                    
+                    {/* Dropdown menu */}
+                    {activePostMenu === post.id && (
+                      <div
+                        style={{
+                          position: "absolute",
+                          right: "10px",
+                          top: "35px",
+                          background: "white",
+                          border: "1px solid #ddd",
+                          borderRadius: "8px",
+                          boxShadow: "0 2px 8px rgba(0,0,0,0.15)",
+                          zIndex: 1000,
+                          minWidth: "120px",
+                        }}
+                      >
+                        <button
+                          onClick={() => handleDeletePost(post.id)}
+                          style={{
+                            width: "100%",
+                            padding: "10px 15px",
+                            border: "none",
+                            background: "none",
+                            textAlign: "left",
+                            cursor: "pointer",
+                            color: "#dc3545",
+                            fontSize: "14px",
+                            fontWeight: "500",
+                          }}
+                          onMouseEnter={(e) => e.currentTarget.style.background = "#f8f9fa"}
+                          onMouseLeave={(e) => e.currentTarget.style.background = "none"}
+                        >
+                          🗑️ Delete
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                  
+                  {post.title && post.title !== post.content && (
+                    <div style={{ fontWeight: "600", marginBottom: "8px", fontSize: "16px" }}>
+                      {post.title}
+                    </div>
+                  )}
+                  
+                  <div className="pf-post-body">
+                    {post.content}
+                  </div>
+                  
+                  {imageUrls.length > 0 && (
+                    <div className="pf-grid">
+                      {imageUrls.slice(0, 4).map((url, index) => (
+                        <div key={index} className="pf-ph">
+                          <img 
+                            src={url} 
+                            alt={`Post image ${index + 1}`}
+                            style={{
+                              width: "100%",
+                              height: "100%",
+                              objectFit: "cover",
+                              borderRadius: "8px",
+                            }}
+                          />
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  
+                  <div className="pf-post-actions" style={{
+                    display: "flex",
+                    gap: "16px",
+                    alignItems: "center",
+                    fontSize: "14px",
+                    color: "#666",
+                  }}>
+                    <span style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z" />
+                      </svg>
+                      {post.commentCount || 0}
+                    </span>
+                    <span style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <polyline points="23 4 23 10 17 10" />
+                        <polyline points="1 20 1 14 7 14" />
+                        <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15" />
+                      </svg>
+                      0
+                    </span>
+                    <span style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
+                      </svg>
+                      {post.reactionCount}
+                    </span>
+                  </div>
+                  <div className="pf-hr" />
+                </div>
+              );
+            })
+          )}
         </aside>
       </div>
+
+      {/* Click outside to close menu */}
+      {activePostMenu && (
+        <div
+          onClick={() => setActivePostMenu(null)}
+          style={{
+            position: "fixed",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            zIndex: 999,
+          }}
+        />
+      )}
 
       {/* Edit Profile Modal */}
       {isEditModalOpen && (

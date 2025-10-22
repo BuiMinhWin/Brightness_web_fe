@@ -450,7 +450,7 @@ const AuthPage: React.FC = () => {
                     alignItems: "center",
                     width: "100%",
                     maxWidth: "380px",
-                    marginBottom: "20px",
+                    marginBottom: "5px",
                     gap: "30px",
                   }}
                 >

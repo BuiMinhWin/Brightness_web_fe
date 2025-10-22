@@ -4,9 +4,14 @@ import HomepageHeader from "../../components/layout/HomepageHeader";
 import WhatNewCarousel from "./WhatNewCarousel";
 import ChatFAB from "@/components/ChatFAB/ChatFAB";
 import GameFooter from "@/components/layout/GameFooter";
+import { useNavigate } from 'react-router-dom';
+import TopPerformanceSection from './TopPerformanceSection';
 
 const Homepage: React.FC = () => {
   const whatRef = useRef<HTMLDivElement | null>(null);
+  const navigate = useNavigate();
+
+
 
   return (
     <div className="homepage min-h-screen w-full overflow-x-hidden">
@@ -144,10 +149,11 @@ const Homepage: React.FC = () => {
       </section>
 
       {/* What's New Section */}
-      <section className="whats-new-section relative  mx-auto px-1 rounded-t-[100px] overflow-hidden">
-        <WhatNewCarousel />
-      </section>
-
+        <section className="whats-new-section relative mx-auto px-1 rounded-t-[100px] overflow-hidden">
+          <WhatNewCarousel 
+            onReadMore={() => navigate('/blogs')} 
+          />
+        </section>
       {/* Q&A Section */}
       <section className="  qa-section relative py-[100px]   ">
         <div
@@ -181,78 +187,43 @@ const Homepage: React.FC = () => {
       </section>
 
       {/* Top Performance Section */}
-      <section
-        className="top-performance-section relative py-[100px] rounded-[100px] my-[50px]"
-        style={{
-          backgroundImage: "url('/assets/Ellipse.svg')",
-          backgroundSize: "cover",
-          backgroundPosition: "center",
-          backgroundRepeat: "no-repeat",
-        }}
-      >
-        <img
-          src="/assets/Asset 10.svg"
-          alt="mask"
-          className="absolute right-[100px] top-[1px] object-contain z-10"
-        />
-        <h2 className="top-performance-title text-white text-center font-bold text-[48px] mb-[50px]">
-          Top performance
-        </h2>
-
-        <div className="performance-cards flex justify-center gap-10 max-w-[1200px] mx-auto px-5 flex-wrap">
-          <div className="performance-card bg-white rounded-[16px] p-[30px] text-center w-[312px] relative">
-            <div className="performance-avatar w-[265px] h-[265px] rounded-full bg-[#4b1414] -mt-[50px] mx-auto mb-5"></div>
-            <h4 className="performance-name font-bold text-[24px] mb-2">Name</h4>
-            <h3 className="performance-title font-bold text-[48px] mb-5">Top about</h3>
-            <p className="performance-description">
-              Lorem ipsum dolor sit amet consecte tur adipiscing elit semper dalaracc lacus
-            </p>
-          </div>
-
-          <div className="performance-card featured bg-[#FF9C50] text-white rounded-[16px] p-[30px] text-center w-[344px] relative scale-[1.1]">
-            <div className="performance-avatar featured w-[292px] h-[292px] rounded-full bg-[#4b1414] -mt-[50px] mx-auto mb-5"></div>
-            <h4 className="performance-name font-bold text-[24px] mb-2">Name</h4>
-            <h3 className="performance-title font-bold text-[48px] mb-5">Top about</h3>
-            <p className="performance-description">
-              Lorem ipsum dolor sit amet consecte tur adipiscing elit semper dalaracc lacus vel
-              facilisis volutpat est velitolm.
-            </p>
-          </div>
-
-          <div className="performance-card bg-white rounded-[16px] p-[30px] text-center w-[312px] relative">
-            <div className="performance-avatar w-[265px] h-[265px] rounded-full bg-[#4b1414] -mt-[50px] mx-auto mb-5"></div>
-            <h4 className="performance-name font-bold text-[24px] mb-2">Name</h4>
-            <h3 className="performance-title font-bold text-[48px] mb-5">Top about</h3>
-            <p className="performance-description">
-              Lorem ipsum dolor sit amet consecte tur adipiscing elit semper dalaracc lacus
-            </p>
-          </div>
-        </div>
-
-        <button className="view-more-btn bg-[#AEFFC4] rounded-[82.5px] py-[15px] px-[40px] text-black font-bold text-[24px] mx-auto block mt-10">
-          View more →
-        </button>
-      </section>
+      <TopPerformanceSection />
 
       {/* Improve Experience Section */}
       <section className="improve-section grid grid-cols-1 md:grid-cols-2 gap-[60px] items-center py-[100px] max-w-[1200px] mx-auto px-5">
-        <div className="improve-content pr-0 md:pr-10">
-          <h2 className="improve-title text-[#046753] font-bold text-[48px] leading-[46px] mb-5">
-            Improve your experience
-          </h2>
-          <h3 className="improve-subtitle text-black font-bold text-[24px] mb-[30px]">
-            Description
-          </h3>
-          <p className="improve-description text-black text-[20px] leading-8 mb-[30px]">
-            Lorem ipsum dolor sit amet consecte tur adipiscing elit semper dalaracc lacus vel
-            facilisis volutpat est velitolm. Lorem ipsum dolor sit amet consecte tur adipiscing elit
-            semper dalaracc lacus vel facilisis volutpat est velitolm. Lorem ipsum dolor sit amet
-            consecte tur adipiscing elit semper dalaracc lacus vel facilisis volutpat est velitolm.
-          </p>
-          <button className="improve-cta bg-[#046753] text-white text-center font-bold text-[32px] py-4 px-11 rounded-[16px]">
-            TRY
-          </button>
-        </div>
+        {/* Left: Content */}
+  <div className="improve-content md:pr-12">
+    <h2 className="text-[#046753] font-bold text-[48px] leading-tight mb-4">
+      Improve your experience
+    </h2>
+
+    <h3 className="text-black font-bold text-[22px] mb-6">
+      Description
+    </h3>
+
+    <div className="space-y-6 text-black text-[18px] leading-relaxed">
+      <p>
+        Welcome to <strong>BrightNest</strong> — your home for a brighter, more balanced fitness journey.
+      </p>
+
+      <p>
+        “<em>Bright</em>” represents energy, positivity, and growth. <br />
+        “<em>Nest</em>” stands for care, comfort, and nurturing your body and mind.
+      </p>
+
+      <p>
+        At BrightNest, we believe fitness is more than workouts — it’s about building a lifestyle that helps you shine from within.  
+        Sign up to receive updates on new features, exclusive offers, and practical fitness tips to keep your motivation alive every day.
+      </p>
+    </div>
+
+    <button
+      onClick={() => navigate("/about")}
+      className="mt-10 bg-[#046753] text-white font-bold text-[24px] px-10 py-3 rounded-full hover:bg-[#058a6e] transition-all"
+    >
+      TRY
+    </button>
+  </div>
 
         <div className="improve-visual relative min-h-[368px]">
           <div

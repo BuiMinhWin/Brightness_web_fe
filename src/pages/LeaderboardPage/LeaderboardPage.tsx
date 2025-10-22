@@ -9,7 +9,9 @@ import {
   challengeService,
   Challenge,
   LeaderboardEntry as APILeaderboardEntry,
+  ChallengeParticipant,
 } from "../../services/challengeService";
+import { authService } from "../../services/authService";
 
 interface LeaderboardEntry {
   id: string;
@@ -27,13 +29,11 @@ const LeaderboardPage: React.FC = () => {
   const { missionId } = useParams<{ missionId: string }>();
   const [activeTab, setActiveTab] = useState<TabType>("all-time");
   
-  // ✅ Get authenticated user ID from Redux
   const authenticatedUserId = useSelector(selectUserId);
   const isAuthenticated = useSelector(selectIsAuthenticated);
 
   console.log("🔐 Leaderboard - Auth State:", { isAuthenticated, authenticatedUserId });
   
-  // State for API data
   const [challenge, setChallenge] = useState<Challenge | null>(null);
   const [allLeaderboardData, setAllLeaderboardData] = useState<LeaderboardEntry[]>([]);
   const [currentUserData, setCurrentUserData] = useState<LeaderboardEntry | null>(null);
@@ -41,7 +41,6 @@ const LeaderboardPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Generate avatar URL
   const getAvatarUrl = (userName: string, userId: string): string => {
     const colors = ["4F46E5", "DC2626", "059669", "D97706", "7C3AED", "EC4899", "10B981"];
     const colorIndex = userId.charCodeAt(0) % colors.length;
@@ -49,17 +48,63 @@ const LeaderboardPage: React.FC = () => {
     return `https://ui-avatars.com/api/?name=${initial}&background=${colors[colorIndex]}&color=fff&size=80&bold=true`;
   };
 
-  const handleBack = () => {
-  if (window.history.length > 1) {
-    navigate(-1); 
-  } else {
-    navigate("/"); // hoặc về trang chính của app
-  }
-};
+  // ✅ Resolve avatar URL - prioritize user's real avatar
+  const resolveAvatarUrl = (profilePicture: string | null | undefined, userName: string, userId: string): string => {
+    // If user has a real avatar, use it
+    if (profilePicture) {
+      // Handle relative paths - prepend API base URL if needed
+      if (profilePicture.startsWith('/')) {
+        return `${import.meta.env.VITE_API_URL || ''}${profilePicture}`;
+      }
+      // If it's already a full URL or base64, use as is
+      return profilePicture;
+    }
+    
+    // Fallback to UI Avatars with user's initial
+    return getAvatarUrl(userName, userId);
+  };
 
-  // Format user display name
-  const formatUserName = (userId: string): string => {
-    return `User ${userId.substring(0, 8)}`;
+  const handleBack = () => {
+    if (window.history.length > 1) {
+      navigate(-1); 
+    } else {
+      navigate("/");
+    }
+  };
+
+  // ✅ Extract first name from full name (for Vietnamese names, take the last word)
+  const extractFirstName = (fullName: string): string => {
+    if (!fullName) return fullName;
+    
+    const parts = fullName.trim().split(/\s+/);
+    
+    // If only one word, return it
+    if (parts.length === 1) return parts[0];
+    
+    // For Vietnamese names, the first name is usually the last word
+    return parts[parts.length - 1];
+  };
+
+  // ✅ Fetch user details and cache them
+  const fetchUserDetails = async (userId: string): Promise<{ name: string; fullName?: string; avatar?: string }> => {
+    try {
+      const userInfo = await authService.getUser(userId);
+      const fullName = userInfo.fullName || userInfo.userName || `User ${userId.substring(0, 8)}`;
+      
+      // If name is too long (more than 15 characters), use only first name
+      const displayName = fullName.length > 15 ? extractFirstName(fullName) : fullName;
+      
+      return {
+        name: displayName,
+        fullName: userInfo.fullName,
+        avatar: userInfo.profilePicture || undefined, // ✅ Get real avatar
+      };
+    } catch (error) {
+      console.warn(`⚠️ Failed to fetch user info for ${userId}:`, error);
+      return {
+        name: `User ${userId.substring(0, 8)}`,
+      };
+    }
   };
 
   useEffect(() => {
@@ -73,7 +118,6 @@ const LeaderboardPage: React.FC = () => {
       return;
     }
 
-    // ✅ Check authentication
     if (!isAuthenticated || !authenticatedUserId) {
       console.warn("⚠️ User not authenticated, redirecting to login");
       setError("Please log in to view the leaderboard");
@@ -82,7 +126,6 @@ const LeaderboardPage: React.FC = () => {
       return;
     }
 
-    // Validate GUID format
     const guidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
     if (!guidRegex.test(missionId)) {
       console.error("❌ Invalid challengeId format:", missionId);
@@ -110,62 +153,85 @@ const LeaderboardPage: React.FC = () => {
       setChallenge(challengeData);
       console.log("✅ Challenge data:", challengeData);
 
-      // 2. Fetch leaderboard from API
+      // 2. Fetch participants to get points and streak data
+      const participants = await challengeService.getParticipantsByChallengeId(missionId);
+      console.log("✅ Participants data:", participants);
+
+      // 3. Fetch leaderboard from API
       let apiLeaderboard: APILeaderboardEntry[] = [];
       try {
         apiLeaderboard = await challengeService.getLeaderboard(missionId);
         console.log("✅ API Leaderboard response:", apiLeaderboard);
       } catch (err) {
-        console.warn("⚠️ Failed to fetch leaderboard from API, falling back to participants:", err);
+        console.warn("⚠️ Failed to fetch leaderboard from API, building from participants:", err);
         
-        // Fallback: Calculate from participants
-        const participants = await challengeService.getParticipantsByChallengeId(missionId);
+        // Fallback: Build leaderboard from participants
         apiLeaderboard = participants
+          .filter(p => p.totalPoints && p.totalPoints > 0)
           .sort((a, b) => (b.totalPoints || 0) - (a.totalPoints || 0))
           .map((participant, index) => ({
             userId: participant.userId,
-            userName: formatUserName(participant.userId),
+            userName: undefined, // Will be fetched from auth service
             totalPoints: participant.totalPoints || 0,
             rank: index + 1,
           }));
         console.log("✅ Fallback leaderboard from participants:", apiLeaderboard);
       }
 
-      // 3. Transform API leaderboard to component format
-      const transformedLeaderboard: LeaderboardEntry[] = apiLeaderboard.map((entry) => ({
-        id: entry.userId,
-        rank: entry.rank,
-        name: entry.userName || formatUserName(entry.userId),
-        points: entry.totalPoints,
-        avatar: getAvatarUrl(entry.userName || formatUserName(entry.userId), entry.userId),
-        isCurrentUser: entry.userId.toLowerCase() === authenticatedUserId.toLowerCase(),
-      }));
+      // 4. Create a map for quick participant lookup
+      const participantMap = new Map(participants.map(p => [p.userId, p]));
 
-      console.log("✅ Transformed leaderboard:", transformedLeaderboard);
+      // 5. Fetch user details for all participants in leaderboard
+      const userDetailsPromises = apiLeaderboard.map(entry => 
+        fetchUserDetails(entry.userId)
+      );
+      const userDetailsArray = await Promise.all(userDetailsPromises);
 
-      // 4. Find current user in leaderboard
+      // 6. Create user details map
+      const userDetailsMap = new Map(
+        apiLeaderboard.map((entry, index) => [
+          entry.userId,
+          userDetailsArray[index]
+        ])
+      );
+
+      // 7. Transform API leaderboard with user details and points
+      const transformedLeaderboard: LeaderboardEntry[] = apiLeaderboard.map((entry) => {
+        const userDetails = userDetailsMap.get(entry.userId);
+        const participant = participantMap.get(entry.userId);
+        const displayName = userDetails?.name || `User ${entry.userId.substring(0, 8)}`;
+        
+        // Use totalPoints from either the leaderboard entry or participant data
+        const points = entry.totalPoints || participant?.totalPoints || 0;
+        
+        return {
+          id: entry.userId,
+          rank: entry.rank,
+          name: displayName,
+          points: points,
+          avatar: resolveAvatarUrl(userDetails?.avatar, displayName, entry.userId), // ✅ Use real avatar
+          isCurrentUser: entry.userId.toLowerCase() === authenticatedUserId.toLowerCase(),
+        };
+      });
+
+      console.log("✅ Transformed leaderboard with user details:", transformedLeaderboard);
+
+      // 8. Find current user in leaderboard
       const currentUser = transformedLeaderboard.find((entry) => entry.isCurrentUser);
 
       if (currentUser) {
         console.log("✅ Found current user in leaderboard:", currentUser);
         setCurrentUserData(currentUser);
-        
-        // Keep ALL users in allLeaderboardData (không loại bỏ current user)
         setAllLeaderboardData(transformedLeaderboard);
         
-        // Fetch current user's participant data for streak
-        try {
-          const allParticipants = await challengeService.getParticipantsByChallengeId(missionId);
-          const userParticipant = allParticipants.find(
-            (p) => p.userId.toLowerCase() === authenticatedUserId.toLowerCase()
-          );
-          
-          if (userParticipant) {
-            setCurrentUserStreak(userParticipant.currentStreak || 0);
-            console.log("✅ Current user streak:", userParticipant.currentStreak);
-          }
-        } catch (err) {
-          console.warn("⚠️ Failed to fetch user streak:", err);
+        // Get current user's streak
+        const userParticipant = participants.find(
+          (p) => p.userId.toLowerCase() === authenticatedUserId.toLowerCase()
+        );
+        
+        if (userParticipant) {
+          setCurrentUserStreak(userParticipant.currentStreak || 0);
+          console.log("✅ Current user streak:", userParticipant.currentStreak);
         }
       } else {
         console.log("ℹ️ Current user not found in leaderboard");
@@ -182,19 +248,14 @@ const LeaderboardPage: React.FC = () => {
     }
   };
 
-  // Loading state
   if (loading) {
     return (
       <div className="leaderboard-page">
         <div className="leaderboard-content">
           <div className="leaderboard-header">
-            {/* <button onClick={() => navigate(`/challenge-detail/${challenge}`)} className="back-button">
-              <ArrowLeft size={24} />
-            </button> */}
             <button onClick={handleBack} className="back-button">
                <ArrowLeft size={24} />
             </button>
-
             <div className="header-info">
               <h1 className="challenge-title">Loading...</h1>
             </div>
@@ -208,19 +269,14 @@ const LeaderboardPage: React.FC = () => {
     );
   }
 
-  // Error state
   if (error || !challenge) {
     return (
       <div className="leaderboard-page">
         <div className="leaderboard-content">
           <div className="leaderboard-header">
-            {/* <button onClick={() => navigate(`/challenge-detail/${challenge}`)} className="back-button">
-              <ArrowLeft size={24} />
-            </button> */}
             <button onClick={handleBack} className="back-button">
               <ArrowLeft size={24} />
             </button>
-
             <div className="header-info">
               <h1 className="challenge-title">Error</h1>
             </div>
@@ -251,22 +307,16 @@ const LeaderboardPage: React.FC = () => {
     );
   }
 
-  // ✅ Split data: Top 3 và Rest (từ rank 4 trở đi)
   const topThree = allLeaderboardData.slice(0, 3);
   const restOfLeaderboard = allLeaderboardData.slice(3);
 
   return (
     <div className="leaderboard-page">
       <div className="leaderboard-content">
-        {/* Header */}
         <div className="leaderboard-header">
-          {/* <button onClick={() => navigate(`/challenge-detail/${challenge}`)} className="back-button">
-            <ArrowLeft size={24} />
-          </button> */}
           <button onClick={handleBack} className="back-button">
             <ArrowLeft size={24} />
           </button>
-
 
           <div className="header-info">
             <h1 className="challenge-title">{challenge.title}</h1>
@@ -283,7 +333,6 @@ const LeaderboardPage: React.FC = () => {
           )}
         </div>
 
-        {/* Tab Navigation */}
         <div className="leaderboard-tabs">
           <button
             className={`tab-button ${activeTab === "today" ? "active" : ""}`}
@@ -305,13 +354,10 @@ const LeaderboardPage: React.FC = () => {
           </button>
         </div>
 
-        {/* Main: Two Column Layout - GIỐNG DESIGN CŨ */}
         <div className="leaderboard-main">
-          {/* Left Column: Top 3 Podium */}
           <div className="top-three-container">
             <h2 className="top-title">TOP 3</h2>
             <div className="podium">
-              {/* Second Place */}
               {topThree[1] && (
                 <div className="podium-place second">
                   <div className="podium-bar">
@@ -325,7 +371,6 @@ const LeaderboardPage: React.FC = () => {
                 </div>
               )}
 
-              {/* First Place */}
               {topThree[0] && (
                 <div className="podium-place first">
                   <div className="podium-bar">
@@ -339,7 +384,6 @@ const LeaderboardPage: React.FC = () => {
                 </div>
               )}
 
-              {/* Third Place */}
               {topThree[2] && (
                 <div className="podium-place third">
                   <div className="podium-bar">
@@ -355,7 +399,6 @@ const LeaderboardPage: React.FC = () => {
             </div>
           </div>
 
-          {/* Right Column: Leaderboard List + Current User */}
           <div className="leaderboard-right">
             <div className="leaderboard-list">
               {restOfLeaderboard.length === 0 ? (
@@ -385,7 +428,6 @@ const LeaderboardPage: React.FC = () => {
               )}
             </div>
 
-            {/* Current User Section - CHỈ HIỂN THỊ NẾU USER KHÔNG Ở TOP 3 */}
             {currentUserData && currentUserData.rank > 3 && (
               <div className="current-user-section">
                 <div className="current-user-item">

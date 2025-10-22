@@ -31,8 +31,8 @@
 /* Main Layout - Improved responsive grid */
 .event-management-main {
   display: grid;
-  grid-template-columns: minmax(320px, 400px) 1fr;
-  gap: 20px;
+  grid-template-columns: minmax(320px, 450px) 1fr;
+  gap: 0px;
   align-items: start;
   width: 100%;
   max-width: 1600px;
@@ -45,7 +45,7 @@
   border-radius: 24px;
   padding: 32px;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
-  width: 100%;
+  width: 95%;
   height: fit-content;
   min-width: 320px;
   max-width: 400px;
@@ -346,12 +346,12 @@
 .calendar-grid {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
-  gap: 1px;
   border: 1px solid #e5e7eb;
   border-radius: 12px;
-  overflow: hidden;
   width: 100%;
   min-width: 0;
+  overflow: hidden;
+  background: #e5e7eb; /* thêm màu nền để thay cho gap */
 }
 
 .calendar-day-header {
@@ -362,6 +362,7 @@
   color: #6b7280;
   padding: 16px 8px;
   border-right: 1px solid #e5e7eb;
+  border-width: 0 1px 1px 0;
 }
 
 .calendar-day-header:last-child {
@@ -702,7 +703,7 @@
 @media (max-width: 1200px) {
   .event-management-main {
     grid-template-columns: minmax(280px, 320px) 1fr;
-    gap: 15px;
+    gap: 0px;
   }
 
   .events-sidebar {
@@ -741,7 +742,7 @@
 @media (max-width: 968px) {
   .event-management-main {
     grid-template-columns: 1fr;
-    gap: 20px;
+    gap: 0px;
   }
 
   .events-sidebar {
@@ -970,7 +971,7 @@
 .event-management-main {
   display: grid;
   grid-template-columns: 350px 1fr;
-  gap: 24px;
+  gap: 0px;
 }
 
 .events-sidebar {
@@ -1213,12 +1214,13 @@
 
 .calendar-grid {
   display: grid;
-  grid-template-columns: repeat(7, 1fr);
+  grid-template-columns: repeat(7, minmax(0, 1fr));
   gap: 1px;
-  background: #e0e0e0;
-  border: 1px solid #e0e0e0;
+  border: 1px solid #e5e7eb;
   border-radius: 12px;
-  overflow: hidden;
+  overflow: visible;
+  width: 100%;
+  min-width: 900px;
 }
 
 .calendar-day-header {
