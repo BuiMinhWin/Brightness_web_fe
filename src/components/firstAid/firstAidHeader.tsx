@@ -44,36 +44,6 @@ const FirstAidHeader: React.FC = () => {
           Learn essential first aid techniques through our comprehensive video collection
         </p>
       </div>
-
-      {/* Right side - Upload button */}
-      <div style={{ flexShrink: 0 }}>
-        <button
-          style={{
-            backgroundColor: "#05644C",
-            color: "white",
-            padding: "12px 24px",
-            borderRadius: "8px",
-            fontWeight: "600",
-            fontSize: "16px",
-            border: "none",
-            cursor: "pointer",
-            boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)",
-            display: "flex",
-            alignItems: "center",
-            gap: "5px",
-            transition: "background-color 0.2s ease",
-          }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.backgroundColor = "#044a3f";
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.backgroundColor = "#05644C";
-          }}
-        >
-          <UploadIcon width={20} height={20} />
-          Upload Video
-        </button>
-      </div>
     </div>
   );
 };

@@ -82,10 +82,10 @@ const AboutPage: React.FC = () => {
         <section className="bg-gradient-to-r from-[#dce642] to-[#ffaf72] py-16 px-6 text-center">
           <div className="relative inline-block mb-16">
             <div className="relative">
-              <div className="text-white font-black text-5xl tracking-wider mb-2 -translate-x-50">
+              <div className="text-white font-black text-5xl tracking-wider mb-4 mt-8 -translate-x-50">
                 WHAT MAKES US
               </div>
-              <div className=" text-black font-black -rotate-5 text-4xl md:text-6xl tracking-tight leading-none translate-x-50">
+              <div className=" text-black font-black -rotate-5 text-4xl md:text-6xl mb-10 tracking-tight leading-none translate-x-50">
                 STAND OUT?
               </div>
 

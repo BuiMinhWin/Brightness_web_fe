@@ -47,7 +47,7 @@
   text-align: center;
   flex: 1;
   color: black;
-  margin-left: 600px;
+  margin-left: 450px;
 }
 
 .header-spacer {
@@ -71,30 +71,6 @@
   justify-content: center;
   overflow: hidden;
 }
-
-/* .hero-overlay {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.4);
-  backdrop-filter: none;
-}
-
-.hero-content {
-  position: relative;
-  max-width: 1200px;
-  margin: 0 auto;
-  text-align: center;
-}
-
-.hero-info {
-  display: inline-flex;
-  align-items: center;
-  gap: 16px;
-  margin-bottom: 24px;
-} */
 
 .event-avatar {
   width: 80px;
@@ -499,63 +475,37 @@
 .dialog-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.5); 
+  background: rgba(0, 0, 0, 0.3); 
   display: flex;
   align-items: center;
   justify-content: center;
   padding: 16px;
   z-index: 9999;
-  /* ✅ Remove blur from overlay - this was causing the issue */
   backdrop-filter: none !important;
   -webkit-backdrop-filter: none !important;
+   animation: overlayFade 0.3s ease forwards;
 }
 
-/* Dialog Overlay - Nền tối phía sau */
-.dialog-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background-color: rgb(0, 0, 0);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 16px;
-  z-index: 9999;
-  /* ✅ KHÔNG có blur ở đây */
+@keyframes overlayFade {
+  0% { opacity: 0; }     /* lúc mới xuất hiện, trong suốt */
+  100% { opacity: 1; }   /* hiển thị rõ hoàn toàn */
 }
-
 /* Dialog Content - Hộp trắng */
 .dialog-content {
-  /* ✅ Nền trắng thuần khiết */
   background: #ffffff !important;
   background-color: #ffffff !important;
-  
-  /* ✅ Loại bỏ TẤT CẢ blur effects */
   backdrop-filter: none !important;
   -webkit-backdrop-filter: none !important;
   filter: none !important;
   -webkit-filter: none !important;
-  
-  /* ✅ Layout properties */
   border-radius: 24px;
   padding: 32px;
   max-width: 448px;
   width: 100%;
   position: relative;
   z-index: 10000;
-  
-  /* ✅ Box shadow sửa lại - chỉ dùng màu đen với opacity thấp */
-  box-shadow: 
-    0 20px 25px -5px rgb(0, 0, 0),
-    0 10px 10px -5px rgb(0, 0, 0);
-  
-  /* ✅ Animation */
   transform: scale(1);
   transition: transform 0.3s ease;
-  
-  /* ✅ Đảm bảo rendering đúng */
   opacity: 1 !important;
   isolation: isolate;
   will-change: transform;

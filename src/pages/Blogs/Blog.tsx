@@ -352,7 +352,7 @@ const Blogs: React.FC = () => {
           background:
             "linear-gradient(135deg, #5BC17F 17%, rgba(255, 123, 23, 0.3) 54%, #007E85 91%)",
           margin: 0,
-          padding: "80px 0 0", // Add top padding for fixed navbar
+          padding: "20px 0 0", // Add top padding for fixed navbar
           display: "flex",
           flexDirection: "column",
           alignItems: "center",

@@ -72,7 +72,7 @@ const FirstAidPage: React.FC = () => {
           margin: 0,
           display: "flex",
           flexDirection: "column",
-          paddingTop: "80px", // Account for fixed navbar
+          paddingTop: "20px", // Account for fixed navbar
         }}
       >
         <div style={{ paddingLeft: "24px", paddingRight: "24px" }}>
@@ -96,24 +96,7 @@ const FirstAidPage: React.FC = () => {
           />
         </div>
 
-        {/* Results Count */}
-        {!loading && (
-          <div
-            style={{
-              textAlign: "center",
-              color: "white",
-              fontSize: "16px",
-              marginBottom: "16px",
-              fontWeight: "500",
-            }}
-          >
-            {searchQuery ? (
-              <span>Found {totalCount} video{totalCount !== 1 ? 's' : ''} for "{searchQuery}"</span>
-            ) : (
-              <span>Showing {videos.length} of {totalCount} videos</span>
-            )}
-          </div>
-        )}
+
 
         {/* Video Grid */}
         <div
@@ -181,6 +164,25 @@ const FirstAidPage: React.FC = () => {
                   </div>
                 ))}
               </div>
+
+                      {/* Results Count */}
+        {!loading && (
+          <div
+            style={{
+              textAlign: "center",
+              color: "white",
+              fontSize: "16px",
+              marginBottom: "16px",
+              fontWeight: "500",
+            }}
+          >
+            {searchQuery ? (
+              <span>Found {totalCount} video{totalCount !== 1 ? 's' : ''} for "{searchQuery}"</span>
+            ) : (
+              <span>Showing {videos.length} of {totalCount} videos</span>
+            )}
+          </div>
+        )}
 
               {/* Pagination */}
               <Pagination

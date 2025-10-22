@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useSelector } from "react-redux";
@@ -27,15 +26,16 @@ import {
   ChallengeRule,
   LeaderboardEntry as APILeaderboardEntry,
 } from "../../services/challengeService";
+import { authService } from "../../services/authService";
 import "./YourDetailPage.css";
 
 interface TaskWithProgress extends ChallengeTask {
   progress?: ChallengeTaskProgress;
   isCompleted: boolean;
-  startDate?: string; // Task start date
-  endDate?: string; // Task end date
-  taskStatus?: 'upcoming' | 'available' | 'overdue'; // Task status based on date
-  penaltyPercentage?: number; // Penalty if late
+  startDate?: string;
+  endDate?: string;
+  taskStatus?: 'upcoming' | 'available' | 'overdue';
+  penaltyPercentage?: number;
 }
 
 interface LeaderboardEntry {
@@ -71,7 +71,7 @@ const YourDetailPage: React.FC = () => {
   const [loadingLeaderboard, setLoadingLeaderboard] = useState(false);
   const [leaderboardError, setLeaderboardError] = useState<string | null>(null);
 
-  // Generate avatar URL
+  // Generate avatar URL (fallback)
   const getAvatarUrl = (userName: string, userId: string): string => {
     const colors = ["4F46E5", "DC2626", "059669", "D97706", "7C3AED", "EC4899", "10B981"];
     const colorIndex = userId.charCodeAt(0) % colors.length;
@@ -79,12 +79,58 @@ const YourDetailPage: React.FC = () => {
     return `https://ui-avatars.com/api/?name=${initial}&background=${colors[colorIndex]}&color=fff&size=80&bold=true`;
   };
 
-  // Format user display name
-  const formatUserName = (userId: string): string => {
-    return `User ${userId.substring(0, 8)}`;
+  // ✅ Resolve avatar URL - prioritize user's real avatar
+  const resolveAvatarUrl = (profilePicture: string | null | undefined, userName: string, userId: string): string => {
+    // If user has a real avatar, use it
+    if (profilePicture) {
+      // Handle relative paths - prepend API base URL if needed
+      if (profilePicture.startsWith('/')) {
+        return `${import.meta.env.VITE_API_URL || ''}${profilePicture}`;
+      }
+      // If it's already a full URL or base64, use as is
+      return profilePicture;
+    }
+    
+    // Fallback to UI Avatars with user's initial
+    return getAvatarUrl(userName, userId);
   };
 
-  // ✅ NEW: Calculate task status based on startDate and endDate
+  // ✅ Extract first name from full name (for Vietnamese names, take the last word)
+  const extractFirstName = (fullName: string): string => {
+    if (!fullName) return fullName;
+    
+    const parts = fullName.trim().split(/\s+/);
+    
+    // If only one word, return it
+    if (parts.length === 1) return parts[0];
+    
+    // For Vietnamese names, the first name is usually the last word
+    return parts[parts.length - 1];
+  };
+
+  // ✅ Fetch user details and cache them
+  const fetchUserDetails = async (userId: string): Promise<{ name: string; fullName?: string; avatar?: string }> => {
+    try {
+      const userInfo = await authService.getUser(userId);
+      const fullName = userInfo.fullName || userInfo.userName || `User ${userId.substring(0, 8)}`;
+      
+      // If name is too long (more than 15 characters), use only first name
+      const displayName = fullName.length > 15 ? extractFirstName(fullName) : fullName;
+      
+      return {
+        name: displayName,
+        fullName: userInfo.fullName,
+        avatar: userInfo.profilePicture || undefined, // ✅ Get real avatar
+      };
+    } catch (error) {
+      console.warn(`⚠️ Failed to fetch user info for ${userId}:`, error);
+      return {
+        name: `User ${userId.substring(0, 8)}`,
+      };
+    }
+  };
+
+  // ✅ Calculate task status based on startDate and endDate
   const getTaskStatus = (task: ChallengeTask): {
     status: 'upcoming' | 'available' | 'overdue';
     penaltyPercentage: number;
@@ -94,27 +140,24 @@ const YourDetailPage: React.FC = () => {
     }
 
     const now = new Date();
-    now.setHours(0, 0, 0, 0); // Reset to start of day for accurate comparison
+    now.setHours(0, 0, 0, 0);
 
     const startDate = new Date(task.startDate);
     startDate.setHours(0, 0, 0, 0);
 
     const endDate = new Date(task.endDate);
-    endDate.setHours(23, 59, 59, 999); // End of the end date
+    endDate.setHours(23, 59, 59, 999);
 
     if (now < startDate) {
-      // Before start date - upcoming
       return { status: 'upcoming', penaltyPercentage: 0 };
     } else if (now >= startDate && now <= endDate) {
-      // Between start and end date - available
       return { status: 'available', penaltyPercentage: 0 };
     } else {
-      // After end date - overdue with 50% penalty
       return { status: 'overdue', penaltyPercentage: 50 };
     }
   };
 
-  // ✅ NEW: Format date range for display
+  // ✅ Format date range for display
   const formatTaskDateRange = (startDate: string | undefined, endDate: string | undefined): string => {
     if (!startDate || !endDate) return "No date set";
     
@@ -127,12 +170,10 @@ const YourDetailPage: React.FC = () => {
     const endDay = new Date(end);
     endDay.setHours(0, 0, 0, 0);
 
-    // Check if task is today only
     if (startDay.getTime() === today.getTime() && endDay.getTime() === today.getTime()) {
       return "Today";
     }
 
-    // Check if task starts today
     if (startDay.getTime() === today.getTime()) {
       const daysUntilEnd = Math.ceil((endDay.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
       if (daysUntilEnd === 0) return "Today";
@@ -140,7 +181,6 @@ const YourDetailPage: React.FC = () => {
       return `Today - ${daysUntilEnd} days`;
     }
 
-    // Check if task ends today
     if (endDay.getTime() === today.getTime()) {
       return "Due Today";
     }
@@ -148,14 +188,12 @@ const YourDetailPage: React.FC = () => {
     const diffToStart = Math.ceil((startDay.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
     const diffToEnd = Math.ceil((endDay.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
 
-    // Future task
     if (diffToStart > 0) {
       if (diffToStart === 1) return "Starts Tomorrow";
       if (diffToStart <= 7) return `Starts in ${diffToStart} days`;
       return start.toLocaleDateString("en-US", { month: "short", day: "numeric" });
     }
 
-    // Overdue task
     if (diffToEnd < 0) {
       const daysOverdue = Math.abs(diffToEnd);
       if (daysOverdue === 1) return "1 day overdue";
@@ -163,7 +201,6 @@ const YourDetailPage: React.FC = () => {
       return `Overdue since ${end.toLocaleDateString("en-US", { month: "short", day: "numeric" })}`;
     }
 
-    // Active task (between start and end)
     if (diffToEnd === 1) return "Due Tomorrow";
     if (diffToEnd <= 7) return `Due in ${diffToEnd} days`;
     return `Due ${end.toLocaleDateString("en-US", { month: "short", day: "numeric" })}`;
@@ -269,7 +306,6 @@ const YourDetailPage: React.FC = () => {
           }
         }
 
-        // ✅ NEW: Combine tasks with progress and calculate status based on startDate/endDate
         const tasksWithProgress: TaskWithProgress[] = tasksData.map((task) => {
           const progress = progressData.find((p) => p.challengeTaskId === task.id);
           const { status, penaltyPercentage } = getTaskStatus(task);
@@ -285,7 +321,6 @@ const YourDetailPage: React.FC = () => {
           };
         });
 
-        // Sort tasks by start date
         tasksWithProgress.sort((a, b) => {
           if (!a.startDate) return 1;
           if (!b.startDate) return -1;
@@ -320,35 +355,68 @@ const YourDetailPage: React.FC = () => {
 
       console.log("🔍 Fetching leaderboard for challenge:", challengeId);
 
+      // 1. Fetch participants to get points data
+      const participants = await challengeService.getParticipantsByChallengeId(challengeId);
+      console.log("✅ Participants data:", participants);
+
+      // 2. Fetch leaderboard from API
       let apiLeaderboard: APILeaderboardEntry[] = [];
       try {
         apiLeaderboard = await challengeService.getLeaderboard(challengeId);
         console.log("✅ API Leaderboard response:", apiLeaderboard);
       } catch (err) {
-        console.warn("⚠️ Failed to fetch leaderboard from API, falling back to participants:", err);
+        console.warn("⚠️ Failed to fetch leaderboard from API, building from participants:", err);
         
-        const participants = await challengeService.getParticipantsByChallengeId(challengeId);
+        // Fallback: Build leaderboard from participants
         apiLeaderboard = participants
+          .filter(p => p.totalPoints && p.totalPoints > 0)
           .sort((a, b) => (b.totalPoints || 0) - (a.totalPoints || 0))
           .map((participant, index) => ({
             userId: participant.userId,
-            userName: formatUserName(participant.userId),
+            userName: undefined,
             totalPoints: participant.totalPoints || 0,
             rank: index + 1,
           }));
         console.log("✅ Fallback leaderboard from participants:", apiLeaderboard);
       }
 
-      const transformedLeaderboard: LeaderboardEntry[] = apiLeaderboard.map((entry) => ({
-        id: entry.userId,
-        rank: entry.rank,
-        name: entry.userName || formatUserName(entry.userId),
-        points: entry.totalPoints,
-        avatar: getAvatarUrl(entry.userName || formatUserName(entry.userId), entry.userId),
-        isCurrentUser: entry.userId.toLowerCase() === authenticatedUserId?.toLowerCase(),
-      }));
+      // 3. Create a map for quick participant lookup
+      const participantMap = new Map(participants.map(p => [p.userId, p]));
 
-      console.log("✅ Transformed leaderboard:", transformedLeaderboard);
+      // 4. Fetch user details for all participants in leaderboard
+      const userDetailsPromises = apiLeaderboard.map(entry => 
+        fetchUserDetails(entry.userId)
+      );
+      const userDetailsArray = await Promise.all(userDetailsPromises);
+
+      // 5. Create user details map
+      const userDetailsMap = new Map(
+        apiLeaderboard.map((entry, index) => [
+          entry.userId,
+          userDetailsArray[index]
+        ])
+      );
+
+      // 6. Transform API leaderboard with user details and real avatars
+      const transformedLeaderboard: LeaderboardEntry[] = apiLeaderboard.map((entry) => {
+        const userDetails = userDetailsMap.get(entry.userId);
+        const participant = participantMap.get(entry.userId);
+        const displayName = userDetails?.name || `User ${entry.userId.substring(0, 8)}`;
+        
+        // Use totalPoints from either the leaderboard entry or participant data
+        const points = entry.totalPoints || participant?.totalPoints || 0;
+        
+        return {
+          id: entry.userId,
+          rank: entry.rank,
+          name: displayName,
+          points: points,
+          avatar: resolveAvatarUrl(userDetails?.avatar, displayName, entry.userId),
+          isCurrentUser: entry.userId.toLowerCase() === authenticatedUserId?.toLowerCase(),
+        };
+      });
+
+      console.log("✅ Transformed leaderboard with real user details:", transformedLeaderboard);
       setLeaderboardData(transformedLeaderboard);
 
     } catch (err) {
@@ -359,7 +427,6 @@ const YourDetailPage: React.FC = () => {
     }
   };
 
-  // ✅ MODIFIED: Handle task completion with date validation and penalty
   const handleMarkAsComplete = async (task: TaskWithProgress) => {
     if (!participant || !task.id || task.isCompleted) return;
 
@@ -369,13 +436,11 @@ const YourDetailPage: React.FC = () => {
       return;
     }
 
-    // ✅ NEW: Check if task is upcoming (not yet at start date)
     if (task.taskStatus === 'upcoming') {
       alert(`This task is not available yet. It will be available starting ${formatTaskDateRange(task.startDate, task.endDate)}.`);
       return;
     }
 
-    // ✅ NEW: Warn user about penalty if overdue (past end date)
     if (task.taskStatus === 'overdue') {
       const confirmComplete = window.confirm(
         `⚠️ This task is overdue!\n\n` +
@@ -392,7 +457,6 @@ const YourDetailPage: React.FC = () => {
     try {
       setUpdatingTask(task.id);
 
-      // ✅ NEW: Calculate points with penalty
       const earnedPoints = task.taskStatus === 'overdue' 
         ? Math.floor((task.points || 0) * 0.5) 
         : (task.points || 0);
@@ -421,7 +485,6 @@ const YourDetailPage: React.FC = () => {
         console.log("✅ Task progress created successfully with penalty:", { original: task.points, earned: earnedPoints });
       }
 
-      // Update local state
       setTasks((prevTasks) =>
         prevTasks.map((t) =>
           t.id === task.id
@@ -442,7 +505,6 @@ const YourDetailPage: React.FC = () => {
         )
       );
 
-      // Update participant stats
       const newCompletedCount = tasks.filter((t) =>
         t.id === task.id ? true : t.isCompleted
       ).length;
@@ -464,7 +526,6 @@ const YourDetailPage: React.FC = () => {
           : null
       );
 
-      // ✅ NEW: Show success message with points earned
       if (task.taskStatus === 'overdue') {
         alert(`✅ Task completed!\nYou earned ${earnedPoints} points (50% penalty applied)`);
       } else {
@@ -552,14 +613,11 @@ const YourDetailPage: React.FC = () => {
     : 0;
 
   const currentUserInLeaderboard = leaderboardData.find(entry => entry.isCurrentUser);
-
-  // ✅ NEW: Get today's available task (not completed, status is 'available')
   const todaysTask = tasks.find((t) => !t.isCompleted && t.taskStatus === 'available');
 
   return (
     <div className="your-detail-page">
       <div className="your-detail-content">
-        {/* Header */}
         <div className="detail-header">
           <button onClick={() => navigate("/your-challenges")} className="back-button">
             <ArrowLeft size={24} />
@@ -578,7 +636,6 @@ const YourDetailPage: React.FC = () => {
           )}
         </div>
 
-        {/* Tab Navigation */}
         <div className="tab-navigation">
           <button
             className={`tab-button ${activeTab === "progress" ? "active" : ""}`}
@@ -594,10 +651,8 @@ const YourDetailPage: React.FC = () => {
           </button>
         </div>
 
-        {/* Progress Tab Content */}
         {activeTab === "progress" && (
           <>
-            {/* Progress Overview Card */}
             <div className="progress-overview">
               <div className="overview-header">
                 <h2 className="overview-title">Challenge Progress</h2>
@@ -635,9 +690,7 @@ const YourDetailPage: React.FC = () => {
               </div>
             </div>
 
-            {/* Challenge Info Cards */}
             <div className="info-cards-grid">
-              {/* How to Participate */}
               {rules && rules.howToParticipate && rules.howToParticipate.length > 0 && (
                 <div className="info-card">
                   <div className="info-card-header">
@@ -652,7 +705,6 @@ const YourDetailPage: React.FC = () => {
                 </div>
               )}
 
-              {/* Prize Pool */}
               {challenge.prizePool && challenge.prizePool > 0 && (
                 <div className="info-card">
                   <div className="info-card-header">
@@ -666,7 +718,6 @@ const YourDetailPage: React.FC = () => {
                 </div>
               )}
 
-              {/* Challenge Stats */}
               <div className="info-card">
                 <div className="info-card-header">
                   <Users size={20} />
@@ -692,7 +743,6 @@ const YourDetailPage: React.FC = () => {
                 </div>
               </div>
 
-              {/* Rules */}
               {rules && rules.ruleText && rules.ruleText.length > 0 && (
                 <div className="info-card">
                   <div className="info-card-header">
@@ -708,7 +758,6 @@ const YourDetailPage: React.FC = () => {
               )}
             </div>
 
-            {/* ✅ MODIFIED: Today's Challenge with date check */}
             {todaysTask && (
               <div className="todays-challenge">
                 <div className="challenge-header">
@@ -761,7 +810,6 @@ const YourDetailPage: React.FC = () => {
               </div>
             )}
 
-            {/* ✅ MODIFIED: All Challenges with date badges and status indicators */}
             <div className="all-challenges">
               <h2 className="all-challenges-title">All Challenges</h2>
               {tasks.length === 0 ? (
@@ -794,7 +842,6 @@ const YourDetailPage: React.FC = () => {
                       <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
                         <h3 className="challenge-list-name">{task.name}</h3>
                         
-                        {/* ✅ Date Badge */}
                         {task.startDate && task.endDate && (
                           <span style={{
                             display: "inline-flex",
@@ -814,7 +861,6 @@ const YourDetailPage: React.FC = () => {
                           </span>
                         )}
 
-                        {/* ✅ Status Badge */}
                         {task.taskStatus === 'upcoming' && !task.isCompleted && (
                           <span style={{
                             display: "inline-flex",
@@ -854,7 +900,6 @@ const YourDetailPage: React.FC = () => {
                         <p className="challenge-list-description">{task.description}</p>
                       )}
                       
-                      {/* ✅ Points Display */}
                       <div style={{ marginTop: "8px", display: "flex", alignItems: "center", gap: "8px" }}>
                         <span style={{ 
                           fontSize: "14px", 
@@ -880,7 +925,6 @@ const YourDetailPage: React.FC = () => {
                       </div>
                     </div>
                     
-                    {/* ✅ Action Button */}
                     {task.isCompleted ? (
                       <span className="status-badge done">Done</span>
                     ) : (
@@ -921,315 +965,303 @@ const YourDetailPage: React.FC = () => {
           </>
         )}
 
-        {/* ✅ Leaderboard Tab Content - NOW WITH REAL DATA */}
-{activeTab === "leaderboard" && (
-  <div className="all-challenges">
-    {/* Main Preview Card */}
-    <div style={{
-      backgroundColor: "white",
-      border: "1px solid #e5e7eb",
-      borderRadius: "16px",
-      padding: "40px",
-      textAlign: "center",
-    }}>
-      {loadingLeaderboard ? (
-        <div style={{ color: "#6b7280", padding: "20px" }}>
-          <div style={{
-            width: "48px",
-            height: "48px",
-            border: "3px solid #e5e7eb",
-            borderTop: "3px solid #3b82f6",
-            borderRadius: "50%",
-            margin: "0 auto 16px",
-            animation: "spin 1s linear infinite",
-          }} />
-          <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
-          Loading leaderboard...
-        </div>
-      ) : leaderboardError ? (
-        <div>
-          <div style={{
-            fontSize: "48px",
-            marginBottom: "16px",
-          }}>😕</div>
-          <div style={{ color: "#ef4444", marginBottom: "20px" }}>
-            {leaderboardError}
-          </div>
-          <button
-            onClick={fetchLeaderboardData}
-            style={{
-              padding: "10px 20px",
-              backgroundColor: "#3b82f6",
-              color: "white",
-              border: "none",
-              borderRadius: "8px",
-              cursor: "pointer",
-            }}
-          >
-            Try Again
-          </button>
-        </div>
-      ) : (
-        <>
-          {/* Trophy Icon */}
-          <div style={{
-            width: "80px",
-            height: "80px",
-            borderRadius: "50%",
-            backgroundColor: "#FEF3C7",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            margin: "0 auto 24px",
-          }}>
-            <Trophy size={40} style={{ color: "#F59E0B" }} />
-          </div>
-
-          {/* Title */}
-          <h2 style={{
-            fontSize: "24px",
-            fontWeight: "bold",
-            marginBottom: "12px",
-            color: "#111827",
-          }}>
-            Challenge Leaderboard
-          </h2>
-
-          {/* Description */}
-          <p style={{
-            fontSize: "16px",
-            color: "#6b7280",
-            marginBottom: "32px",
-            maxWidth: "500px",
-            margin: "0 auto 32px",
-          }}>
-            See how you rank against other participants and compete for the top spots!
-          </p>
-
-          {/* Quick Stats Grid */}
-          {currentUserInLeaderboard ? (
+        {activeTab === "leaderboard" && (
+          <div className="all-challenges">
             <div style={{
-              display: "grid",
-              gridTemplateColumns: "repeat(3, 1fr)",
-              gap: "20px",
-              marginBottom: "32px",
-              maxWidth: "600px",
-              margin: "0 auto 32px",
+              backgroundColor: "white",
+              border: "1px solid #e5e7eb",
+              borderRadius: "16px",
+              padding: "40px",
+              textAlign: "center",
             }}>
-              {/* Your Rank */}
-              <div style={{
-                padding: "20px",
-                backgroundColor: "#EFF6FF",
-                borderRadius: "12px",
-                border: "2px solid #3B82F6",
-              }}>
-                <div style={{
-                  fontSize: "32px",
-                  fontWeight: "bold",
-                  color: "#3B82F6",
-                  marginBottom: "4px",
-                }}>
-                  #{currentUserInLeaderboard.rank}
+              {loadingLeaderboard ? (
+                <div style={{ color: "#6b7280", padding: "20px" }}>
+                  <div style={{
+                    width: "48px",
+                    height: "48px",
+                    border: "3px solid #e5e7eb",
+                    borderTop: "3px solid #3b82f6",
+                    borderRadius: "50%",
+                    margin: "0 auto 16px",
+                    animation: "spin 1s linear infinite",
+                  }} />
+                  <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+                  Loading leaderboard...
                 </div>
-                <div style={{ fontSize: "14px", color: "#1E40AF", fontWeight: "500" }}>
-                  Your Rank
-                </div>
-              </div>
-
-              {/* Your Points */}
-              <div style={{
-                padding: "20px",
-                backgroundColor: "#F0FDF4",
-                borderRadius: "12px",
-                border: "2px solid #10B981",
-              }}>
-                <div style={{
-                  fontSize: "32px",
-                  fontWeight: "bold",
-                  color: "#10B981",
-                  marginBottom: "4px",
-                }}>
-                  {currentUserInLeaderboard.points}
-                </div>
-                <div style={{ fontSize: "14px", color: "#065F46", fontWeight: "500" }}>
-                  Your Points
-                </div>
-              </div>
-
-              {/* Total Players */}
-              <div style={{
-                padding: "20px",
-                backgroundColor: "#FEF3C7",
-                borderRadius: "12px",
-                border: "2px solid #F59E0B",
-              }}>
-                <div style={{
-                  fontSize: "32px",
-                  fontWeight: "bold",
-                  color: "#F59E0B",
-                  marginBottom: "4px",
-                }}>
-                  {leaderboardData.length}
-                </div>
-                <div style={{ fontSize: "14px", color: "#92400E", fontWeight: "500" }}>
-                  Total Players
-                </div>
-              </div>
-            </div>
-          ) : (
-            <div style={{
-              padding: "20px",
-              backgroundColor: "#FEF3C7",
-              borderRadius: "12px",
-              marginBottom: "32px",
-              maxWidth: "500px",
-              margin: "0 auto 32px",
-              border: "1px solid #FDE68A",
-            }}>
-              <div style={{ fontSize: "24px", marginBottom: "8px" }}>📊</div>
-              <p style={{ fontSize: "14px", color: "#92400E", margin: 0, fontWeight: "500" }}>
-                Complete tasks to appear on the leaderboard!
-              </p>
-            </div>
-          )}
-
-          {/* Main CTA Button */}
-          <button
-            onClick={() => navigate(`/leaderboard/${challengeId}`)}
-            style={{
-              padding: "16px 48px",
-              backgroundColor: "#3b82f6",
-              color: "white",
-              border: "none",
-              borderRadius: "12px",
-              cursor: "pointer",
-              fontSize: "16px",
-              fontWeight: "600",
-              boxShadow: "0 4px 6px rgba(59, 130, 246, 0.3)",
-              transition: "all 0.2s",
-              display: "inline-flex",
-              alignItems: "center",
-              gap: "8px",
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.backgroundColor = "#2563eb";
-              e.currentTarget.style.transform = "translateY(-2px)";
-              e.currentTarget.style.boxShadow = "0 6px 8px rgba(59, 130, 246, 0.4)";
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.backgroundColor = "#3b82f6";
-              e.currentTarget.style.transform = "translateY(0)";
-              e.currentTarget.style.boxShadow = "0 4px 6px rgba(59, 130, 246, 0.3)";
-            }}
-          >
-            View Full Leaderboard
-            <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-              <path d="M7 3L14 10L7 17" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-            </svg>
-          </button>
-
-          {/* Top 3 Preview (Optional) */}
-          {leaderboardData.length >= 3 && (
-            <div style={{
-              marginTop: "40px",
-              paddingTop: "32px",
-              borderTop: "1px solid #e5e7eb",
-            }}>
-              <h3 style={{
-                fontSize: "18px",
-                fontWeight: "600",
-                marginBottom: "20px",
-                color: "#374151",
-              }}>
-                🏆 Current Top 3
-              </h3>
-              <div style={{
-                display: "flex",
-                gap: "16px",
-                justifyContent: "center",
-                flexWrap: "wrap",
-              }}>
-                {leaderboardData.slice(0, 3).map((entry, index) => (
-                  <div key={entry.id} style={{
-                    flex: "1",
-                    minWidth: "150px",
-                    maxWidth: "200px",
-                    padding: "20px",
-                    backgroundColor: index === 0 ? "#FEF3C7" : "#F9FAFB",
-                    borderRadius: "12px",
-                    border: entry.isCurrentUser ? "2px solid #3B82F6" : "1px solid #e5e7eb",
-                    position: "relative",
-                  }}>
-                    {/* Medal/Rank Badge */}
-                    <div style={{
-                      position: "absolute",
-                      top: "-12px",
-                      right: "-12px",
-                      width: "32px",
-                      height: "32px",
-                      borderRadius: "50%",
-                      backgroundColor: index === 0 ? "#FFD700" : index === 1 ? "#C0C0C0" : "#CD7F32",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      fontSize: "16px",
-                      fontWeight: "bold",
-                      color: "white",
-                      boxShadow: "0 2px 4px rgba(0,0,0,0.2)",
-                    }}>
-                      {index + 1}
-                    </div>
-
-                    <img
-                      src={entry.avatar}
-                      alt={entry.name}
-                      style={{
-                        width: "56px",
-                        height: "56px",
-                        borderRadius: "50%",
-                        margin: "0 auto 12px",
-                        display: "block",
-                        border: entry.isCurrentUser ? "3px solid #3B82F6" : "2px solid #e5e7eb",
-                      }}
-                    />
-                    <div style={{
-                      fontSize: "15px",
-                      fontWeight: "600",
-                      color: entry.isCurrentUser ? "#3B82F6" : "#374151",
-                      marginBottom: "4px",
-                      overflow: "hidden",
-                      textOverflow: "ellipsis",
-                      whiteSpace: "nowrap",
-                    }}>
-                      {entry.isCurrentUser ? "You 👋" : entry.name}
-                    </div>
-                    <div style={{
-                      fontSize: "18px",
-                      fontWeight: "bold",
-                      color: "#10B981",
-                    }}>
-                      {entry.points} pts
-                    </div>
+              ) : leaderboardError ? (
+                <div>
+                  <div style={{
+                    fontSize: "48px",
+                    marginBottom: "16px",
+                  }}>😕</div>
+                  <div style={{ color: "#ef4444", marginBottom: "20px" }}>
+                    {leaderboardError}
                   </div>
-                ))}
-              </div>
-              <div style={{
-                marginTop: "16px",
-                fontSize: "13px",
-                color: "#6b7280",
-              }}>
-                Click "View Full Leaderboard" to see all rankings
-              </div>
+                  <button
+                    onClick={fetchLeaderboardData}
+                    style={{
+                      padding: "10px 20px",
+                      backgroundColor: "#3b82f6",
+                      color: "white",
+                      border: "none",
+                      borderRadius: "8px",
+                      cursor: "pointer",
+                    }}
+                  >
+                    Try Again
+                  </button>
+                </div>
+              ) : (
+                <>
+                  <div style={{
+                    width: "80px",
+                    height: "80px",
+                    borderRadius: "50%",
+                    backgroundColor: "#FEF3C7",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    margin: "0 auto 24px",
+                  }}>
+                    <Trophy size={40} style={{ color: "#F59E0B" }} />
+                  </div>
+
+                  <h2 style={{
+                    fontSize: "24px",
+                    fontWeight: "bold",
+                    marginBottom: "12px",
+                    color: "#111827",
+                  }}>
+                    Challenge Leaderboard
+                  </h2>
+
+                  <p style={{
+                    fontSize: "16px",
+                    color: "#6b7280",
+                    marginBottom: "32px",
+                    maxWidth: "500px",
+                    margin: "0 auto 32px",
+                  }}>
+                    See how you rank against other participants and compete for the top spots!
+                  </p>
+
+                  {currentUserInLeaderboard ? (
+                    <div style={{
+                      display: "grid",
+                      gridTemplateColumns: "repeat(3, 1fr)",
+                      gap: "20px",
+                      marginBottom: "32px",
+                      maxWidth: "600px",
+                      margin: "0 auto 32px",
+                    }}>
+                      <div style={{
+                        padding: "20px",
+                        backgroundColor: "#EFF6FF",
+                        borderRadius: "12px",
+                        border: "2px solid #3B82F6",
+                      }}>
+                        <div style={{
+                          fontSize: "32px",
+                          fontWeight: "bold",
+                          color: "#3B82F6",
+                          marginBottom: "4px",
+                        }}>
+                          #{currentUserInLeaderboard.rank}
+                        </div>
+                        <div style={{ fontSize: "14px", color: "#1E40AF", fontWeight: "500" }}>
+                          Your Rank
+                        </div>
+                      </div>
+
+                      <div style={{
+                        padding: "20px",
+                        backgroundColor: "#F0FDF4",
+                        borderRadius: "12px",
+                        border: "2px solid #10B981",
+                      }}>
+                        <div style={{
+                          fontSize: "32px",
+                          fontWeight: "bold",
+                          color: "#10B981",
+                          marginBottom: "4px",
+                        }}>
+                          {currentUserInLeaderboard.points}
+                        </div>
+                        <div style={{ fontSize: "14px", color: "#065F46", fontWeight: "500" }}>
+                          Your Points
+                        </div>
+                      </div>
+
+                      <div style={{
+                        padding: "20px",
+                        backgroundColor: "#FEF3C7",
+                        borderRadius: "12px",
+                        border: "2px solid #F59E0B",
+                      }}>
+                        <div style={{
+                          fontSize: "32px",
+                          fontWeight: "bold",
+                          color: "#F59E0B",
+                          marginBottom: "4px",
+                        }}>
+                          {leaderboardData.length}
+                        </div>
+                        <div style={{ fontSize: "14px", color: "#92400E", fontWeight: "500" }}>
+                          Total Players
+                        </div>
+                      </div>
+                    </div>
+                  ) : (
+                    <div style={{
+                      padding: "20px",
+                      backgroundColor: "#FEF3C7",
+                      borderRadius: "12px",
+                      marginBottom: "32px",
+                      maxWidth: "500px",
+                      margin: "0 auto 32px",
+                      border: "1px solid #FDE68A",
+                    }}>
+                      <div style={{ fontSize: "24px", marginBottom: "8px" }}>📊</div>
+                      <p style={{ fontSize: "14px", color: "#92400E", margin: 0, fontWeight: "500" }}>
+                        Complete tasks to appear on the leaderboard!
+                      </p>
+                    </div>
+                  )}
+
+                  <button
+                    onClick={() => navigate(`/leaderboard/${challengeId}`)}
+                    style={{
+                      padding: "16px 48px",
+                      backgroundColor: "#3b82f6",
+                      color: "white",
+                      border: "none",
+                      borderRadius: "12px",
+                      cursor: "pointer",
+                      fontSize: "16px",
+                      fontWeight: "600",
+                      boxShadow: "0 4px 6px rgba(59, 130, 246, 0.3)",
+                      transition: "all 0.2s",
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: "8px",
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.backgroundColor = "#2563eb";
+                      e.currentTarget.style.transform = "translateY(-2px)";
+                      e.currentTarget.style.boxShadow = "0 6px 8px rgba(59, 130, 246, 0.4)";
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.backgroundColor = "#3b82f6";
+                      e.currentTarget.style.transform = "translateY(0)";
+                      e.currentTarget.style.boxShadow = "0 4px 6px rgba(59, 130, 246, 0.3)";
+                    }}
+                  >
+                    View Full Leaderboard
+                    <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                      <path d="M7 3L14 10L7 17" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                    </svg>
+                  </button>
+
+                  {leaderboardData.length >= 3 && (
+                    <div style={{
+                      marginTop: "40px",
+                      paddingTop: "32px",
+                      borderTop: "1px solid #e5e7eb",
+                    }}>
+                      <h3 style={{
+                        fontSize: "18px",
+                        fontWeight: "600",
+                        marginBottom: "20px",
+                        color: "#374151",
+                      }}>
+                        🏆 Current Top 3
+                      </h3>
+                      <div style={{
+                        display: "flex",
+                        gap: "16px",
+                        justifyContent: "center",
+                        flexWrap: "wrap",
+                      }}>
+                        {leaderboardData.slice(0, 3).map((entry, index) => (
+                          <div key={entry.id} style={{
+                            flex: "1",
+                            minWidth: "150px",
+                            maxWidth: "200px",
+                            padding: "20px",
+                            backgroundColor: index === 0 ? "#FEF3C7" : "#F9FAFB",
+                            borderRadius: "12px",
+                            border: entry.isCurrentUser ? "2px solid #3B82F6" : "1px solid #e5e7eb",
+                            position: "relative",
+                          }}>
+                            <div style={{
+                              position: "absolute",
+                              top: "-12px",
+                              right: "-12px",
+                              width: "32px",
+                              height: "32px",
+                              borderRadius: "50%",
+                              backgroundColor: index === 0 ? "#FFD700" : index === 1 ? "#C0C0C0" : "#CD7F32",
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "center",
+                              fontSize: "16px",
+                              fontWeight: "bold",
+                              color: "white",
+                              boxShadow: "0 2px 4px rgba(0,0,0,0.2)",
+                            }}>
+                              {index + 1}
+                            </div>
+
+                            <img
+                              src={entry.avatar}
+                              alt={entry.name}
+                              style={{
+                                width: "56px",
+                                height: "56px",
+                                borderRadius: "50%",
+                                margin: "0 auto 12px",
+                                display: "block",
+                                border: entry.isCurrentUser ? "3px solid #3B82F6" : "2px solid #e5e7eb",
+                              }}
+                            />
+                            <div style={{
+                              fontSize: "15px",
+                              fontWeight: "600",
+                              color: entry.isCurrentUser ? "#3B82F6" : "#374151",
+                              marginBottom: "4px",
+                              overflow: "hidden",
+                              textOverflow: "ellipsis",
+                              whiteSpace: "nowrap",
+                            }}>
+                              {entry.isCurrentUser ? "You 👋" : entry.name}
+                            </div>
+                            <div style={{
+                              fontSize: "18px",
+                              fontWeight: "bold",
+                              color: "#10B981",
+                            }}>
+                              {entry.points} pts
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                      <div style={{
+                        marginTop: "16px",
+                        fontSize: "13px",
+                        color: "#6b7280",
+                      }}>
+                        Click "View Full Leaderboard" to see all rankings
+                      </div>
+                    </div>
+                  )}
+                </>
+              )}
             </div>
-          )}
-        </>
-      )}
-    </div>
-  </div>
-)}
+          </div>
+        )}
       </div>
     </div>
   );
 };
 
-export default YourDetailPage;
+export default YourDetailPage;  

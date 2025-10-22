@@ -8,6 +8,7 @@ import type { CreateInvoicePayload, InitiatePaymentPayload, PricingPlan } from "
 import type { SubscriptionPlan } from "@/models/subscriptionPlan";
 import { useAppSelector } from "@/store/hooks";
 import { selectUserId, selectIsAuthenticated } from "@/store/slices/authSlice";
+import { ArrowLeft } from "lucide-react";
 
 interface PricingPageProps {
   onNavigateBack: () => void;
@@ -40,6 +41,14 @@ const PricingPage: React.FC = () => {
     buttonText: "Your current plan",
     isCurrentPlan: true,
   };
+
+    const handleBack = () => {
+  if (window.history.length > 1) {
+    navigate(-1); 
+  } else {
+    navigate("/"); // hoặc về trang chính của app
+  }
+};
 
   // Redirect to login if user is not authenticated
   useEffect(() => {
@@ -228,12 +237,11 @@ const PricingPage: React.FC = () => {
     <div className="pricing-page">
       <div className="pricing-content">
         {/* Header */}
+        <button onClick={handleBack} className="back-button">
+               <ArrowLeft size={24} />
+            </button>
         <div className="pricing-hero">
-          <button className="pricing-back" onClick={() => navigate("/your-missions")}>
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
-              <polyline points="15,18 9,12 15,6" stroke="currentColor" strokeWidth="2" />
-            </svg>
-          </button>
+          
 
           <div className="pricing-hero-text">
             <h1 className="pricing-hero-title">Plans &amp; Pricing</h1>
