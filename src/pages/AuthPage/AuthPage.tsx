@@ -6,6 +6,8 @@ import { useAppDispatch, useAppSelector } from "../../store/hooks";
 import { loginUser, registerUser, loginWithExternalProvider } from "../../store/slices/authSlice";
 import type { LoginRequest, RegisterRequest } from "../../models";
 import { Snackbar, Alert } from "@mui/material";
+import { format } from "date-fns";
+import { Calendar as CalendarIcon } from "lucide-react";
 import {
   Select,
   SelectContent,
@@ -13,6 +15,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Button } from "@/components/ui/button";
+import { Calendar } from "@/components/ui/calendar";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 
 type AuthMode = "signin" | "signup";
 
@@ -540,7 +549,7 @@ const AuthPage: React.FC = () => {
               className="sign-up-form mt-10 overscroll-y-auto no-scrollbar"
               onSubmit={handleSubmit}
             >
-              <div className="signup-header flex items-center flex-row justify-center gap-3 mt-50 mb-5">
+              <div className="signup-header flex items-center flex-row justify-center gap-3 mt-30 mb-5">
                 <div
                   className="signup-logo"
                   style={{ backgroundImage: `url(${logoImg})`, marginBottom: 0 }}
@@ -625,17 +634,47 @@ const AuthPage: React.FC = () => {
                   <label htmlFor="dateOfBirth" className="mb-1 text-sm font-medium text-gray-700">
                     Date of Birth
                   </label>
-                  <input
-                    id="dateOfBirth"
-                    name="dateOfBirth"
-                    type="date"
-                    placeholder="Date of birth"
-                    value={formValues.dateOfBirth}
-                    onChange={handleInputChange}
-                    autoComplete="bday"
-                    max={new Date().toISOString().split("T")[0]}
-                    className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-gray-700 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 outline-none transition-all"
-                  />
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        className="w-full justify-start text-left font-normal rounded-lg border-gray-300 hover:border-blue-500 hover:bg-white"
+                      >
+                        <CalendarIcon className="mr-2 h-4 w-4" />
+                        {formValues.dateOfBirth ? (
+                          format(new Date(formValues.dateOfBirth), "PPP")
+                        ) : (
+                          <span className="text-gray-500">Pick a date</span>
+                        )}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-2" align="start">
+                      <Calendar
+                        mode="single"
+                        selected={formValues.dateOfBirth ? new Date(formValues.dateOfBirth) : undefined}
+                        onSelect={(date) => {
+                          if (date) {
+                            setFormValues((prev) => ({
+                              ...prev,
+                              dateOfBirth: format(date, "yyyy-MM-dd"),
+                            }));
+                          }
+                        }}
+                        disabled={(date) => date > new Date() || date < new Date("1900-01-01")}
+                        initialFocus
+                        captionLayout="dropdown"
+                        fromYear={1900}
+                        toYear={new Date().getFullYear()}
+                        classNames={{
+                          month: "space-y-2 w-full",
+                          table: "w-full border-collapse",
+                          head_cell: "text-muted-foreground rounded-md w-8 font-normal text-xs",
+                          cell: "h-8 w-8 text-center text-sm p-0 relative",
+                          day: "h-8 w-8 p-0 font-normal text-sm aria-selected:opacity-100",
+                        }}
+                      />
+                    </PopoverContent>
+                  </Popover>
                 </div>
               </div>
 
