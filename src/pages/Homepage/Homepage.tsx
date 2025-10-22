@@ -1,4 +1,4 @@
-import React, { useRef } from "react";
+import React, { useRef, useState } from "react";
 import "./Homepage.css";
 import HomepageHeader from "../../components/layout/HomepageHeader";
 import WhatNewCarousel from "./WhatNewCarousel";
@@ -10,7 +10,21 @@ import TopPerformanceSection from './TopPerformanceSection';
 const Homepage: React.FC = () => {
   const whatRef = useRef<HTMLDivElement | null>(null);
   const navigate = useNavigate();
+  const [chatOpen, setChatOpen] = useState(false);
+  const [chatInitialMessage, setChatInitialMessage] = useState<string>("");
 
+  const handleQuestionClick = (question: string) => {
+    setChatInitialMessage(question);
+    setChatOpen(true);
+  };
+
+  const handleChatOpenChange = (open: boolean) => {
+    setChatOpen(open);
+    if (!open) {
+      // Clear initial message when chat closes
+      setChatInitialMessage("");
+    }
+  };
 
 
   return (
@@ -171,16 +185,28 @@ const Homepage: React.FC = () => {
         </div>
 
         <div className="qa-questions max-w-[800px] ml-[91px] px-5 flex flex-col gap-5 mt-[100px] items-start">
-          <button className="qa-question bg-[#AEFFC4] rounded-[102px] py-[17px] px-[30px] font-bold text-[#007E85]">
-            When will I see results?
+          <button 
+            onClick={() => handleQuestionClick("What are my stats?")}
+            className="qa-question bg-[#AEFFC4] rounded-[102px] py-[17px] px-[30px] font-bold text-[#007E85] hover:bg-[#9EEfB4] transition-colors"
+          >
+            What are my stats?
           </button>
-          <button className="qa-question bg-[#AEFFC4] rounded-[102px] py-[17px] px-[30px] font-bold text-[#007E85]">
+          <button 
+            onClick={() => handleQuestionClick("How to start working out?")}
+            className="qa-question bg-[#AEFFC4] rounded-[102px] py-[17px] px-[30px] font-bold text-[#007E85] hover:bg-[#9EEfB4] transition-colors"
+          >
             How to start working out?
           </button>
-          <button className="qa-question bg-[#AEFFC4] rounded-[102px] py-[17px] px-[30px] font-bold text-[#007E85]">
+          <button 
+            onClick={() => handleQuestionClick("What exercises are good for beginners?")}
+            className="qa-question bg-[#AEFFC4] rounded-[102px] py-[17px] px-[30px] font-bold text-[#007E85] hover:bg-[#9EEfB4] transition-colors"
+          >
             What exercises are good for beginners?
           </button>
-          <button className="qa-question bg-[#AEFFC4] rounded-[102px] py-[17px] px-[30px] font-bold text-[#007E85]">
+          <button 
+            onClick={() => handleQuestionClick("How much protein do I need per day?")}
+            className="qa-question bg-[#AEFFC4] rounded-[102px] py-[17px] px-[30px] font-bold text-[#007E85] hover:bg-[#9EEfB4] transition-colors"
+          >
             How much protein do I need per day?
           </button>
         </div>
@@ -243,7 +269,11 @@ const Homepage: React.FC = () => {
       </div>
 
       {/* AI Chat FAB */}
-      <ChatFAB />
+      <ChatFAB 
+        openChat={chatOpen}
+        onChatOpenChange={handleChatOpenChange}
+        initialMessage={chatInitialMessage}
+      />
     </div>
   );
 };

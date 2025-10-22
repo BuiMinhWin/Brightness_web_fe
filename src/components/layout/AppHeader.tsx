@@ -8,14 +8,14 @@ const AppHeader: React.FC = () => {
   return (
     <header className="app-header fixed top-0 left-0 right-0 z-50  px-6 py-2 flex justify-between items-center">
       {/* Logo */}
-      <div className="flex items-center gap-2 ml-[150px]">
+      <div className="flex items-center gap-2 ml-[50px]">
         <img
           className="w-10 h-10"
-          src="https://api.builder.io/api/v1/image/assets/TEMP/6baac292ed20ef5d5c64b4c24038dc8d93be59a6?width=170"
+          src="/assets/LogoWhite.png"
           alt="BRIGHTNEST Logo"
         />
         <div className="text-sm font-bold">
-          <span className="text-[#0b3d33]">BRIGHT</span>
+          <span className="text-white">BRIGHT</span>
           <span className="text-white">NEST</span>
         </div>
       </div>

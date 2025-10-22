@@ -252,4 +252,46 @@ export const personalCoachService = {
       method: "GET",
     });
   },
+
+  /** Process health lab result with AI OCR */
+  async processHealthLabResult(
+    file: File,
+    userId: string,
+    prompt?: string,
+    dataType: 'lab_result' | 'fitness_measurement' | 'general' = 'lab_result'
+  ): Promise<any> {
+    const formData = new FormData();
+    formData.append("file", file);
+    formData.append("UserId", userId);
+    formData.append("Prompt", prompt || "Extract all body measurements, weight, muscle mass, body fat percentage, and any other health metrics from this health document.");
+    formData.append("DataType", dataType);
+
+    return httpRequest("/ai-ocr/api/OCR/ai-vision-upload", {
+      method: "POST",
+      body: formData,
+      skipContentType: true, // Let browser set multipart/form-data with boundary
+    });
+  },
+
+  /** Validate image/PDF file before upload */
+  validateHealthImage(file: File): { valid: boolean; error?: string } {
+    const maxSize = 10 * 1024 * 1024; // 10MB
+    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'application/pdf'];
+
+    if (!allowedTypes.includes(file.type)) {
+      return {
+        valid: false,
+        error: 'Invalid file type. Please upload an image (JPG, PNG, WebP) or PDF file.',
+      };
+    }
+
+    if (file.size > maxSize) {
+      return {
+        valid: false,
+        error: 'File size too large. Maximum size is 10MB.',
+      };
+    }
+
+    return { valid: true };
+  },
 };

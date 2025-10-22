@@ -5,6 +5,7 @@ import {
   WorkoutScheduleResponse,
   ScheduleDayDetail,
 } from "@/services/personalCoachService";
+import chatService from "@/services/chatService";
 import GenerateWorkoutModal, { GenerateWorkoutFormData } from "@/components/GenerateWorkoutModal";
 import WorkoutDetailModal from "@/components/WorkoutDetailModal";
 import WorkoutFeedbackModal, { WorkoutFeedbackData } from "@/components/WorkoutFeedbackModal";
@@ -148,11 +149,22 @@ const Schedule: React.FC = () => {
 
     try {
       console.log("🎯 Generating workout schedule...");
-      const response = await personalCoachService.generateSchedule({
+      
+      // Track AI action and get credits
+      const credits = await chatService.trackAiAction();
+      console.log("Credits response:", credits);
+      
+      // Generate schedule using Personal Coach service
+      await personalCoachService.generateSchedule({
         userId,
-        ...formData,
+        goal: formData.goal,
+        durationDays: formData.durationDays,
+        difficultyLevel: formData.difficultyLevel,
+        availableDays: formData.availableDays,
+        equipmentAvailable: formData.equipmentAvailable,
+        additionalNotes: formData.additionalNotes,
       });
-      console.log("✅ Schedule generated:", response);
+      console.log("✅ Schedule generated");
 
       // Refetch schedules
       await fetchSchedules();
@@ -160,7 +172,7 @@ const Schedule: React.FC = () => {
       setShowGenerateModal(false);
       setToast({
         open: true,
-        message: "Workout plan generated successfully!",
+        message: `Workout plan generated successfully! (${credits?.remainingMessages ?? '?'}/${credits?.dailyLimit ?? '?'} AI credits remaining)`,
         severity: "success",
       });
     } catch (err) {
@@ -193,8 +205,13 @@ const Schedule: React.FC = () => {
 
   const handleRegenerateSchedule = async (requestData: RegenerateRequestData) => {
     try {
-      const response = await personalCoachService.regenerateSchedule(requestData);
-      console.log("✅ Schedule regenerated:", response);
+      // Track AI action and get credits
+      const credits = await chatService.trackAiAction();
+      console.log("Credits response:", credits);
+      
+      // Regenerate schedule using Personal Coach service
+      await personalCoachService.regenerateSchedule(requestData);
+      console.log("✅ Schedule regenerated");
 
       // Refetch schedules
       await fetchSchedules();
@@ -202,7 +219,7 @@ const Schedule: React.FC = () => {
       setShowRegenerateModal(false);
       setToast({
         open: true,
-        message: "Schedule regenerated successfully! Your progress has been preserved.",
+        message: `Schedule regenerated successfully! Your progress has been preserved. (${credits?.remainingMessages ?? '?'}/${credits?.dailyLimit ?? '?'} AI credits remaining)`,
         severity: "success",
       });
     } catch (error) {

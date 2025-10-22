@@ -1,4 +1,6 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
+import { gsap } from "gsap";
+import { DotLottieReact } from "@lottiefiles/dotlottie-react";
 import {
   FitnessCenter,
   CalendarMonth,
@@ -51,6 +53,50 @@ const GenerateWorkoutModal: React.FC<GenerateWorkoutModalProps> = ({
     additionalNotes: "",
     startFromToday: false,
   });
+
+  const [showLottie, setShowLottie] = useState(false);
+  const iconRef = useRef<HTMLDivElement>(null);
+
+  // Animate icon transition when isGenerating changes
+  useEffect(() => {
+    if (isGenerating && iconRef.current) {
+      // Shrink the original icon
+      gsap.to(iconRef.current, {
+        scale: 0,
+        duration: 0.3,
+        ease: "power2.in",
+        onComplete: () => {
+          setShowLottie(true);
+          // Scale in the Lottie animation
+          if (iconRef.current) {
+            gsap.fromTo(
+              iconRef.current,
+              { scale: 0 },
+              { scale: 1, duration: 0.3, ease: "back.out(1.7)" }
+            );
+          }
+        },
+      });
+    } else if (!isGenerating && showLottie) {
+      // Reset when generation completes
+      gsap.to(iconRef.current, {
+        scale: 0,
+        duration: 0.3,
+        ease: "power2.in",
+        onComplete: () => {
+          setShowLottie(false);
+          // Scale in the original icon
+          if (iconRef.current) {
+            gsap.fromTo(
+              iconRef.current,
+              { scale: 0 },
+              { scale: 1, duration: 0.3, ease: "back.out(1.7)" }
+            );
+          }
+        },
+      });
+    }
+  }, [isGenerating, showLottie]);
 
   if (!isOpen) return null;
 
@@ -397,17 +443,19 @@ const GenerateWorkoutModal: React.FC<GenerateWorkoutModalProps> = ({
             className="flex-1 px-6 py-3 rounded-xl font-semibold text-white hover:opacity-90 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
             style={{ background: "#0a6a56" }}
           >
-            {isGenerating ? (
-              <>
-                <AutoAwesome className="animate-spin" fontSize="small" />
-                Generating...
-              </>
-            ) : (
-              <>
+            <div ref={iconRef} className="flex items-center">
+              {showLottie ? (
+                <DotLottieReact
+                  src="/animations/LoadingAI_Gen.lottie"
+                  loop
+                  autoplay
+                  style={{ width: 20, height: 20 }}
+                />
+              ) : (
                 <AutoAwesome fontSize="small" />
-                Generate Workout
-              </>
-            )}
+              )}
+            </div>
+            <span>{isGenerating ? "Generating..." : "Generate Workout"}</span>
           </button>
         </div>
       </div>

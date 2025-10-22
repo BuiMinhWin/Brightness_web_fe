@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { Upload, FileText, CheckCircle, Info, Sparkles, ArrowUp, Bot, X, Image as ImageIcon } from "lucide-react";
-import { CircularProgress } from "@mui/material";
+import { DotLottieReact } from "@lottiefiles/dotlottie-react";
 import SectionCard from "./SectionCard";
 
 interface UploadedFileInfo {
@@ -240,7 +240,12 @@ const DocumentUploadSection: React.FC<DocumentUploadSectionProps> = ({
                   {/* Processing Overlay */}
                   {fileInfo.status === "processing" && (
                     <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
-                      <CircularProgress size={32} thickness={4} sx={{ color: "white" }} />
+                      <DotLottieReact
+                        src="/animations/ImageLoading.lottie"
+                        loop
+                        autoplay
+                        style={{ width: 48, height: 48 }}
+                      />
                     </div>
                   )}
                   
@@ -349,7 +354,12 @@ const DocumentUploadSection: React.FC<DocumentUploadSectionProps> = ({
           
           {isProcessing ? (
             <div className="flex flex-col items-center gap-2">
-              <CircularProgress size={40} thickness={4} sx={{ color: "#0a6a56" }} />
+              <DotLottieReact
+                src="/animations/ImageLoading.lottie"
+                loop
+                autoplay
+                style={{ width: 56, height: 56 }}
+              />
               <p className="text-base font-semibold text-gray-800">{currentProgress}</p>
               <p className="text-xs text-gray-500 flex items-center gap-1">
                 <Bot size={12} className="text-emerald-600" />

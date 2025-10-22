@@ -128,7 +128,7 @@ const Navbar: React.FC<NavbarProps> = ({ currentPage = "home" }) => {
               user={{
                 name: userInfo.fullName || userInfo.userName || "User",
                 email: userInfo.email || "user@brightnest.com",
-                avatar: resolveApiAssetUrl(userInfo.profilePicture) || "https://github.com/shadcn.png",
+                avatar: resolveApiAssetUrl(userInfo.profilePicture) || "/assets/foxHead_closedEye_tiltLeft.svg",
                 onLogout: handleLogout,
                 onProfile: handleProfileClick,
               }}

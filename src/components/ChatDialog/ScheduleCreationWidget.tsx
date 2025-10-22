@@ -1,4 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
+import { gsap } from 'gsap';
+import { DotLottieReact } from '@lottiefiles/dotlottie-react';
 import chatService from '../../services/chatService';
 import { 
   LocalFireDepartment, 
@@ -15,7 +17,7 @@ import {
 
 interface ScheduleCreationWidgetProps {
   sessionId: string;
-  onScheduleCreated: (schedule: any) => void;
+  onScheduleCreated: (schedule: any, remainingMessages: number, dailyLimit: number) => void;
   onCancel: () => void;
   suggestedGoal?: string;
   suggestedDifficulty?: string;
@@ -69,6 +71,49 @@ const ScheduleCreationWidget: React.FC<ScheduleCreationWidgetProps> = ({
   const [error, setError] = useState<string | null>(null);
   const [showCustomize, setShowCustomize] = useState(false);
   const [isAnalyzing, setIsAnalyzing] = useState(true);
+  const [showLottie, setShowLottie] = useState(false);
+  const iconRef = useRef<HTMLDivElement>(null);
+
+  // Animate icon transition when isCreating changes
+  useEffect(() => {
+    if (isCreating && iconRef.current) {
+      // Shrink the original icon
+      gsap.to(iconRef.current, {
+        scale: 0,
+        duration: 0.3,
+        ease: 'power2.in',
+        onComplete: () => {
+          setShowLottie(true);
+          // Scale in the Lottie animation
+          if (iconRef.current) {
+            gsap.fromTo(
+              iconRef.current,
+              { scale: 0 },
+              { scale: 1, duration: 0.3, ease: 'back.out(1.7)' }
+            );
+          }
+        },
+      });
+    } else if (!isCreating && showLottie) {
+      // Reset when creation completes
+      gsap.to(iconRef.current, {
+        scale: 0,
+        duration: 0.3,
+        ease: 'power2.in',
+        onComplete: () => {
+          setShowLottie(false);
+          // Scale in the original icon
+          if (iconRef.current) {
+            gsap.fromTo(
+              iconRef.current,
+              { scale: 0 },
+              { scale: 1, duration: 0.3, ease: 'back.out(1.7)' }
+            );
+          }
+        },
+      });
+    }
+  }, [isCreating, showLottie]);
 
   const currentGoalInfo = GOAL_INFO[goal as keyof typeof GOAL_INFO];
 
@@ -114,7 +159,7 @@ const ScheduleCreationWidget: React.FC<ScheduleCreationWidgetProps> = ({
         additionalNotes
       });
 
-      const schedule = await chatService.createScheduleFromChat({
+      const response = await chatService.createScheduleFromChat({
         sessionId,
         goal,
         durationDays,
@@ -122,8 +167,13 @@ const ScheduleCreationWidget: React.FC<ScheduleCreationWidgetProps> = ({
         additionalNotes,
       });
 
-      console.log('✅ Schedule created successfully:', schedule);
-      onScheduleCreated(schedule);
+      console.log('✅ Schedule created successfully:', response);
+      console.log('📦 Response structure:', {
+        hasSchedule: !!response.schedule,
+        schedule: response.schedule,
+        credits: `${response.remainingMessages}/${response.dailyLimit}`
+      });
+      onScheduleCreated(response.schedule, response.remainingMessages, response.dailyLimit);
     } catch (err: any) {
       console.error('❌ Failed to create schedule:', err);
       setError(err.message || 'Failed to create schedule');
@@ -463,17 +513,19 @@ const ScheduleCreationWidget: React.FC<ScheduleCreationWidgetProps> = ({
             className="flex-[2] px-6 py-3 rounded-xl font-semibold text-white hover:opacity-90 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
             style={{ background: '#0a6a56' }}
           >
-            {isCreating ? (
-              <>
-                <AutoAwesome className="animate-spin" fontSize="small" />
-                Creating...
-              </>
+            <div ref={iconRef} className="flex items-center">
+            {showLottie ? (
+              <DotLottieReact
+                src="/animations/LoadingAI_Gen.lottie"
+                loop
+                autoplay
+                style={{ width: 20, height: 20 }}
+              />
             ) : (
-              <>
-                <AutoAwesome fontSize="small" />
-                Generate Custom Plan
-              </>
+              <AutoAwesome fontSize="small" />
             )}
+          </div>
+          <span>{isCreating ? 'Creating...' : 'Generate Custom Plan'}</span>
           </button>
         </div>
       </div>

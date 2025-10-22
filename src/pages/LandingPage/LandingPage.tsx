@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { gsap } from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { Draggable } from "gsap/Draggable";
@@ -7,7 +8,6 @@ import FitnessCenterIcon from '@mui/icons-material/FitnessCenter';
 import SportsBasketballIcon from '@mui/icons-material/SportsBasketball';
 import PoolIcon from '@mui/icons-material/Pool';
 import DirectionsBikeIcon from '@mui/icons-material/DirectionsBike';
-import SportsFootballIcon from '@mui/icons-material/SportsFootball';
 import FavoriteIcon from '@mui/icons-material/Favorite';
 import ChatBubbleIcon from '@mui/icons-material/ChatBubble';
 import PhoneIcon from '@mui/icons-material/Phone';
@@ -17,7 +17,6 @@ import InstagramIcon from '@mui/icons-material/Instagram';
 import EmojiEventsIcon from '@mui/icons-material/EmojiEvents';
 import LocalFireDepartmentIcon from '@mui/icons-material/LocalFireDepartment';
 import PeopleIcon from '@mui/icons-material/People';
-import StarIcon from '@mui/icons-material/Star';
 import TrendingUpIcon from '@mui/icons-material/TrendingUp';
 import WorkspacePremiumIcon from '@mui/icons-material/WorkspacePremium';
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
@@ -26,6 +25,7 @@ import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
 gsap.registerPlugin(ScrollTrigger, Draggable);
 
 const LandingPage: React.FC = () => {
+  const navigate = useNavigate();
   const containerRef = useRef<HTMLDivElement>(null);
   const panelsContainerRef = useRef<HTMLDivElement>(null);
   const heroTitleRef = useRef<HTMLHeadingElement>(null);
@@ -166,7 +166,7 @@ const LandingPage: React.FC = () => {
               duration: 0.8,
               stagger: 0.15,
               ease: "power2.out",
-              delay: 0.7,
+              delay: 1.6, // Changed from 0.7 to 1.6 (after tagline)
             }
           );
         }
@@ -184,7 +184,7 @@ const LandingPage: React.FC = () => {
             duration: 0.6, 
             stagger: 0.15,
             ease: "back.out(1.5)", 
-            delay: 1.4 
+            delay: 2.4 // Changed from 1.4 to 2.4 (after sport icons)
           }
         );
       }
@@ -236,6 +236,9 @@ const LandingPage: React.FC = () => {
         const element = taglineRef.current;
         const text = element.textContent || '';
         
+        // Set parent element opacity to 1 before animation
+        gsap.set(element, { opacity: 1 });
+        
         // Split text into characters
         const chars = text.split('').map((char) => {
           const span = document.createElement('span');
@@ -261,7 +264,7 @@ const LandingPage: React.FC = () => {
           transformOrigin: "0% 50% -50",
           ease: "back.out(1.7)",
           stagger: 0.02,
-          delay: 1.2,
+          delay: 0.7, // Changed from 1.2 to 0.7 (right after title)
           onComplete: () => {
             // Revert split text back to normal text for performance & a11y
             element.innerHTML = '';
@@ -970,7 +973,7 @@ const LandingPage: React.FC = () => {
                       fontFamily: "DM Sans, sans-serif",
                       paddingLeft: "20px",
                       textShadow: "2px 2px 4px rgba(0,0,0,0.3)",
-                      opacity: 1,
+                      opacity: 0,
                       willChange: "transform",
                       transform: "translateZ(0)"
                     }}
@@ -1037,9 +1040,10 @@ const LandingPage: React.FC = () => {
                   </div>
 
                   {/* CTA Buttons */}
-                  <div ref={ctaButtonsRef} className="flex gap-4 mt-6">
+                  <div ref={ctaButtonsRef} className="flex gap-4 mt-12">
                   <button
-                    className="px-8 py-4 rounded-full text-lg font-bold transition-all duration-300 hover:scale-105 hover:shadow-xl"
+                    onClick={() => navigate("/auth?mode=signin")}
+                    className="px-8 py-4 rounded-full text-lg font-bold transition-all duration-300 hover:scale-105 hover:shadow-xl cursor-pointer"
                     style={{
                       background: "linear-gradient(135deg, #05644c 0%, #0a8f6f 100%)",
                       color: "white",
@@ -1992,9 +1996,6 @@ const LandingPage: React.FC = () => {
                       Download App
                     </h4>
                     <div className="space-y-3 flex flex-col items-center">
-                      <a href="#" className="block">
-                        <img src="https://tools.applemediaservices.com/api/badges/download-on-the-app-store/black/en-us?size=250x83" alt="Download on App Store" className="h-10 w-auto" />
-                      </a>
                       <a href="#" className="block">
                         <img src="https://play.google.com/intl/en_us/badges/static/images/badges/en_badge_web_generic.png" alt="Get it on Google Play" className="h-14 w-auto" />
                       </a>
