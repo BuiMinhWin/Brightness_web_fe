@@ -9,11 +9,18 @@ import {
   ChevronRight,
   ArrowBack,
   Schedule as ScheduleIcon,
+  ExpandMore,
+  ExpandLess,
+  Create,
+  Bookmark,
 } from "@mui/icons-material";
 import { Tooltip } from "@mui/material";
 import AIGenerateTab, { GenerateWorkoutFormData } from "./AIGenerateTab";
 import HistoryTab from "./HistoryTab";
 import WorkoutDetailTab from "./WorkoutDetailTab";
+import ExerciseLibraryTab from "./ExerciseLibraryTab";
+import WorkoutTemplatesTab from "./WorkoutTemplatesTab";
+import CustomBuilderTab from "./CustomBuilderTab";
 import { ScheduleDayDetail } from "@/services/personalCoachService";
 
 export type { GenerateWorkoutFormData };
@@ -38,9 +45,11 @@ interface ScheduleSidebarProps {
   onEditClick?: () => void;
   onRegenerateClick?: () => void;
   scheduleId?: string;
+  // Schedule management
+  onScheduleUpdated?: () => void;
 }
 
-type SidebarSection = "ai-generate" | "history" | "exercises" | "templates" | "custom" | "workout-detail" | null;
+type SidebarSection = "ai-generate" | "history" | "exercises" | "templates" | "custom" | "custom-create" | "custom-saved" | "workout-detail" | null;
 
 const ScheduleSidebar: React.FC<ScheduleSidebarProps> = ({ 
   onGenerateSubmit,
@@ -56,9 +65,14 @@ const ScheduleSidebar: React.FC<ScheduleSidebarProps> = ({
   onEditClick,
   onRegenerateClick,
   scheduleId,
+  onScheduleUpdated,
 }) => {
   const [isExpanded, setIsExpanded] = useState(false); // Start collapsed
   const [activeSection, setActiveSection] = useState<SidebarSection>(null);
+  const [customMenuExpanded, setCustomMenuExpanded] = useState(false); // Track Custom Builder sub-menu expansion
+  
+  // Shared state for custom template builder (persists across view switches)
+  const [loadedTemplateData, setLoadedTemplateData] = useState<any>(null);
 
   // Auto-expand sidebar when workout is selected (only if not viewing other sections)
   React.useEffect(() => {
@@ -103,12 +117,40 @@ const ScheduleSidebar: React.FC<ScheduleSidebarProps> = ({
         return "Workout Templates";
       case "custom":
         return "Custom Builder";
+      case "custom-create":
+        return "Create New Template";
+      case "custom-saved":
+        return "Your Saved Templates";
       case "workout-detail":
         return "Workout Details";
       default:
         return "Builder";
     }
   };
+
+  const handleCustomMenuToggle = () => {
+    if (isExpanded) {
+      // If expanded, toggle the sub-menu
+      setCustomMenuExpanded(!customMenuExpanded);
+    } else {
+      // If collapsed, expand sidebar and show sub-menu
+      setIsExpanded(true);
+      setCustomMenuExpanded(true);
+    }
+  };
+
+  const handleTemplateLoadedForEdit = (templateData: any) => {
+    // Store the loaded template data and switch to the create view
+    setLoadedTemplateData(templateData);
+    setActiveSection("custom-create");
+  };
+  
+  // Clear loaded template data when navigating away from custom builder
+  React.useEffect(() => {
+    if (activeSection !== "custom-create" && activeSection !== "custom-saved" && activeSection !== "custom") {
+      setLoadedTemplateData(null);
+    }
+  }, [activeSection]);
 
   const sidebarWidth = isExpanded ? "420px" : "64px";
 
@@ -204,22 +246,39 @@ const ScheduleSidebar: React.FC<ScheduleSidebarProps> = ({
               <HistoryTab userId={userId} isVisible={activeSection === "history"} />
             )}
             {activeSection === "exercises" && (
-              <div className="text-center py-8" style={{ color: "#6b7280" }}>
-                <FitnessCenter style={{ fontSize: 48, opacity: 0.3 }} />
-                <p className="mt-2 text-sm">Coming soon...</p>
-              </div>
+              <ExerciseLibraryTab isDragDisabled={isGenerating || !scheduleId} />
             )}
             {activeSection === "templates" && (
-              <div className="text-center py-8" style={{ color: "#6b7280" }}>
-                <ViewList style={{ fontSize: 48, opacity: 0.3 }} />
-                <p className="mt-2 text-sm">Coming soon...</p>
-              </div>
+              <WorkoutTemplatesTab
+                scheduleId={scheduleId}
+                onTemplateApplied={onScheduleUpdated}
+              />
             )}
             {activeSection === "custom" && (
-              <div className="text-center py-8" style={{ color: "#6b7280" }}>
-                <Add style={{ fontSize: 48, opacity: 0.3 }} />
-                <p className="mt-2 text-sm">Coming soon...</p>
-              </div>
+              <CustomBuilderTab 
+                onTemplateLoaded={handleTemplateLoadedForEdit} 
+                loadedTemplateData={loadedTemplateData}
+                scheduleId={scheduleId}
+                onTemplateApplied={onScheduleUpdated}
+              />
+            )}
+            {activeSection === "custom-create" && (
+              <CustomBuilderTab 
+                mode="create" 
+                onTemplateLoaded={handleTemplateLoadedForEdit} 
+                loadedTemplateData={loadedTemplateData}
+                scheduleId={scheduleId}
+                onTemplateApplied={onScheduleUpdated}
+              />
+            )}
+            {activeSection === "custom-saved" && (
+              <CustomBuilderTab 
+                mode="saved" 
+                onTemplateLoaded={handleTemplateLoadedForEdit} 
+                loadedTemplateData={loadedTemplateData}
+                scheduleId={scheduleId}
+                onTemplateApplied={onScheduleUpdated}
+              />
             )}
             {activeSection === "workout-detail" && (
               selectedWorkout ? (
@@ -321,20 +380,58 @@ const ScheduleSidebar: React.FC<ScheduleSidebarProps> = ({
               </button>
             </Tooltip>
 
-            {/* Custom */}
-            <Tooltip title={isExpanded ? "" : "Custom Builder"} arrow placement="right">
-              <button
-                onClick={() => handleSectionClick("custom")}
-                className="w-full px-4 py-3 flex items-center gap-3 hover:bg-white hover:bg-opacity-30 transition-all"
-              >
-                <Add style={{ color: "#0a6a56", fontSize: isExpanded ? 20 : 24 }} />
-                {isExpanded && (
-                  <span className="font-semibold text-sm" style={{ color: "#0b3d33" }}>
-                    Custom
-                  </span>
-                )}
-              </button>
-            </Tooltip>
+            {/* Custom Builder with Sub-menu */}
+            <div>
+              <Tooltip title={isExpanded ? "" : "Custom Builder"} arrow placement="right">
+                <button
+                  onClick={handleCustomMenuToggle}
+                  className="w-full px-4 py-3 flex items-center gap-3 hover:bg-white hover:bg-opacity-30 transition-all"
+                >
+                  <Add style={{ color: "#0a6a56", fontSize: isExpanded ? 20 : 24 }} />
+                  {isExpanded && (
+                    <>
+                      <span className="font-semibold text-sm flex-1 text-left" style={{ color: "#0b3d33" }}>
+                        Custom
+                      </span>
+                      {customMenuExpanded ? (
+                        <ExpandLess style={{ color: "#0a6a56", fontSize: 20 }} />
+                      ) : (
+                        <ExpandMore style={{ color: "#0a6a56", fontSize: 20 }} />
+                      )}
+                    </>
+                  )}
+                </button>
+              </Tooltip>
+
+              {/* Sub-menu items */}
+              {isExpanded && customMenuExpanded && (
+                <div className="pl-4" style={{ background: "rgba(10, 106, 86, 0.05)" }}>
+                  <Tooltip title="" arrow>
+                    <button
+                      onClick={() => handleSectionClick("custom-create")}
+                      className="w-full px-4 py-2 flex items-center gap-3 hover:bg-white hover:bg-opacity-30 transition-all"
+                    >
+                      <Create style={{ color: "#0a6a56", fontSize: 18 }} />
+                      <span className="font-medium text-sm" style={{ color: "#0b3d33" }}>
+                        Create New
+                      </span>
+                    </button>
+                  </Tooltip>
+
+                  <Tooltip title="" arrow>
+                    <button
+                      onClick={() => handleSectionClick("custom-saved")}
+                      className="w-full px-4 py-2 flex items-center gap-3 hover:bg-white hover:bg-opacity-30 transition-all"
+                    >
+                      <Bookmark style={{ color: "#0a6a56", fontSize: 18 }} />
+                      <span className="font-medium text-sm" style={{ color: "#0b3d33" }}>
+                        Saved Templates
+                      </span>
+                    </button>
+                  </Tooltip>
+                </div>
+              )}
+            </div>
           </div>
         )}
       </div>

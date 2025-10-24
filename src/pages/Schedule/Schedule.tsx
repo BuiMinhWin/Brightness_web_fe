@@ -7,6 +7,7 @@ import {
   WorkoutScheduleResponse,
   ScheduleDayDetail,
   AIUsageLimits,
+  ExerciseLibraryDTO,
 } from "@/services/personalCoachService";
 import {
   challengeService,
@@ -23,6 +24,16 @@ import RegenerateScheduleModal, {
 import EditWorkoutDayModal, { EditWorkoutDayData } from "@/components/EditWorkoutDayModal";
 import UpgradePrompt from "@/components/UpgradePrompt";
 import ScheduleSidebar, { GenerateWorkoutFormData } from "@/components/schedule/ScheduleSidebar";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import {
   FitnessCenter,
   Schedule as ScheduleIcon,
@@ -108,6 +119,14 @@ const Schedule: React.FC = () => {
   const [editingWorkout, setEditingWorkout] = useState<ScheduleDayDetail | null>(null);
   const [aiUsageLimits, setAiUsageLimits] = useState<AIUsageLimits | null>(null);
   const [showUpgradePrompt, setShowUpgradePrompt] = useState(false);
+  const [dragOverDate, setDragOverDate] = useState<string | null>(null);
+  const [showDropConfirm, setShowDropConfirm] = useState(false);
+  const [pendingDrop, setPendingDrop] = useState<{
+    exercise: ExerciseLibraryDTO;
+    date: Date;
+    dateStr: string;
+    existingWorkout: any;
+  } | null>(null);
   const [toast, setToast] = useState<{
     open: boolean;
     message: string;
@@ -655,6 +674,270 @@ const Schedule: React.FC = () => {
       showToast({ message: "Failed to update task status.", severity: "error" });
     }
   };
+  // Drag-and-drop handlers
+  const formatDateISO = (date: Date): string => {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    const day = String(date.getDate()).padStart(2, "0");
+    return `${year}-${month}-${day}`;
+  };
+
+  const calculateDayNumber = (date: Date): number => {
+    if (!workoutSchedules[0]?.days[0]?.date) return 1;
+    const firstDayDate = new Date(workoutSchedules[0].days[0].date);
+    const diffTime = date.getTime() - firstDayDate.getTime();
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    return Math.max(1, diffDays + 1);
+  };
+
+  const handleDragOver = (e: React.DragEvent, date: Date) => {
+    if (isGenerating || !workoutSchedules[0]?.scheduleId) return;
+    e.preventDefault();
+    e.dataTransfer.dropEffect = "copy";
+    const dateStr = formatDateISO(date);
+    setDragOverDate(dateStr);
+  };
+
+  const handleDragLeave = () => {
+    setDragOverDate(null);
+  };
+
+  const handleTemplateDrop = async (template: any, date: Date) => {
+    try {
+      const dateStr = formatDateISO(date);
+      const scheduleId = workoutSchedules[0]?.scheduleId;
+      if (!scheduleId) return;
+
+      // Check if day already has a workout
+      const existingWorkout = events.find((ev) => ev.date === dateStr);
+      const dayNumber = calculateDayNumber(date);
+
+      // Convert template exercises to custom day exercises
+      const customExercises = template.exercises.map((ex: any, index: number) => ({
+        exerciseLibraryId: ex.exerciseId,
+        exerciseName: ex.exerciseName,
+        exerciseNameVi: ex.exerciseNameVi,
+        category: ex.category,
+        sets: ex.sets,
+        reps: ex.reps,
+        restSeconds: ex.restSeconds,
+        orderIndex: index,
+        notes: ex.notes || "",
+      }));
+
+      // If existing workout, ask user to replace or cancel
+      const replaceExisting = existingWorkout
+        ? window.confirm(
+            `A workout already exists on ${new Date(date).toLocaleDateString()}. Replace it with "${template.templateName}"?`
+          )
+        : true;
+
+      if (!replaceExisting) return;
+
+      await personalCoachService.addCustomDay(scheduleId, {
+        date: dateStr,
+        dayNumber,
+        dayType: "workout",
+        focusArea: template.focusArea,
+        estimatedDuration: template.estimatedDuration,
+        exercises: customExercises,
+        replaceExisting,
+      });
+
+      showToast({
+        message: `"${template.templateName}" applied to ${new Date(date).toLocaleDateString()}`,
+        severity: "success",
+      });
+
+      await fetchSchedules();
+    } catch (error: any) {
+      console.error("Failed to apply template:", error);
+      showToast({
+        message: error?.response?.data?.message || "Failed to apply template. Please try again.",
+        severity: "error",
+      });
+    }
+  };
+
+  const handleDrop = async (e: React.DragEvent, date: Date) => {
+    e.preventDefault();
+    setDragOverDate(null);
+
+    if (isGenerating) {
+      showToast({
+        message: "Please wait for the current generation to complete",
+        severity: "warning",
+      });
+      return;
+    }
+
+    if (!workoutSchedules[0]?.scheduleId) {
+      showToast({
+        message: "Please create a schedule first (use AI Generate or add exercises manually)",
+        severity: "warning",
+      });
+      return;
+    }
+
+    // Check if dropping a template
+    const templateData = e.dataTransfer.getData("template");
+    if (templateData) {
+      await handleTemplateDrop(JSON.parse(templateData), date);
+      return;
+    }
+
+    // Otherwise, handle exercise drop
+    const exerciseData = e.dataTransfer.getData("exercise");
+    if (!exerciseData) return;
+
+    try {
+      const exercise: ExerciseLibraryDTO = JSON.parse(exerciseData);
+      const dateStr = formatDateISO(date);
+      const scheduleId = workoutSchedules[0].scheduleId;
+
+      // Check if day already has a workout
+      const existingWorkout = events.find((ev) => ev.date === dateStr);
+
+      if (existingWorkout) {
+        // Show confirmation dialog
+        setPendingDrop({
+          exercise,
+          date,
+          dateStr,
+          existingWorkout,
+        });
+        setShowDropConfirm(true);
+        return;
+      } else {
+        // Create new custom day
+        const dayNumber = calculateDayNumber(date);
+        await personalCoachService.addCustomDay(scheduleId, {
+          date: dateStr,
+          dayNumber,
+          dayType: "workout",
+          focusArea: exercise.category || "general",
+          estimatedDuration: 30,
+          exercises: [
+            {
+              exerciseLibraryId: exercise.id,
+              exerciseName: exercise.exerciseName,
+              category: exercise.category,
+              sets: exercise.defaultSets,
+              reps: exercise.defaultReps,
+              restSeconds: exercise.defaultRestSeconds,
+              orderIndex: 0,
+              notes: "",
+            },
+          ],
+        });
+        showToast({
+          message: `New workout created with ${exercise.exerciseName} on ${dateStr}`,
+          severity: "success",
+        });
+      }
+
+      // Refresh schedule
+      await fetchSchedules();
+    } catch (error: any) {
+      console.error("Failed to add exercise:", error);
+      showToast({
+        message: error?.response?.data?.message || "Failed to add exercise. Please try again.",
+        severity: "error",
+      });
+    }
+  };
+
+  const handleAppendExercise = async () => {
+    if (!pendingDrop) return;
+
+    try {
+      const { exercise, dateStr, existingWorkout } = pendingDrop;
+
+      // Add to existing workout
+      await personalCoachService.editWorkoutDay({
+        scheduleDayId: existingWorkout.dayDetail.scheduleDayId,
+        exercisesToAdd: [
+          {
+            exerciseName: exercise.exerciseName,
+            sets: exercise.defaultSets,
+            reps: exercise.defaultReps,
+            restSeconds: exercise.defaultRestSeconds,
+            orderIndex: existingWorkout.dayDetail.exercises.length,
+          },
+        ],
+      });
+
+      showToast({
+        message: `${exercise.exerciseName} added to ${dateStr}`,
+        severity: "success",
+      });
+
+      await fetchSchedules();
+    } catch (error: any) {
+      console.error("Failed to add exercise:", error);
+      showToast({
+        message: error?.response?.data?.message || "Failed to add exercise. Please try again.",
+        severity: "error",
+      });
+    } finally {
+      setShowDropConfirm(false);
+      setPendingDrop(null);
+    }
+  };
+
+  const handleOverrideWorkout = async () => {
+    if (!pendingDrop || !workoutSchedules[0]?.scheduleId) return;
+
+    try {
+      const { exercise, date, dateStr, existingWorkout } = pendingDrop;
+      const scheduleId = workoutSchedules[0].scheduleId;
+
+      // Delete existing workout
+      await personalCoachService.deleteWorkoutDay(
+        scheduleId,
+        existingWorkout.dayDetail.scheduleDayId
+      );
+
+      // Create new custom day with the dropped exercise
+      const dayNumber = calculateDayNumber(date);
+      await personalCoachService.addCustomDay(scheduleId, {
+        date: dateStr,
+        dayNumber,
+        dayType: "workout",
+        focusArea: exercise.category || "general",
+        estimatedDuration: 30,
+        exercises: [
+          {
+            exerciseLibraryId: exercise.id,
+            exerciseName: exercise.exerciseName,
+            category: exercise.category,
+            sets: exercise.defaultSets,
+            reps: exercise.defaultReps,
+            restSeconds: exercise.defaultRestSeconds,
+            orderIndex: 0,
+            notes: "",
+          },
+        ],
+      });
+
+      showToast({
+        message: `Workout replaced with ${exercise.exerciseName}`,
+        severity: "success",
+      });
+
+      await fetchSchedules();
+    } catch (error: any) {
+      console.error("Failed to override workout:", error);
+      showToast({
+        message: error?.response?.data?.message || "Failed to override workout. Please try again.",
+        severity: "error",
+      });
+    } finally {
+      setShowDropConfirm(false);
+      setPendingDrop(null);
+    }
+  };
+
   const getDaysInMonth = (date: Date) => {
     return new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate();
   };
@@ -825,8 +1108,13 @@ const Schedule: React.FC = () => {
       days.push(
         <div
           key={day}
-          className="h-20 flex items-center justify-center font-bold cursor-pointer relative transition-all hover:scale-105 text-base border-r border-b border-green-300 hover:border-green-400 hover:bg-green-50"
+          className={`h-20 flex items-center justify-center font-bold cursor-pointer relative transition-all hover:scale-105 text-base border-r border-b border-green-300 hover:border-green-400 hover:bg-green-50 ${
+            dragOverDate === formatDateISO(date) ? "drag-over" : ""
+          }`}
           onClick={() => setSelectedDate(date)}
+          onDragOver={(e) => handleDragOver(e, date)}
+          onDragLeave={handleDragLeave}
+          onDrop={(e) => handleDrop(e, date)}
         >
           {/* Current date background circle */}
           {isToday && !isSelected && (
@@ -1533,6 +1821,7 @@ const Schedule: React.FC = () => {
           }
         }}
         scheduleId={workoutSchedules[0]?.scheduleId}
+        onScheduleUpdated={fetchSchedules}
       />
 
       {/* Workout Feedback Modal */}
@@ -1601,6 +1890,70 @@ const Schedule: React.FC = () => {
           {toast.message}
         </Alert>
       </Snackbar>
+
+      {/* Drop Confirmation Dialog */}
+      <AlertDialog open={showDropConfirm} onOpenChange={setShowDropConfirm}>
+        <AlertDialogContent
+          className="bg-white rounded-3xl"
+          style={{ border: "2px solid #c8ead6" }}
+        >
+          <AlertDialogHeader>
+            <AlertDialogTitle style={{ color: "#0a6a56" }}>Workout Already Exists</AlertDialogTitle>
+            <AlertDialogDescription>
+              This day already has a workout scheduled (
+              {pendingDrop?.existingWorkout?.dayDetail?.exercises?.length || 0} exercises).
+              <br />
+              <br />
+              <strong>Append:</strong> Add this exercise to the existing workout.
+              <br />
+              <strong>Override:</strong> Replace the entire workout with just this exercise.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel
+              onClick={() => {
+                setShowDropConfirm(false);
+                setPendingDrop(null);
+              }}
+              className="rounded-xl"
+              style={{ borderColor: "#c8ead6" }}
+            >
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleAppendExercise}
+              className="rounded-xl text-white hover:opacity-90"
+              style={{ background: "#0a6a56" }}
+            >
+              Append
+            </AlertDialogAction>
+            <AlertDialogAction
+              onClick={handleOverrideWorkout}
+              className="rounded-xl text-white hover:opacity-90"
+              style={{ background: "#dc2626" }}
+            >
+              Override
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Drag-and-Drop CSS */}
+      <style>{`
+        .drag-over {
+          border: 2px dashed #0a6a56 !important;
+          background: rgba(10, 106, 86, 0.1) !important;
+          transform: scale(1.02);
+        }
+        
+        .exercise-card[draggable="true"] {
+          cursor: grab;
+        }
+        
+        .exercise-card[draggable="true"]:active {
+          cursor: grabbing;
+        }
+      `}</style>
     </div>
   );
 };
