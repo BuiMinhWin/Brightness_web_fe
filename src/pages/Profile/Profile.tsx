@@ -5,9 +5,11 @@ import { UserModel, UpdateUserRequest } from "../../models";
 import type { Post } from "../../models/social";
 import { useAppSelector } from "../../store/hooks";
 import { resolveApiAssetUrl } from "@/utils/media";
+import { useToast } from "../../hooks/useToast";
 import "./Profile.css";
 
 const Profile: React.FC = () => {
+  const { showToast } = useToast();
   const AVATAR_MAX_SIZE_BYTES = 2 * 1024 * 1024; // 2MB
   const [profileData, setProfileData] = useState<UserModel | null>(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -117,10 +119,10 @@ const Profile: React.FC = () => {
       // Remove the deleted post from state
       setUserPosts(prev => prev.filter(post => post.id !== postId));
       setActivePostMenu(null);
-      alert("Post deleted successfully!");
+      showToast({ message: "Post deleted successfully!", severity: "success" });
     } catch (error) {
       console.error("Error deleting post:", error);
-      alert("Failed to delete post. Please try again.");
+      showToast({ message: "Failed to delete post. Please try again.", severity: "error" });
     }
   };
 
@@ -197,11 +199,11 @@ const Profile: React.FC = () => {
       setEditFormData({});
       setAvatarPreview(null);
       setAvatarError(null);
-      alert("Profile updated successfully!");
+      showToast({ message: "Profile updated successfully!", severity: "success" });
       window.location.reload();
     } catch (error) {
       console.error("Error updating profile:", error);
-      alert("Error updating profile. Please try again.");
+      showToast({ message: "Error updating profile. Please try again.", severity: "error" });
     } finally {
       setIsLoading(false);
     }

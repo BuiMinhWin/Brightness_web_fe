@@ -24,6 +24,13 @@ interface RegenerateScheduleModalProps {
   completedDays: number;
   totalDays: number;
   currentDifficulty: string;
+  aiUsageLimits?: {
+    remainingGenerations: number;
+    monthlyLimit: number;
+    canGenerate: boolean;
+    subscriptionTier: string;
+    daysUntilReset: number;
+  } | null;
 }
 
 export interface RegenerateRequestData {
@@ -43,6 +50,7 @@ const RegenerateScheduleModal: React.FC<RegenerateScheduleModalProps> = ({
   completedDays,
   totalDays,
   currentDifficulty,
+  aiUsageLimits,
 }) => {
   const [isGenerating, setIsGenerating] = useState(false);
   const [formData, setFormData] = useState<RegenerateRequestData>({
@@ -127,6 +135,31 @@ const RegenerateScheduleModal: React.FC<RegenerateScheduleModalProps> = ({
             <Close style={{ color: "#0a6a56" }} />
           </button>
         </div>
+
+        {/* AI Usage Warning */}
+        {aiUsageLimits && !aiUsageLimits.canGenerate && (
+          <div className="px-6">
+            <div className="bg-red-50 border-2 border-red-300 rounded-xl p-4">
+              <div className="flex items-start gap-3">
+                <Warning style={{ color: "#dc2626", fontSize: 24 }} />
+                <div>
+                  <h3 className="font-bold text-sm" style={{ color: "#991b1b" }}>
+                    AI Generation Limit Reached
+                  </h3>
+                  <p className="text-xs mt-1" style={{ color: "#991b1b", opacity: 0.9 }}>
+                    You've used {aiUsageLimits.monthlyLimit} of {aiUsageLimits.monthlyLimit} AI
+                    generations this month.
+                  </p>
+                  <p className="text-xs mt-1" style={{ color: "#991b1b", opacity: 0.7 }}>
+                    Resets in {aiUsageLimits.daysUntilReset}{" "}
+                    {aiUsageLimits.daysUntilReset === 1 ? "day" : "days"} or upgrade for unlimited
+                    generations.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Content */}
         <div className="px-6 py-5 space-y-6 overflow-y-auto flex-1 scrollbar-hide">
@@ -258,7 +291,7 @@ const RegenerateScheduleModal: React.FC<RegenerateScheduleModalProps> = ({
           </button>
           <button
             onClick={handleSubmit}
-            disabled={isGenerating}
+            disabled={isGenerating || (aiUsageLimits && !aiUsageLimits.canGenerate)}
             className="flex-1 px-6 py-3 rounded-xl font-semibold text-white hover:opacity-90 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
             style={{ background: "#0a6a56" }}
           >

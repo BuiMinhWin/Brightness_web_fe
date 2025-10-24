@@ -21,6 +21,7 @@ import {
   ChallengeTask,
   ChallengeParticipant,
 } from "../../services/challengeService";
+import { useToast } from "../../hooks/useToast";
 
 // Event interface matching API data
 interface Event {
@@ -73,6 +74,7 @@ interface Event {
 }
 
 const EventDetailPage: React.FC = () => {
+  const { showToast } = useToast();
   const [showJoinDialog, setShowJoinDialog] = useState(false);
   const [event, setEvent] = useState<Event | null>(null);
   const [loading, setLoading] = useState(true);
@@ -404,7 +406,7 @@ const EventDetailPage: React.FC = () => {
 
     // ✅ Check if user is authenticated before allowing join
     if (!isAuthenticated || !authenticatedUserId) {
-      alert("Please log in to join this challenge");
+      showToast({ message: "Please log in to join this challenge", severity: "warning" });
       navigate("/auth?mode=signin");
       return;
     }
@@ -418,14 +420,14 @@ const EventDetailPage: React.FC = () => {
       const guidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
       if (!guidRegex.test(authenticatedUserId)) {
         console.error("❌ Invalid userId format (not a Guid):", authenticatedUserId);
-        alert("Invalid user ID format. Please try logging in again.");
+        showToast({ message: "Invalid user ID format. Please try logging in again.", severity: "error" });
         return;
       }
 
       // Validate eventId is a Guid
       if (!guidRegex.test(eventId)) {
         console.error("❌ Invalid eventId format (not a Guid):", eventId);
-        alert("Invalid event ID format.");
+        showToast({ message: "Invalid event ID format.", severity: "error" });
         return;
       }
 
@@ -453,7 +455,7 @@ const EventDetailPage: React.FC = () => {
       setShowJoinDialog(false);
 
       // Show success message
-      alert(`Successfully joined ${event.title}!`);
+      showToast({ message: `Successfully joined ${event.title}!`, severity: "success" });
 
       // Navigate to your challenges page
       navigate("/your-challenges");
@@ -462,12 +464,12 @@ const EventDetailPage: React.FC = () => {
       
       // More specific error messages
       if (err.message?.includes("already")) {
-        alert("You have already joined this challenge!");
+        showToast({ message: "You have already joined this challenge!", severity: "info" });
         setIsAlreadyJoined(true);
       } else if (err.status === 400) {
-        alert("Invalid request. Please check if the challenge exists and you're not already a participant.");
+        showToast({ message: "Invalid request. Please check if the challenge exists and you're not already a participant.", severity: "error" });
       } else {
-        alert("Failed to join the event. Please try again.");
+        showToast({ message: "Failed to join the event. Please try again.", severity: "error" });
       }
     } finally {
       setJoining(false);
@@ -704,7 +706,7 @@ const EventDetailPage: React.FC = () => {
                 <button
                   onClick={() => {
                     if (!isAuthenticated) {
-                      alert("Please log in to join this challenge");
+                      showToast({ message: "Please log in to join this challenge", severity: "warning" });
                       navigate("/auth?mode=signin");
                     } else {
                       setShowJoinDialog(true);

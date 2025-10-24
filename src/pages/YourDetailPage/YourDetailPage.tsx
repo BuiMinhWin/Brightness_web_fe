@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useSelector } from "react-redux";
 import { selectUserId, selectIsAuthenticated } from "../../store/slices/authSlice";
+import { useToast } from "../../hooks/useToast";
 import {
   ArrowLeft,
   CheckCircle,
@@ -50,6 +51,7 @@ interface LeaderboardEntry {
 type TabType = "progress" | "leaderboard";
 
 const YourDetailPage: React.FC = () => {
+  const { showToast } = useToast();
   const { challengeId } = useParams<{ challengeId: string }>();
   const navigate = useNavigate();
   
@@ -431,13 +433,13 @@ const YourDetailPage: React.FC = () => {
     if (!participant || !task.id || task.isCompleted) return;
 
     if (!isAuthenticated || !authenticatedUserId) {
-      alert("Please log in to mark tasks as complete");
+      showToast({ message: "Please log in to mark tasks as complete", severity: "warning" });
       navigate("/auth?mode=signin");
       return;
     }
 
     if (task.taskStatus === 'upcoming') {
-      alert(`This task is not available yet. It will be available starting ${formatTaskDateRange(task.startDate, task.endDate)}.`);
+      showToast({ message: `This task is not available yet. It will be available starting ${formatTaskDateRange(task.startDate, task.endDate)}.`, severity: "info" });
       return;
     }
 
@@ -527,15 +529,15 @@ const YourDetailPage: React.FC = () => {
       );
 
       if (task.taskStatus === 'overdue') {
-        alert(`✅ Task completed!\nYou earned ${earnedPoints} points (50% penalty applied)`);
+        showToast({ message: `✅ Task completed! You earned ${earnedPoints} points (50% penalty applied)`, severity: "success" });
       } else {
-        alert(`✅ Task completed!\nYou earned ${earnedPoints} points`);
+        showToast({ message: `✅ Task completed! You earned ${earnedPoints} points`, severity: "success" });
       }
 
       console.log("✅ Task marked as complete successfully");
     } catch (err) {
       console.error("❌ Error marking task as complete:", err);
-      alert("Failed to mark task as complete. Please try again.");
+      showToast({ message: "Failed to mark task as complete. Please try again.", severity: "error" });
     } finally {
       setUpdatingTask(null);
     }

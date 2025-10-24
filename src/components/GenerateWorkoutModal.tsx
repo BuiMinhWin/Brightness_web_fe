@@ -26,6 +26,12 @@ interface GenerateWorkoutModalProps {
   onClose: () => void;
   onGenerate: (formData: GenerateWorkoutFormData) => Promise<void>;
   isGenerating: boolean;
+  aiUsageLimits?: {
+    remainingGenerations: number;
+    monthlyLimit: number;
+    canGenerate: boolean;
+    subscriptionTier: string;
+  } | null;
 }
 
 export interface GenerateWorkoutFormData {
@@ -43,6 +49,7 @@ const GenerateWorkoutModal: React.FC<GenerateWorkoutModalProps> = ({
   onClose,
   onGenerate,
   isGenerating,
+  aiUsageLimits,
 }) => {
   const [formData, setFormData] = useState<GenerateWorkoutFormData>({
     goal: "Weight Loss",
@@ -144,6 +151,38 @@ const GenerateWorkoutModal: React.FC<GenerateWorkoutModalProps> = ({
             <Close />
           </button>
         </div>
+
+        {/* AI Usage Warning */}
+        {aiUsageLimits && aiUsageLimits.subscriptionTier === "free" && aiUsageLimits.remainingGenerations <= 1 && (
+          <div 
+            className="mb-4 p-4 rounded-xl"
+            style={{ 
+              background: aiUsageLimits.remainingGenerations === 0 ? "#fee2e2" : "#fff7ed",
+              border: `2px solid ${aiUsageLimits.remainingGenerations === 0 ? "#fecaca" : "#fed7aa"}`
+            }}
+          >
+            <div className="flex items-start gap-3">
+              <div className="flex-1">
+                <p className="font-semibold text-sm" style={{ 
+                  color: aiUsageLimits.remainingGenerations === 0 ? "#991b1b" : "#9a3412"
+                }}>
+                  {aiUsageLimits.remainingGenerations === 0 
+                    ? "No AI generations remaining" 
+                    : `Last AI generation for this month (${aiUsageLimits.remainingGenerations}/${aiUsageLimits.monthlyLimit})`
+                  }
+                </p>
+                <p className="text-xs mt-1" style={{ 
+                  color: aiUsageLimits.remainingGenerations === 0 ? "#dc2626" : "#ea580c"
+                }}>
+                  {aiUsageLimits.remainingGenerations === 0
+                    ? "Consider using the manual schedule builder or upgrade to Premium for 50 AI generations per month."
+                    : "After this, consider using the manual builder or upgrade to Premium."
+                  }
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Scrollable Content */}
         <div

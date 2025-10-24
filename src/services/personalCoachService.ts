@@ -44,6 +44,142 @@ export interface WorkoutScheduleResponse {
   durationDays: number;
   days: ScheduleDayDetail[];
   createdAt: string;
+  isLatest: boolean;
+  status: string;
+  version: number;
+}
+
+// ==================== MANUAL SCHEDULE BUILDER TYPES ====================
+
+export interface AIUsageLimits {
+  remainingGenerations: number;
+  monthlyLimit: number;
+  canGenerate: boolean;
+  usedThisMonth: number;
+  daysUntilReset: number;
+  subscriptionTier: "free" | "paid";
+}
+
+export interface ExerciseLibraryDTO {
+  id: string;
+  exerciseName: string;
+  exerciseNameVi: string;
+  category: string;
+  targetMuscles: string[];
+  difficulty: string;
+  equipmentRequired: string[];
+  description: string;
+  videoUrl: string;
+  defaultSets: number;
+  defaultReps: string;
+  defaultRestSeconds: number;
+}
+
+export interface ExerciseFilters {
+  category?: string;
+  difficulty?: string;
+  equipmentAvailable?: string[];
+  searchQuery?: string;
+}
+
+export interface ExerciseSuggestionRequest {
+  focusArea: string;
+  difficulty: string;
+  equipmentAvailable?: string[];
+  count?: number;
+}
+
+export interface WorkoutTemplateDTO {
+  id: string;
+  templateName: string;
+  focusArea: string;
+  difficulty: string;
+  estimatedDuration: number;
+  description: string;
+  exercises: TemplateExerciseDTO[];
+}
+
+export interface TemplateExerciseDTO {
+  exerciseLibraryId: string;
+  exerciseName: string;
+  exerciseNameVi: string;
+  orderIndex: number;
+  sets: number;
+  reps: string;
+  restSeconds: number;
+  notes: string;
+}
+
+export interface TemplateFilters {
+  focusArea?: string;
+  difficulty?: string;
+}
+
+export interface ManualScheduleRequest {
+  userId: string;
+  scheduleName: string;
+  goal: string;
+  startDate: string;
+  endDate?: string;
+  durationDays: number;
+  difficultyLevel: string;
+}
+
+export interface AddDayFromTemplateRequest {
+  scheduleId?: string;
+  templateId: string;
+  date: string;
+  dayNumber: number;
+}
+
+export interface CustomExerciseDTO {
+  exerciseLibraryId?: string;
+  exerciseName: string;
+  category: string;
+  sets: number;
+  reps: string;
+  restSeconds: number;
+  orderIndex: number;
+  notes?: string;
+}
+
+export interface AddCustomDayRequest {
+  scheduleId?: string;
+  date: string;
+  dayNumber: number;
+  dayType: string;
+  focusArea: string;
+  estimatedDuration: number;
+  exercises: CustomExerciseDTO[];
+}
+
+export interface UpdateWorkoutDayRequest {
+  dayType?: string;
+  focusArea?: string;
+  estimatedDuration?: number;
+  exercises?: CustomExerciseDTO[];
+}
+
+export interface WorkoutDayResponse {
+  dayId: string;
+  scheduleId: string;
+  dayNumber: number;
+  date: string;
+  dayType: string;
+  focusArea: string;
+  estimatedDuration: number;
+  exercises: ExerciseDetailDTO[];
+}
+
+export interface ExerciseDetailDTO {
+  exerciseId: string;
+  exerciseName: string;
+  category: string;
+  sets: number;
+  reps: string;
+  restSeconds: number;
+  orderIndex: number;
+  notes: string;
 }
 
 export interface ModifyDayRequest {
@@ -293,5 +429,146 @@ export const personalCoachService = {
     }
 
     return { valid: true };
+  },
+
+  // ==================== MANUAL SCHEDULE BUILDER METHODS ====================
+
+  // AI Usage Limits
+  getAIUsageLimits: async (userId: string): Promise<AIUsageLimits> => {
+    const response = await httpRequest<{ success: boolean; data: AIUsageLimits }>(
+      `/coach/api/schedule/ai-usage-limits/${userId}`,
+      { method: 'GET' }
+    );
+    return response.data;
+  },
+
+  // Exercise Library
+  getExerciseLibrary: async (filters?: ExerciseFilters): Promise<ExerciseLibraryDTO[]> => {
+    const params = new URLSearchParams();
+    if (filters?.category) params.append('category', filters.category);
+    if (filters?.difficulty) params.append('difficulty', filters.difficulty);
+    if (filters?.searchQuery) params.append('searchQuery', filters.searchQuery);
+    
+    const query = params.toString() ? `?${params.toString()}` : '';
+    const response = await httpRequest<{ success: boolean; data: ExerciseLibraryDTO[]; count: number }>(
+      `/coach/api/exercise-library${query}`,
+      { method: 'GET' }
+    );
+    return response.data;
+  },
+
+  getExerciseById: async (id: string): Promise<ExerciseLibraryDTO> => {
+    const response = await httpRequest<{ success: boolean; data: ExerciseLibraryDTO }>(
+      `/coach/api/exercise-library/${id}`,
+      { method: 'GET' }
+    );
+    return response.data;
+  },
+
+  searchExercises: async (query: string): Promise<ExerciseLibraryDTO[]> => {
+    const response = await httpRequest<{ success: boolean; data: ExerciseLibraryDTO[]; count: number }>(
+      `/coach/api/exercise-library/search?q=${encodeURIComponent(query)}`,
+      { method: 'GET' }
+    );
+    return response.data;
+  },
+
+  getExerciseCategories: async (): Promise<string[]> => {
+    const response = await httpRequest<{ success: boolean; data: string[] }>(
+      `/coach/api/exercise-library/categories`,
+      { method: 'GET' }
+    );
+    return response.data;
+  },
+
+  getAISuggestions: async (request: ExerciseSuggestionRequest): Promise<ExerciseLibraryDTO[]> => {
+    const params = new URLSearchParams();
+    params.append('focusArea', request.focusArea);
+    params.append('difficulty', request.difficulty);
+    if (request.count) params.append('count', request.count.toString());
+    
+    const response = await httpRequest<{ success: boolean; data: ExerciseLibraryDTO[]; count: number; note: string }>(
+      `/coach/api/exercise-library/suggestions?${params.toString()}`,
+      { method: 'GET' }
+    );
+    return response.data;
+  },
+
+  // Workout Templates
+  getWorkoutTemplates: async (filters?: TemplateFilters): Promise<WorkoutTemplateDTO[]> => {
+    const params = new URLSearchParams();
+    if (filters?.focusArea) params.append('focusArea', filters.focusArea);
+    if (filters?.difficulty) params.append('difficulty', filters.difficulty);
+    
+    const query = params.toString() ? `?${params.toString()}` : '';
+    const response = await httpRequest<{ success: boolean; data: WorkoutTemplateDTO[]; count: number }>(
+      `/coach/api/workout-templates${query}`,
+      { method: 'GET' }
+    );
+    return response.data;
+  },
+
+  getTemplateById: async (id: string): Promise<WorkoutTemplateDTO> => {
+    const response = await httpRequest<{ success: boolean; data: WorkoutTemplateDTO }>(
+      `/coach/api/workout-templates/${id}`,
+      { method: 'GET' }
+    );
+    return response.data;
+  },
+
+  // Manual Schedule Management
+  createManualSchedule: async (request: ManualScheduleRequest): Promise<WorkoutScheduleResponse> => {
+    const response = await httpRequest<{ success: boolean; data: WorkoutScheduleResponse }>(
+      `/coach/api/schedule/manual`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(request),
+      }
+    );
+    return response.data;
+  },
+
+  addDayFromTemplate: async (scheduleId: string, request: AddDayFromTemplateRequest): Promise<WorkoutDayResponse> => {
+    const response = await httpRequest<{ success: boolean; data: WorkoutDayResponse }>(
+      `/coach/api/schedule/${scheduleId}/days/from-template`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(request),
+      }
+    );
+    return response.data;
+  },
+
+  addCustomDay: async (scheduleId: string, request: AddCustomDayRequest): Promise<WorkoutDayResponse> => {
+    const response = await httpRequest<{ success: boolean; data: WorkoutDayResponse }>(
+      `/coach/api/schedule/${scheduleId}/days/custom`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(request),
+      }
+    );
+    return response.data;
+  },
+
+  updateWorkoutDay: async (scheduleId: string, dayId: string, request: UpdateWorkoutDayRequest): Promise<WorkoutDayResponse> => {
+    const response = await httpRequest<{ success: boolean; data: WorkoutDayResponse }>(
+      `/coach/api/schedule/${scheduleId}/days/${dayId}`,
+      {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(request),
+      }
+    );
+    return response.data;
+  },
+
+  deleteWorkoutDay: async (scheduleId: string, dayId: string): Promise<void> => {
+    await httpRequest<{ success: boolean; message: string }>(
+      `/coach/api/schedule/${scheduleId}/days/${dayId}`,
+      { method: 'DELETE' }
+    );
   },
 };

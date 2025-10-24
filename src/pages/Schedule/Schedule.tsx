@@ -1,19 +1,21 @@
 import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { useAppSelector } from "@/store/hooks";
+import { useToast } from "@/hooks/useToast";
 import {
   personalCoachService,
   WorkoutScheduleResponse,
   ScheduleDayDetail,
+  AIUsageLimits,
 } from "@/services/personalCoachService";
 import chatService from "@/services/chatService";
-import GenerateWorkoutModal, { GenerateWorkoutFormData } from "@/components/GenerateWorkoutModal";
-import WorkoutDetailModal from "@/components/WorkoutDetailModal";
 import WorkoutFeedbackModal, { WorkoutFeedbackData } from "@/components/WorkoutFeedbackModal";
 import RegenerateScheduleModal, {
   RegenerateRequestData,
 } from "@/components/RegenerateScheduleModal";
 import EditWorkoutDayModal, { EditWorkoutDayData } from "@/components/EditWorkoutDayModal";
-import ScheduleHistoryModal from "@/components/ScheduleHistoryModal";
+import UpgradePrompt from "@/components/UpgradePrompt";
+import ScheduleSidebar, { GenerateWorkoutFormData } from "@/components/schedule/ScheduleSidebar";
 import {
   FitnessCenter,
   Schedule as ScheduleIcon,
@@ -25,6 +27,7 @@ import {
   AutoAwesome,
   Refresh,
   History,
+  CheckCircle,
 } from "@mui/icons-material";
 import { Tooltip, Snackbar, Alert } from "@mui/material";
 import {
@@ -47,15 +50,15 @@ interface WorkoutEvent {
 }
 
 const Schedule: React.FC = () => {
+  const { showToast } = useToast();
+  const navigate = useNavigate();
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState<Date | null>(new Date());
   const [workoutSchedules, setWorkoutSchedules] = useState<WorkoutScheduleResponse[]>([]);
   const [events, setEvents] = useState<WorkoutEvent[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [showGenerateModal, setShowGenerateModal] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
-  const [showDetailModal, setShowDetailModal] = useState(false);
   const [selectedWorkout, setSelectedWorkout] = useState<ScheduleDayDetail | null>(null);
   const [selectedWorkoutDate, setSelectedWorkoutDate] = useState<string>("");
   const [showFeedbackModal, setShowFeedbackModal] = useState(false);
@@ -68,7 +71,8 @@ const Schedule: React.FC = () => {
   const [showRegenerateModal, setShowRegenerateModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [editingWorkout, setEditingWorkout] = useState<ScheduleDayDetail | null>(null);
-  const [showHistoryModal, setShowHistoryModal] = useState(false);
+  const [aiUsageLimits, setAiUsageLimits] = useState<AIUsageLimits | null>(null);
+  const [showUpgradePrompt, setShowUpgradePrompt] = useState(false);
   const [toast, setToast] = useState<{
     open: boolean;
     message: string;
@@ -79,8 +83,22 @@ const Schedule: React.FC = () => {
     severity: "info",
   });
   const userId = useAppSelector((state) => state.auth.userId);
+  const userInfo = useAppSelector((state) => state.auth.userInfo);
+  const isPaidUser = userInfo?.subscriptionPlanId != null;
 
   const weekdays = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+
+  // Fetch AI usage limits
+  const fetchAIUsageLimits = async () => {
+    if (!userId) return;
+    
+    try {
+      const limits = await personalCoachService.getAIUsageLimits(userId);
+      setAiUsageLimits(limits);
+    } catch (error) {
+      console.error("Failed to fetch AI usage limits:", error);
+    }
+  };
 
   // Fetch user's workout schedules
   const fetchSchedules = async () => {
@@ -98,10 +116,10 @@ const Schedule: React.FC = () => {
       console.log("✅ Schedules fetched:", schedules);
       setWorkoutSchedules(schedules);
 
-      // Only use the latest (most recent) schedule
+      // Only use the latest schedule (prioritize IsLatest flag, fallback to most recent)
       if (schedules.length > 0) {
-        const latestSchedule = schedules[0]; // Already ordered by CreatedAt DESC from backend
-        console.log("📌 Using latest schedule:", latestSchedule.scheduleName);
+        const latestSchedule = schedules.find(s => s.isLatest) || schedules[0];
+        console.log("📌 Using latest schedule:", latestSchedule.scheduleName, "IsLatest:", latestSchedule.isLatest);
 
         // Convert latest schedule to calendar events using actual dates from backend
         const calendarEvents: WorkoutEvent[] = [];
@@ -136,11 +154,35 @@ const Schedule: React.FC = () => {
 
   useEffect(() => {
     fetchSchedules();
+    fetchAIUsageLimits();
   }, [userId]);
+
+  // Auto-select workout when date is selected
+  useEffect(() => {
+    if (!selectedDate) return;
+    
+    // Format date as YYYY-MM-DD
+    const year = selectedDate.getFullYear();
+    const month = String(selectedDate.getMonth() + 1).padStart(2, "0");
+    const day = String(selectedDate.getDate()).padStart(2, "0");
+    const dateStr = `${year}-${month}-${day}`;
+    
+    const workoutsForDate = events.filter((event) => event.date === dateStr);
+    
+    if (workoutsForDate.length > 0) {
+      // Automatically select the first workout for this date
+      setSelectedWorkout(workoutsForDate[0].dayDetail);
+      setSelectedWorkoutDate(workoutsForDate[0].date);
+    } else {
+      // Clear selection if no workout on this date
+      setSelectedWorkout(null);
+      setSelectedWorkoutDate("");
+    }
+  }, [selectedDate, events]);
 
   const handleGenerateWorkout = async (formData: GenerateWorkoutFormData) => {
     if (!userId) {
-      alert("Please log in to generate a workout schedule");
+      showToast({ message: "Please log in to generate a workout schedule", severity: "warning" });
       return;
     }
 
@@ -166,10 +208,10 @@ const Schedule: React.FC = () => {
       });
       console.log("✅ Schedule generated");
 
-      // Refetch schedules
+      // Refetch schedules and AI usage limits
       await fetchSchedules();
+      await fetchAIUsageLimits();
 
-      setShowGenerateModal(false);
       setToast({
         open: true,
         message: `Workout plan generated successfully! (${credits?.remainingMessages ?? '?'}/${credits?.dailyLimit ?? '?'} AI credits remaining)`,
@@ -213,8 +255,9 @@ const Schedule: React.FC = () => {
       await personalCoachService.regenerateSchedule(requestData);
       console.log("✅ Schedule regenerated");
 
-      // Refetch schedules
+      // Refetch schedules and AI usage limits
       await fetchSchedules();
+      await fetchAIUsageLimits();
 
       setShowRegenerateModal(false);
       setToast({
@@ -330,24 +373,69 @@ const Schedule: React.FC = () => {
             (() => {
               const dayEvents = getEventsForDate(date);
               const hasWorkout = dayEvents.some((e) => e.dayDetail.dayType === "workout");
+              
+              // Calculate progress
+              let progressPercentage = 0;
+              if (hasWorkout) {
+                const workoutEvent = dayEvents.find((e) => e.dayDetail.dayType === "workout");
+                if (workoutEvent) {
+                  const completedExercises = workoutEvent.dayDetail.exercises.filter(
+                    (ex) => ex.completed
+                  ).length;
+                  const totalExercises = workoutEvent.dayDetail.exercises.length;
+                  progressPercentage =
+                    totalExercises > 0 ? (completedExercises / totalExercises) * 100 : 0;
+                }
+              }
 
               return (
-                <div
-                  className="absolute w-6 h-6 rounded-full flex items-center justify-center"
-                  style={{
-                    background: hasWorkout ? "#0a6a56" : "#69c68d",
-                    color: "white",
-                    top: "4px",
-                    right: "4px",
-                    opacity: 0.6,
-                  }}
-                >
-                  {hasWorkout ? (
-                    <FitnessCenter style={{ fontSize: 14 }} />
-                  ) : (
-                    <Hotel style={{ fontSize: 14 }} />
+                <>
+                  <div
+                    className="absolute w-6 h-6 rounded-full flex items-center justify-center"
+                    style={{
+                      background: hasWorkout 
+                        ? progressPercentage === 100 
+                          ? "#22c55e" 
+                          : progressPercentage > 0 
+                            ? "#f59e0b" 
+                            : "#0a6a56"
+                        : "#69c68d",
+                      color: "white",
+                      top: "4px",
+                      right: "4px",
+                      opacity: 0.6,
+                    }}
+                  >
+                    {hasWorkout ? (
+                      progressPercentage === 100 ? (
+                        <CheckCircle style={{ fontSize: 14 }} />
+                      ) : (
+                        <FitnessCenter style={{ fontSize: 14 }} />
+                      )
+                    ) : (
+                      <Hotel style={{ fontSize: 14 }} />
+                    )}
+                  </div>
+                  {hasWorkout && (
+                    <div
+                      className="absolute bottom-1 left-1 right-1 h-1 rounded-full overflow-hidden"
+                      style={{ background: "rgba(10, 106, 86, 0.1)", opacity: 0.5 }}
+                    >
+                      <div
+                        className="h-full transition-all duration-300"
+                        style={{
+                          width: `${progressPercentage}%`,
+                          background:
+                            progressPercentage === 100
+                              ? "#22c55e"
+                              : progressPercentage > 0
+                                ? "#f59e0b"
+                                : "#0a6a56",
+                        }}
+                      />
+                    </div>
                   )}
-                </div>
+                </>
               );
             })()}
         </div>
@@ -419,30 +507,79 @@ const Schedule: React.FC = () => {
             {day}
           </span>
 
-          {/* Event icon badge - Workout or Rest */}
+          {/* Event indicator with progress */}
           {eventCount > 0 &&
-            !isSelected &&
             (() => {
               const dayEvents = getEventsForDate(date);
               const hasWorkout = dayEvents.some((e) => e.dayDetail.dayType === "workout");
               const hasRest = dayEvents.some((e) => e.dayDetail.dayType === "rest");
+              
+              // Calculate progress for workout days
+              let progressPercentage = 0;
+              if (hasWorkout) {
+                const workoutEvent = dayEvents.find((e) => e.dayDetail.dayType === "workout");
+                if (workoutEvent) {
+                  const completedExercises = workoutEvent.dayDetail.exercises.filter(
+                    (ex) => ex.completed
+                  ).length;
+                  const totalExercises = workoutEvent.dayDetail.exercises.length;
+                  progressPercentage =
+                    totalExercises > 0 ? (completedExercises / totalExercises) * 100 : 0;
+                }
+              }
 
               return (
-                <div
-                  className="absolute w-7 h-7 rounded-full flex items-center justify-center"
-                  style={{
-                    background: hasWorkout ? "#0a6a56" : "#69c68d",
-                    color: "white",
-                    top: "4px",
-                    right: "4px",
-                  }}
-                >
-                  {hasWorkout ? (
-                    <FitnessCenter style={{ fontSize: 16 }} />
-                  ) : (
-                    <Hotel style={{ fontSize: 16 }} />
+                <>
+                  {/* Icon badge */}
+                  {!isSelected && (
+                    <div
+                      className="absolute w-7 h-7 rounded-full flex items-center justify-center"
+                      style={{
+                        background: hasWorkout 
+                          ? progressPercentage === 100 
+                            ? "#22c55e" 
+                            : progressPercentage > 0 
+                              ? "#f59e0b" 
+                              : "#0a6a56"
+                          : "#69c68d",
+                        color: "white",
+                        top: "4px",
+                        right: "4px",
+                      }}
+                    >
+                      {hasWorkout ? (
+                        progressPercentage === 100 ? (
+                          <CheckCircle style={{ fontSize: 16 }} />
+                        ) : (
+                          <FitnessCenter style={{ fontSize: 16 }} />
+                        )
+                      ) : (
+                        <Hotel style={{ fontSize: 16 }} />
+                      )}
+                    </div>
                   )}
-                </div>
+                  
+                  {/* Progress bar at bottom */}
+                  {hasWorkout && (
+                    <div
+                      className="absolute bottom-1 left-1 right-1 h-1.5 rounded-full overflow-hidden"
+                      style={{ background: "rgba(10, 106, 86, 0.15)" }}
+                    >
+                      <div
+                        className="h-full transition-all duration-300"
+                        style={{
+                          width: `${progressPercentage}%`,
+                          background:
+                            progressPercentage === 100
+                              ? "linear-gradient(90deg, #22c55e 0%, #16a34a 100%)"
+                              : progressPercentage > 0
+                                ? "linear-gradient(90deg, #f59e0b 0%, #f97316 100%)"
+                                : "linear-gradient(90deg, #0a6a56 0%, #069668 100%)",
+                        }}
+                      />
+                    </div>
+                  )}
+                </>
               );
             })()}
         </div>
@@ -473,24 +610,69 @@ const Schedule: React.FC = () => {
               (() => {
                 const dayEvents = getEventsForDate(date);
                 const hasWorkout = dayEvents.some((e) => e.dayDetail.dayType === "workout");
+                
+                // Calculate progress
+                let progressPercentage = 0;
+                if (hasWorkout) {
+                  const workoutEvent = dayEvents.find((e) => e.dayDetail.dayType === "workout");
+                  if (workoutEvent) {
+                    const completedExercises = workoutEvent.dayDetail.exercises.filter(
+                      (ex) => ex.completed
+                    ).length;
+                    const totalExercises = workoutEvent.dayDetail.exercises.length;
+                    progressPercentage =
+                      totalExercises > 0 ? (completedExercises / totalExercises) * 100 : 0;
+                  }
+                }
 
                 return (
-                  <div
-                    className="absolute w-6 h-6 rounded-full flex items-center justify-center"
-                    style={{
-                      background: hasWorkout ? "#0a6a56" : "#69c68d",
-                      color: "white",
-                      top: "4px",
-                      right: "4px",
-                      opacity: 0.6,
-                    }}
-                  >
-                    {hasWorkout ? (
-                      <FitnessCenter style={{ fontSize: 14 }} />
-                    ) : (
-                      <Hotel style={{ fontSize: 14 }} />
+                  <>
+                    <div
+                      className="absolute w-6 h-6 rounded-full flex items-center justify-center"
+                      style={{
+                        background: hasWorkout 
+                          ? progressPercentage === 100 
+                            ? "#22c55e" 
+                            : progressPercentage > 0 
+                              ? "#f59e0b" 
+                              : "#0a6a56"
+                          : "#69c68d",
+                        color: "white",
+                        top: "4px",
+                        right: "4px",
+                        opacity: 0.6,
+                      }}
+                    >
+                      {hasWorkout ? (
+                        progressPercentage === 100 ? (
+                          <CheckCircle style={{ fontSize: 14 }} />
+                        ) : (
+                          <FitnessCenter style={{ fontSize: 14 }} />
+                        )
+                      ) : (
+                        <Hotel style={{ fontSize: 14 }} />
+                      )}
+                    </div>
+                    {hasWorkout && (
+                      <div
+                        className="absolute bottom-1 left-1 right-1 h-1 rounded-full overflow-hidden"
+                        style={{ background: "rgba(10, 106, 86, 0.1)", opacity: 0.5 }}
+                      >
+                        <div
+                          className="h-full transition-all duration-300"
+                          style={{
+                            width: `${progressPercentage}%`,
+                            background:
+                              progressPercentage === 100
+                                ? "#22c55e"
+                                : progressPercentage > 0
+                                  ? "#f59e0b"
+                                  : "#0a6a56",
+                          }}
+                        />
+                      </div>
                     )}
-                  </div>
+                  </>
                 );
               })()}
           </div>
@@ -510,87 +692,41 @@ const Schedule: React.FC = () => {
   const displayEvents = getEventsForSelectedDate();
 
   return (
-    <div
-      className="h-full flex flex-col overflow-y-auto no-scrollbar px-4 py-3 rounded-3xl"
-      style={{
-        background: "linear-gradient(180deg, #bfe8d6 0%, #dff4e9 50%, #f1f8d6 100%)",
-        color: "#022c3c",
-      }}
-    >
-      {/* Calendar content */}
-      <main className="flex flex-col h-full">
+    <div className="h-full flex overflow-hidden">
+      {/* Main Calendar Section */}
+      <div
+        className="flex-1 flex flex-col overflow-y-auto no-scrollbar px-4 py-3 rounded-3xl transition-all duration-300"
+        style={{
+          background: "linear-gradient(180deg, #bfe8d6 0%, #dff4e9 50%, #f1f8d6 100%)",
+          color: "#022c3c",
+        }}
+      >
+        {/* Calendar content */}
+        <main className="flex flex-col h-full">
         {/* Heading row */}
         <div className="flex items-center justify-between px-3 py-1 flex-shrink-0">
           <div className="font-black text-4xl" style={{ color: "#0b3d33" }}>
             Schedule
           </div>
           <div className="flex items-center gap-4">
-            {/* Generate Workout Button */}
-            <Tooltip
-              title={!userId ? "Please log in to generate workout" : "Generate AI workout plan"}
-              placement="bottom"
-              arrow
-              componentsProps={{
-                tooltip: {
-                  sx: {
-                    bgcolor: "#0a6a56",
-                    color: "white",
-                    fontSize: "13px",
-                    fontWeight: "500",
-                    "& .MuiTooltip-arrow": {
-                      color: "#0a6a56",
-                    },
-                  },
-                },
-              }}
-            >
-              <button
-                onClick={() => setShowGenerateModal(true)}
-                disabled={!userId}
-                className="px-4 py-2 rounded-xl text-white font-medium shadow-md hover:shadow-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
-                style={{
-                  background: "linear-gradient(90deg, #0a6a56 0%, #69c68d 100%)",
-                }}
-              >
-                <AutoAwesome fontSize="small" />
-                <span className="text-sm">Generate Plan</span>
-              </button>
-            </Tooltip>
-
-            {/* History Button */}
-            {workoutSchedules.length > 0 && (
-              <Tooltip
-                title="View schedule history and analytics"
-                placement="bottom"
-                arrow
-                componentsProps={{
-                  tooltip: {
-                    sx: {
-                      bgcolor: "#0a6a56",
-                      color: "white",
-                      fontSize: "13px",
-                      fontWeight: "500",
-                      "& .MuiTooltip-arrow": {
-                        color: "#0a6a56",
-                      },
-                    },
-                  },
-                }}
-              >
-                <button
-                  onClick={() => setShowHistoryModal(true)}
-                  className="w-10 h-10 rounded-xl flex items-center justify-center shadow-md hover:shadow-lg transition-all duration-200"
+            {/* AI Usage Badge */}
+            {!isPaidUser && aiUsageLimits && (
+              <div className="flex items-center gap-2 text-sm">
+                <span style={{ color: "#0a6a56", fontWeight: "500" }}>
+                  AI:
+                </span>
+                <span
+                  className="px-2 py-1 rounded-lg font-semibold"
                   style={{
-                    background: "linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)",
-                    color: "white",
+                    background: aiUsageLimits.remainingGenerations > 0 ? "#dcfce7" : "#fee2e2",
+                    color: aiUsageLimits.remainingGenerations > 0 ? "#16a34a" : "#dc2626",
                   }}
                 >
-                  <History fontSize="small" />
-                </button>
-              </Tooltip>
+                  {aiUsageLimits.remainingGenerations}/{aiUsageLimits.monthlyLimit}
+                </span>
+              </div>
             )}
 
-            <div className="w-px h-8 bg-green-300"></div>
 
             <div className="flex items-center gap-3">
               <button
@@ -740,7 +876,6 @@ const Schedule: React.FC = () => {
                   onClick={() => {
                     setSelectedWorkout(event.dayDetail);
                     setSelectedWorkoutDate(event.date);
-                    setShowDetailModal(true);
                   }}
                   className="rounded-xl px-3 py-3 flex flex-col gap-2 mb-2 cursor-pointer hover:shadow-lg transition-all"
                   style={{
@@ -848,25 +983,21 @@ const Schedule: React.FC = () => {
           )}
         </div>
       </main>
+      </div>
 
-      {/* Generate Workout Modal */}
-      <GenerateWorkoutModal
-        isOpen={showGenerateModal}
-        onClose={() => setShowGenerateModal(false)}
-        onGenerate={handleGenerateWorkout}
+      {/* Schedule Sidebar - Always Visible */}
+      <ScheduleSidebar
+        onGenerateSubmit={handleGenerateWorkout}
         isGenerating={isGenerating}
-      />
-
-      {/* Workout Detail Modal */}
-      <WorkoutDetailModal
-        isOpen={showDetailModal}
-        onClose={() => {
-          setShowDetailModal(false);
+        hasSchedules={workoutSchedules.length > 0}
+        userId={userId || ""}
+        aiUsageLimits={aiUsageLimits}
+        selectedWorkout={selectedWorkout}
+        selectedWorkoutDate={selectedWorkoutDate}
+        onWorkoutClose={() => {
           setSelectedWorkout(null);
+          setSelectedWorkoutDate("");
         }}
-        workout={selectedWorkout}
-        date={selectedWorkoutDate}
-        scheduleId={workoutSchedules[0]?.scheduleId}
         onExerciseComplete={() => {
           // Refetch schedules to update the UI with latest completion status
           fetchSchedules();
@@ -893,6 +1024,7 @@ const Schedule: React.FC = () => {
             setShowRegenerateModal(true);
           }
         }}
+        scheduleId={workoutSchedules[0]?.scheduleId}
       />
 
       {/* Workout Feedback Modal */}
@@ -923,6 +1055,7 @@ const Schedule: React.FC = () => {
           }
           totalDays={workoutSchedules[0].durationDays}
           currentDifficulty={workoutSchedules[0].difficultyLevel}
+          aiUsageLimits={aiUsageLimits}
         />
       )}
 
@@ -937,14 +1070,12 @@ const Schedule: React.FC = () => {
         workout={editingWorkout}
       />
 
-      {/* Schedule History Modal */}
-      {userId && (
-        <ScheduleHistoryModal
-          isOpen={showHistoryModal}
-          onClose={() => setShowHistoryModal(false)}
-          userId={userId}
-        />
-      )}
+      {/* Upgrade Prompt Modal */}
+      <UpgradePrompt
+        isOpen={showUpgradePrompt}
+        onClose={() => setShowUpgradePrompt(false)}
+        aiUsageLimits={aiUsageLimits}
+      />
 
       {/* Toast Notification */}
       <Snackbar
