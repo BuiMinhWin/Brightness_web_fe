@@ -37,6 +37,7 @@ interface CustomBuilderTabProps {
   loadedTemplateData?: CustomTemplate | null; // Template data loaded from parent
   scheduleId?: string; // Current schedule ID for applying templates
   onTemplateApplied?: () => void; // Callback after template is applied
+  ensureScheduleExists?: () => Promise<string | null>; // Callback to ensure schedule exists
 }
 
 interface CustomTemplate {
@@ -49,7 +50,7 @@ interface CustomTemplate {
   exercises: TemplateExerciseDTO[];
 }
 
-const CustomBuilderTab: React.FC<CustomBuilderTabProps> = ({ mode, onTemplateLoaded, loadedTemplateData, scheduleId, onTemplateApplied }) => {
+const CustomBuilderTab: React.FC<CustomBuilderTabProps> = ({ mode, onTemplateLoaded, loadedTemplateData, scheduleId, onTemplateApplied, ensureScheduleExists }) => {
   const { showToast } = useToast();
   const [templateName, setTemplateName] = useState("");
   const [focusArea, setFocusArea] = useState("full_body");
@@ -245,22 +246,31 @@ const CustomBuilderTab: React.FC<CustomBuilderTabProps> = ({ mode, onTemplateLoa
   };
 
   const openApplyModal = (template: CustomTemplate) => {
-    if (!scheduleId) {
-      showToast({
-        message: "Please create a schedule first",
-        severity: "warning",
-      });
-      return;
-    }
     setTemplateToApply(template);
     setSelectedDate(new Date()); // Default to today
     setShowApplyModal(true);
   };
 
   const applyTemplate = async () => {
-    if (!templateToApply || !scheduleId || !selectedDate) return;
+    if (!templateToApply || !selectedDate) return;
 
     try {
+      // Ensure schedule exists before applying template
+      let activeScheduleId = scheduleId;
+      if (!activeScheduleId && ensureScheduleExists) {
+        const newScheduleId = await ensureScheduleExists();
+        if (!newScheduleId) {
+          return;
+        }
+        activeScheduleId = newScheduleId;
+      } else if (!activeScheduleId) {
+        showToast({
+          message: "Please create a schedule first",
+          severity: "warning",
+        });
+        return;
+      }
+
       const dateStr = format(selectedDate, "yyyy-MM-dd");
       
       // Calculate day number based on selected date
@@ -281,7 +291,7 @@ const CustomBuilderTab: React.FC<CustomBuilderTabProps> = ({ mode, onTemplateLoa
         notes: ex.notes || "",
       }));
 
-      await personalCoachService.addCustomDay(scheduleId, {
+      await personalCoachService.addCustomDay(activeScheduleId, {
         date: dateStr,
         dayNumber,
         dayType: "workout",

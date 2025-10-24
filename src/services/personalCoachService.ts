@@ -10,6 +10,7 @@ export interface GenerateScheduleRequest {
   availableDays: string[];
   equipmentAvailable: string[];
   additionalNotes?: string;
+  startDate?: string;
 }
 
 export interface ExerciseDetail {
@@ -216,10 +217,39 @@ export interface ScheduleAdjustmentResponse {
   summary: string;
 }
 
+export interface ConflictingWorkout {
+  date: string;
+  focusArea: string;
+  exerciseCount: number;
+  isCompleted: boolean;
+}
+
+export interface ScheduleConflictInfo {
+  hasConflicts: boolean;
+  conflictingWorkouts: ConflictingWorkout[];
+  totalConflicts: number;
+}
+
+export interface CheckConflictsRequest {
+  userId: string;
+  startDate: string;
+  durationDays: number;
+  availableDays: string[];
+}
+
 export const personalCoachService = {
   /** Generate AI-powered workout schedule */
   async generateSchedule(request: GenerateScheduleRequest): Promise<WorkoutScheduleResponse> {
     return httpRequest<WorkoutScheduleResponse>("/coach/api/Schedule/generate", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(request),
+    });
+  },
+
+  /** Check for conflicts with existing workouts before generating */
+  async checkScheduleConflicts(request: CheckConflictsRequest): Promise<ScheduleConflictInfo> {
+    return httpRequest<ScheduleConflictInfo>("/coach/api/Schedule/check-conflicts", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(request),
@@ -384,10 +414,23 @@ export const personalCoachService = {
   },
 
   /** Get user profile */
-  async getUserProfile(userId: string) {
+  async getUserProfile(userId: string): Promise<any> {
     return httpRequest(`/coach/api/UserProfile/${userId}`, {
       method: "GET",
     });
+  },
+
+  /** Get user health metrics (latest measurements) */
+  async getLatestHealthMetrics(userId: string) {
+    try {
+      // This would ideally be a dedicated endpoint, but we can try the OCR health profile endpoint
+      return await httpRequest(`/ai-ocr/api/OCR/users/${userId}/health-profile`, {
+        method: "GET",
+      });
+    } catch (error) {
+      console.error("Error fetching health metrics:", error);
+      return null;
+    }
   },
 
   /** Process health lab result with AI OCR */

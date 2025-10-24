@@ -26,11 +26,13 @@ import { useToast } from "@/hooks/useToast";
 interface WorkoutTemplatesTabProps {
   scheduleId?: string;
   onTemplateApplied?: () => void;
+  ensureScheduleExists?: () => Promise<string | null>;
 }
 
 const WorkoutTemplatesTab: React.FC<WorkoutTemplatesTabProps> = ({
   scheduleId,
   onTemplateApplied,
+  ensureScheduleExists,
 }) => {
   const { showToast } = useToast();
   const [templates, setTemplates] = useState<WorkoutTemplateDTO[]>([]);
@@ -73,14 +75,6 @@ const WorkoutTemplatesTab: React.FC<WorkoutTemplatesTabProps> = ({
   };
 
   const handleApplyTemplate = async () => {
-    if (!scheduleId) {
-      showToast({
-        message: "Please create a schedule first (use AI Generate or add exercises manually)",
-        severity: "warning",
-      });
-      return;
-    }
-
     if (!selectedTemplate || !selectedDate) {
       showToast({
         message: "Please select a date",
@@ -91,10 +85,28 @@ const WorkoutTemplatesTab: React.FC<WorkoutTemplatesTabProps> = ({
 
     setIsApplying(true);
     try {
+      // Ensure schedule exists before applying template
+      let activeScheduleId = scheduleId;
+      if (!activeScheduleId && ensureScheduleExists) {
+        const newScheduleId = await ensureScheduleExists();
+        if (!newScheduleId) {
+          setIsApplying(false);
+          return;
+        }
+        activeScheduleId = newScheduleId;
+      } else if (!activeScheduleId) {
+        showToast({
+          message: "Please create a schedule first",
+          severity: "warning",
+        });
+        setIsApplying(false);
+        return;
+      }
+
       // Calculate day number from date (simplified - you may need more complex logic)
       const dayNumber = Math.floor((new Date(selectedDate).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24)) + 1;
 
-      await personalCoachService.addDayFromTemplate(scheduleId, {
+      await personalCoachService.addDayFromTemplate(activeScheduleId, {
         templateId: selectedTemplate.id,
         date: selectedDate,
         dayNumber: Math.max(1, dayNumber),
@@ -419,14 +431,14 @@ const WorkoutTemplatesTab: React.FC<WorkoutTemplatesTabProps> = ({
                 />
               </div>
 
-              {/* Warning if no schedule */}
+              {/* Info if no schedule */}
               {!scheduleId && (
                 <div
                   className="p-3 rounded-xl border-2"
-                  style={{ borderColor: "#fbbf24", background: "#fef3c7" }}
+                  style={{ borderColor: "#0ea5e9", background: "#e0f2fe" }}
                 >
-                  <p className="text-xs font-medium" style={{ color: "#78350f" }}>
-                    You need to create a schedule first. Use AI Generate or add exercises manually to create one.
+                  <p className="text-xs font-medium" style={{ color: "#075985" }}>
+                    A new schedule will be created automatically when you apply this template.
                   </p>
                 </div>
               )}
@@ -443,7 +455,7 @@ const WorkoutTemplatesTab: React.FC<WorkoutTemplatesTabProps> = ({
                 </button>
                 <button
                   onClick={handleApplyTemplate}
-                  disabled={isApplying || !scheduleId}
+                  disabled={isApplying}
                   className="flex-1 px-4 py-3 rounded-xl font-semibold text-white transition-all hover:opacity-90 disabled:opacity-50 flex items-center justify-center gap-2"
                   style={{ background: "#0a6a56" }}
                 >
