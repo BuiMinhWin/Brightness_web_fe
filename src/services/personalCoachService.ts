@@ -151,6 +151,7 @@ export interface AddCustomDayRequest {
   focusArea: string;
   estimatedDuration: number;
   exercises: CustomExerciseDTO[];
+  replaceExisting?: boolean;
 }
 
 export interface UpdateWorkoutDayRequest {
