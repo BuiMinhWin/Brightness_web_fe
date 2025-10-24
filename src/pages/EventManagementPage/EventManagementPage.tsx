@@ -6,6 +6,7 @@ import { challengeService, Challenge, ChallengeTask } from "@/services/challenge
 import { useAppSelector, useAppDispatch } from "../../store/hooks";
 import { selectIsAuthenticated, selectUserId, selectUserInfo } from "@/store/slices/authSlice";
 import { logoutUser } from "@/store/slices/authSlice";
+import { useToast } from "@/hooks/useToast";
 
 interface Event {
   id: string;
@@ -63,6 +64,7 @@ interface EventModal {
 }
 
 const EventManagementPage: React.FC = () => {
+  const { showToast } = useToast();
   const navigate = useNavigate();
   const dispatch = useAppDispatch();
   const [currentDate, setCurrentDate] = useState(new Date());
@@ -297,34 +299,34 @@ const loadChallenges = async () => {
 const handleSaveEvent = async () => {
   try {
     if (!userId) {
-      alert("Unable to get user ID. Please login again.");
+      showToast({ message: "Unable to get user ID. Please login again.", severity: "error" });
       return;
     }
 
     // Validate required fields
     if (!formData.title?.trim()) {
-      alert("Please enter an event title");
+      showToast({ message: "Please enter an event title", severity: "warning" });
       return;
     }
 
     if (!formData.status) {
-      alert("Please select a status");
+      showToast({ message: "Please select a status", severity: "warning" });
       return;
     }
 
     if (!formData.startDate) {
-      alert("Please select a start date");
+      showToast({ message: "Please select a start date", severity: "warning" });
       return;
     }
 
     if (!formData.endDate) {
-      alert("Please select an end date");
+      showToast({ message: "Please select an end date", severity: "warning" });
       return;
     }
 
     // Validate end date is after start date
     if (new Date(formData.endDate) <= new Date(formData.startDate)) {
-      alert("End date must be after start date");
+      showToast({ message: "End date must be after start date", severity: "warning" });
       return;
     }
 
@@ -346,7 +348,7 @@ const handleSaveEvent = async () => {
     const formattedEndDate = formatDateToISO(formData.endDate);
 
     if (!formattedStartDate || !formattedEndDate) {
-      alert("Invalid date format. Please check your dates.");
+      showToast({ message: "Invalid date format. Please check your dates.", severity: "error" });
       return;
     }
 
@@ -411,14 +413,14 @@ const handleSaveEvent = async () => {
               const errors = (errorDetails as any).errors;
               const errorMessages = Object.entries(errors)
                 .map(([field, msgs]) => `${field}: ${Array.isArray(msgs) ? msgs.join(', ') : msgs}`)
-                .join('\n');
-              alert(`Validation failed:\n${errorMessages}`);
+                .join(', ');
+              showToast({ message: `Validation failed: ${errorMessages}`, severity: "error", duration: 8000 });
               return;
             }
           }
-          alert("Bad Request: The server rejected the challenge data. Please check all fields and try again.");
+          showToast({ message: "Bad Request: The server rejected the challenge data. Please check all fields and try again.", severity: "error", duration: 8000 });
         } else {
-          alert(`Failed to create challenge: ${createErr?.message || 'Unknown error'}`);
+          showToast({ message: `Failed to create challenge: ${createErr?.message || 'Unknown error'}`, severity: "error" });
         }
         return;
       }
@@ -446,7 +448,7 @@ const handleSaveEvent = async () => {
         console.error("❌ No challenge ID found in response!");
         console.error("Response type:", typeof createdChallenge);
         console.error("Response value:", createdChallenge);
-        alert("Challenge created but couldn't get ID. Please refresh the page.");
+        showToast({ message: "Challenge created but couldn't get ID. Please refresh the page.", severity: "warning" });
         await loadChallenges();
         setEventModal({ isOpen: false, type: "create", event: null });
         return;
@@ -505,7 +507,7 @@ const handleSaveEvent = async () => {
         }
       }
 
-      alert("Challenge created successfully!");
+      showToast({ message: "Challenge created successfully!", severity: "success" });
       await loadChallenges();
       setEventModal({ isOpen: false, type: "create", event: null });
 
@@ -581,7 +583,7 @@ const handleSaveEvent = async () => {
         console.error("Error updating tasks:", err);
       }
 
-      alert("Challenge updated successfully!");
+      showToast({ message: "Challenge updated successfully!", severity: "success" });
       await loadChallenges();
       setEventModal({ isOpen: false, type: "create", event: null });
     }
@@ -603,7 +605,7 @@ const handleSaveEvent = async () => {
       err?.message?.includes("expired") || 
       err?.message?.includes("token") ||
       err?.message?.includes("unauthorized")) {
-      alert("Session expired. Please login again.");
+      showToast({ message: "Session expired. Please login again.", severity: "error" });
       await dispatch(logoutUser());
       navigate("/auth?mode=signin");
       return;
@@ -631,7 +633,7 @@ const handleSaveEvent = async () => {
       errorMessage = err.message;
     }
 
-    alert(`Error: ${errorMessage}\n\nPlease check the console for more details.`);
+    showToast({ message: `Error: ${errorMessage}. Please check the console for more details.`, severity: "error", duration: 8000 });
   }
 };
 
@@ -679,9 +681,10 @@ const handleSaveEvent = async () => {
       try {
         await challengeService.deleteChallenge(eventId);
         setEvents(events.filter((event) => event.id !== eventId));
+        showToast({ message: "Challenge deleted successfully", severity: "success" });
       } catch (err) {
         console.error("Error deleting challenge:", err);
-        alert("Failed to delete challenge");
+        showToast({ message: "Failed to delete challenge", severity: "error" });
       }
     }
   };

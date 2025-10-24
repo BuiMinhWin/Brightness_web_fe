@@ -6,6 +6,7 @@ import { CircularProgress, Box } from "@mui/material";
 import theme from "./mui/theme";
 import { store } from "./store/store";
 import { useAuthInitialization } from "./hooks/useAuthInitialization";
+import { ToastProvider } from "./hooks/useToast";
 
 /**
  * App Content with Auth Initialization
@@ -61,7 +62,9 @@ const App: React.FC = () => {
   return (
     <Provider store={store}>
       <ThemeProvider theme={theme}>
-        <AppContent />
+        <ToastProvider>
+          <AppContent />
+        </ToastProvider>
       </ThemeProvider>
     </Provider>
   );

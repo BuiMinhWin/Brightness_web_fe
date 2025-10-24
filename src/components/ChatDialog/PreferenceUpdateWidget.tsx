@@ -1,18 +1,21 @@
 import React, { useState } from 'react';
+import { personalCoachService } from '../../services/personalCoachService';
 import chatService from '../../services/chatService';
 import { Settings, WbSunny, LightMode, Nightlight, CalendarToday, CheckCircle, Close, Edit } from '@mui/icons-material';
 
 interface PreferenceUpdateWidgetProps {
-  sessionId: string;
+  userId: string | null;
+  sessionId?: string;
   detectedChanges: {
     preferredWorkoutTime?: string;
     workoutDaysPerWeek?: number;
   };
-  onPreferenceUpdated: () => void;
+  onPreferenceUpdated: (remainingMessages: number, dailyLimit: number) => void;
   onCancel: () => void;
 }
 
 const PreferenceUpdateWidget: React.FC<PreferenceUpdateWidgetProps> = ({
+  userId,
   sessionId,
   detectedChanges,
   onPreferenceUpdated,
@@ -25,19 +28,54 @@ const PreferenceUpdateWidget: React.FC<PreferenceUpdateWidgetProps> = ({
   const [editMode, setEditMode] = useState(false);
 
   const handleConfirm = async () => {
+    if (!userId || !sessionId) {
+      setError('Session information is missing');
+      return;
+    }
+
     try {
       setIsUpdating(true);
       setError(null);
 
-      const updateData: any = { sessionId };
-      if (preferredWorkoutTime) updateData.preferredWorkoutTime = preferredWorkoutTime;
-      if (workoutDaysPerWeek) updateData.workoutDaysPerWeek = workoutDaysPerWeek;
+      // Step 1: Get current profile
+      const currentProfile: any = await personalCoachService.getUserProfile(userId);
 
-      await chatService.updatePreferenceFromChat(updateData);
+      // Step 2: Generate available days based on workout days per week
+      const daysOfWeek = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+      const availableDays = workoutDaysPerWeek > 0 
+        ? daysOfWeek.slice(0, workoutDaysPerWeek) 
+        : (currentProfile?.availableDays || ['Monday', 'Wednesday', 'Friday']);
 
-      onPreferenceUpdated();
+      // Step 3: Update profile directly with PersonalCoach API
+      await personalCoachService.createOrUpdateProfile({
+        userId,
+        heightCm: currentProfile.heightCm || 170,
+        currentWeightKg: currentProfile.currentWeightKg || 70,
+        targetWeightKg: currentProfile.targetWeightKg || 70,
+        fitnessLevel: currentProfile.fitnessLevel || 'intermediate',
+        fitnessGoal: currentProfile.fitnessGoal || 'general_fitness',
+        preferredWorkoutTime: preferredWorkoutTime || currentProfile.preferredWorkoutTime || 'morning',
+        workoutDurationMinutes: currentProfile.workoutDurationMinutes || 60,
+        availableDays,
+        equipmentAvailable: currentProfile.equipmentAvailable || ['Bodyweight'],
+        gymAccess: currentProfile.gymAccess || false,
+        homeWorkoutOnly: currentProfile.homeWorkoutOnly ?? true,
+        dietaryRestrictions: currentProfile.dietaryRestrictions || [],
+        dislikedExercises: currentProfile.dislikedExercises || [],
+        favoriteExercises: currentProfile.favoriteExercises || []
+      });
+
+      // Step 4: Track AI credits and invalidate cache via Chat service
+      const response = await chatService.updatePreferenceFromChat({
+        sessionId,
+        preferredWorkoutTime,
+        workoutDaysPerWeek,
+      });
+
+      onPreferenceUpdated(response.remainingMessages, response.dailyLimit);
     } catch (err: any) {
-      setError(err.message || 'Failed to update preference');
+      console.error('Error updating preferences:', err);
+      setError(err.message || 'Failed to update preferences');
     } finally {
       setIsUpdating(false);
     }

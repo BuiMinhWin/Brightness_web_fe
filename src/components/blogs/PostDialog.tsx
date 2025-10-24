@@ -12,6 +12,7 @@ import { useSelector } from "react-redux";
 import { selectUserId } from "../../store/slices/authSlice";
 import type { Comment as CommentType } from "../../models/social";
 import ImageViewer from "./ImageViewer";
+import { useToast } from "../../hooks/useToast";
 
 interface Comment {
   id: string;
@@ -52,6 +53,7 @@ interface PostDialogProps {
 }
 
 const PostDialog: React.FC<PostDialogProps> = ({ post, isOpen, onClose, onPostUpdated }) => {
+  const { showToast } = useToast();
   const userId = useSelector(selectUserId);
   
   const [comments, setComments] = useState<Comment[]>([]);
@@ -226,7 +228,7 @@ const PostDialog: React.FC<PostDialogProps> = ({ post, isOpen, onClose, onPostUp
       }
     } catch (err) {
       console.error("Failed to post comment:", err);
-      alert("Failed to post comment. Please try again.");
+      showToast({ message: "Failed to post comment. Please try again.", severity: "error" });
     } finally {
       setIsSubmittingComment(false);
     }

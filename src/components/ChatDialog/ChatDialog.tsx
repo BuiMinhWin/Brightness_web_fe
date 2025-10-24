@@ -5,12 +5,14 @@ import chatService, { MessageLimits } from "@/services/chatService";
 import { useAppSelector } from "@/store/hooks";
 import ScheduleCreationWidget from "./ScheduleCreationWidget";
 import PreferenceUpdateWidget from "./PreferenceUpdateWidget";
-import { Menu, CalendarMonth, Settings, Person } from "@mui/icons-material";
+import HealthDataUploadWidget from "./HealthDataUploadWidget";
+import { Menu, CalendarMonth, Settings, Person, Upload } from "@mui/icons-material";
 import { Snackbar, Alert } from "@mui/material";
 
 type ChatDialogProps = {
   open: boolean;
   onClose: () => void;
+  initialMessage?: string;
 };
 
 type Message = {
@@ -19,9 +21,9 @@ type Message = {
   text: string;
 };
 
-type WidgetType = "none" | "schedule" | "preference";
+type WidgetType = "none" | "schedule" | "preference" | "healthUpload";
 
-const ChatDialog: React.FC<ChatDialogProps> = ({ open, onClose }) => {
+const ChatDialog: React.FC<ChatDialogProps> = ({ open, onClose, initialMessage }) => {
   const { userId } = useAppSelector((state) => state.auth);
   const [messages, setMessages] = useState<Message[]>([
     {
@@ -36,6 +38,7 @@ const ChatDialog: React.FC<ChatDialogProps> = ({ open, onClose }) => {
   const [limits, setLimits] = useState<MessageLimits | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [activeWidget, setActiveWidget] = useState<WidgetType>("none");
+  const [pendingWidget, setPendingWidget] = useState<WidgetType | null>(null);
   const [showQuickMenu, setShowQuickMenu] = useState(false);
   const [detectedScheduleParams, setDetectedScheduleParams] = useState<any>({});
   const [detectedPreferenceChanges, setDetectedPreferenceChanges] = useState<any>({});
@@ -50,6 +53,13 @@ const ChatDialog: React.FC<ChatDialogProps> = ({ open, onClose }) => {
   });
   const listRef = useRef<HTMLDivElement | null>(null);
 
+  // Set initial message when dialog opens
+  useEffect(() => {
+    if (open && initialMessage) {
+      setInput(initialMessage);
+    }
+  }, [open, initialMessage]);
+
   // Fetch message limits when dialog opens
   useEffect(() => {
     if (open && userId) {
@@ -62,6 +72,14 @@ const ChatDialog: React.FC<ChatDialogProps> = ({ open, onClose }) => {
       listRef.current.scrollTop = listRef.current.scrollHeight;
     }
   }, [messages, open]);
+
+  // Activate pending widget once session is ready
+  useEffect(() => {
+    if (pendingWidget && sessionId) {
+      setActiveWidget(pendingWidget);
+      setPendingWidget(null);
+    }
+  }, [pendingWidget, sessionId]);
 
   if (!open) return null;
 
@@ -88,12 +106,33 @@ const ChatDialog: React.FC<ChatDialogProps> = ({ open, onClose }) => {
     if (hasScheduleIntent) {
       const params = detectScheduleIntent(text);
       setDetectedScheduleParams(params);
-      setActiveWidget("schedule");
       
       // Add user message to chat
       const newMsg: Message = { id: crypto.randomUUID?.() ?? String(Date.now()), role: "user", text };
       setMessages((prev) => [...prev, newMsg]);
       setInput("");
+      
+      // Show loading to simulate AI thinking
+      setIsLoading(true);
+      
+      // Ensure we have a session
+      if (!sessionId) {
+        const session = await chatService.createSession();
+        setSessionId(session.id);
+        
+        // Wait a bit to simulate AI processing, then show widget
+        setTimeout(() => {
+          setIsLoading(false);
+          setPendingWidget("schedule");
+        }, 800);
+      } else {
+        // Wait a bit to simulate AI processing, then show widget
+        setTimeout(() => {
+          setIsLoading(false);
+          setActiveWidget("schedule");
+        }, 800);
+      }
+      
       return;
     }
 
@@ -105,14 +144,57 @@ const ChatDialog: React.FC<ChatDialogProps> = ({ open, onClose }) => {
       const changes = detectPreferenceChanges(text);
       if (Object.keys(changes).length > 0) {
         setDetectedPreferenceChanges(changes);
-        setActiveWidget("preference");
         
         // Add user message to chat
         const newMsg: Message = { id: crypto.randomUUID?.() ?? String(Date.now()), role: "user", text };
         setMessages((prev) => [...prev, newMsg]);
         setInput("");
+        
+        // Show loading to simulate AI thinking
+        setIsLoading(true);
+        
+        // Ensure we have a session
+        if (!sessionId) {
+          const session = await chatService.createSession();
+          setSessionId(session.id);
+          
+          // Wait a bit to simulate AI processing, then show widget
+          setTimeout(() => {
+            setIsLoading(false);
+            setPendingWidget("preference");
+          }, 800);
+        } else {
+          // Wait a bit to simulate AI processing, then show widget
+          setTimeout(() => {
+            setIsLoading(false);
+            setActiveWidget("preference");
+          }, 800);
+        }
+        
         return;
       }
+    }
+
+    // Detect health data upload intent
+    const healthUploadKeywords = ['upload health', 'lab result', 'blood test', 'health report', 'medical report', 'test results'];
+    const hasHealthUploadIntent = healthUploadKeywords.some(keyword => lowerText.includes(keyword));
+    
+    if (hasHealthUploadIntent) {
+      // Add user message to chat
+      const newMsg: Message = { id: crypto.randomUUID?.() ?? String(Date.now()), role: "user", text };
+      setMessages((prev) => [...prev, newMsg]);
+      setInput("");
+      
+      // Show loading to simulate AI thinking
+      setIsLoading(true);
+      
+      // Wait a bit to simulate AI processing, then show widget
+      setTimeout(() => {
+        setIsLoading(false);
+        setActiveWidget("healthUpload");
+      }, 800);
+      
+      return;
     }
 
     // Check if limit reached
@@ -226,17 +308,35 @@ const ChatDialog: React.FC<ChatDialogProps> = ({ open, onClose }) => {
     setShowQuickMenu(false);
     
     // Ensure we have a session ID
-    if (!sessionId) {
+    let currentSessionId = sessionId;
+    const needsNewSession = !currentSessionId;
+    
+    if (needsNewSession) {
       const session = await chatService.createSession();
-      setSessionId(session.id);
+      currentSessionId = session.id;
+      setSessionId(currentSessionId);
     }
 
     if (action === "schedule") {
-      setActiveWidget("schedule");
       setDetectedScheduleParams({}); // Reset params for fresh analysis
+      if (needsNewSession) {
+        setPendingWidget("schedule");
+      } else {
+        setActiveWidget("schedule");
+      }
     } else if (action === "preferences") {
-      setActiveWidget("preference");
       setDetectedPreferenceChanges({});
+      if (needsNewSession) {
+        setPendingWidget("preference");
+      } else {
+        setActiveWidget("preference");
+      }
+    } else if (action === "healthUpload") {
+      if (needsNewSession) {
+        setPendingWidget("healthUpload");
+      } else {
+        setActiveWidget("healthUpload");
+      }
     } else if (action === "mystats") {
       // Add user message immediately
       const newMsg: Message = {
@@ -250,7 +350,7 @@ const ChatDialog: React.FC<ChatDialogProps> = ({ open, onClose }) => {
       setIsLoading(true);
       try {
         const response = await chatService.sendMessage({
-          sessionId,
+          sessionId: currentSessionId,
           message: "What do you know about me?",
         });
         
@@ -278,21 +378,55 @@ const ChatDialog: React.FC<ChatDialogProps> = ({ open, onClose }) => {
     }
   };
 
-  const handleScheduleCreated = (schedule: any) => {
-    console.log('📅 handleScheduleCreated called with:', schedule);
+  const handleScheduleCreated = (schedule: any, remainingMessages: number, dailyLimit: number) => {
+    console.log('📅 handleScheduleCreated called with:', {
+      schedule,
+      remainingMessages,
+      dailyLimit,
+      scheduleType: typeof schedule,
+      scheduleKeys: schedule ? Object.keys(schedule) : 'null'
+    });
+    
+    // Log each property individually
+    console.log('🔍 Schedule properties:', {
+      durationDays: schedule?.durationDays,
+      totalDays: schedule?.totalDays, 
+      duration: schedule?.duration,
+      difficultyLevel: schedule?.difficultyLevel,
+      difficulty: schedule?.difficulty,
+      goal: schedule?.goal,
+      fitnessGoal: schedule?.fitnessGoal,
+      fullObject: JSON.stringify(schedule, null, 2)
+    });
+    
     setActiveWidget("none");
     setDetectedScheduleParams({});
+    
+    // Update limits after creating schedule
+    setLimits((prev) => prev ? {
+      ...prev,
+      remainingDaily: remainingMessages,
+      dailyLimit: dailyLimit,
+    } : null);
+    
+    // Extract schedule details (handle different response structures)
+    const durationDays = schedule?.durationDays || schedule?.totalDays || schedule?.duration || 'unknown';
+    const difficultyLevel = schedule?.difficultyLevel || schedule?.difficulty || 'unknown';
+    const goal = schedule?.goal || schedule?.fitnessGoal || 'unknown';
+    
+    console.log('📊 Extracted values:', { durationDays, difficultyLevel, goal });
     
     // Add success message with clickable link
     const successMessage = {
       id: crypto.randomUUID?.() ?? String(Date.now()),
       role: "ai" as const,
-      text: `Your workout schedule has been created successfully! 
+      text: `Your workout schedule has been created successfully! 🎉
 
 **Schedule Details:**
-- **Duration:** ${schedule.durationDays || schedule.totalDays || 'N/A'} days
-- **Difficulty:** ${schedule.difficultyLevel || 'N/A'}
-- **Goal:** ${schedule.goal || 'N/A'}
+- **Duration:** ${durationDays} days
+- **Difficulty:** ${difficultyLevel}
+- **Goal:** ${goal}
+- **Credits Remaining:** ${remainingMessages}/${dailyLimit}
 
 [Click here to view your schedule](/schedule) or navigate to the Schedule section of your dashboard.`,
     };
@@ -311,17 +445,61 @@ const ChatDialog: React.FC<ChatDialogProps> = ({ open, onClose }) => {
     }, 500);
   };
 
-  const handlePreferenceUpdated = () => {
+  const handlePreferenceUpdated = (remainingMessages: number, dailyLimit: number) => {
     setActiveWidget("none");
     setDetectedPreferenceChanges({});
+    
+    // Update credit display
+    setLimits((prev) => prev ? {
+      ...prev,
+      remainingDaily: remainingMessages,
+      dailyLimit: dailyLimit,
+    } : null);
+    
     setMessages((prev) => [
       ...prev,
       {
         id: crypto.randomUUID?.() ?? String(Date.now()),
         role: "ai",
-        text: "Your preferences have been updated successfully! This will help me give you better recommendations.",
+        text: `Your preferences have been updated successfully! This will help me give you better recommendations.`,
       },
     ]);
+  };
+
+  const handleHealthDataSaved = (data: any) => {
+    setActiveWidget("none");
+    
+    // Format the health metrics for display
+    const healthMetrics = data.healthMetrics || {};
+    const dataEntries = Object.entries(healthMetrics)
+      .filter(([_, value]) => value !== undefined && value !== null)
+      .slice(0, 8) // Show top 8 metrics
+      .map(([key, value]) => 
+        `- **${key.replace(/([A-Z])/g, ' $1').trim()}:** ${value}`
+      ).join('\n');
+    
+    const successMessage = {
+      id: crypto.randomUUID?.() ?? String(Date.now()),
+      role: "ai" as const,
+      text: `Your health data has been processed and saved successfully! 🎉
+
+**Key Health Metrics Extracted:**
+${dataEntries || 'All data processed'}
+
+I'll use this information to provide you with personalized workout plans, nutrition advice, and safety guidelines. You can always update this data by uploading a new report.`,
+    };
+    
+    setMessages((prev) => [...prev, successMessage]);
+    
+    // Show toast notification
+    setError(null);
+    setTimeout(() => {
+      setToast({
+        open: true,
+        message: 'Health data saved successfully!',
+        severity: 'success'
+      });
+    }, 500);
   };
 
   const handleSubmit: React.FormEventHandler<HTMLFormElement> = (e) => {
@@ -428,12 +606,23 @@ const ChatDialog: React.FC<ChatDialogProps> = ({ open, onClose }) => {
 
           {activeWidget === "preference" && sessionId && (
             <PreferenceUpdateWidget
+              userId={userId}
               sessionId={sessionId}
               detectedChanges={detectedPreferenceChanges}
               onPreferenceUpdated={handlePreferenceUpdated}
               onCancel={() => {
                 setActiveWidget("none");
                 setDetectedPreferenceChanges({});
+              }}
+            />
+          )}
+
+          {activeWidget === "healthUpload" && (
+            <HealthDataUploadWidget
+              userId={userId}
+              onDataSaved={handleHealthDataSaved}
+              onCancel={() => {
+                setActiveWidget("none");
               }}
             />
           )}
@@ -486,6 +675,13 @@ const ChatDialog: React.FC<ChatDialogProps> = ({ open, onClose }) => {
                 >
                   <Settings style={{ color: '#0a6a56', fontSize: 18 }} />
                   <span style={{ color: '#0b3d33' }}>Update Preferences</span>
+                </button>
+                <button
+                  onClick={() => handleQuickAction("healthUpload")}
+                  className="w-full text-left px-3 py-2 hover:bg-green-50 rounded-xl text-sm transition-all flex items-center gap-2"
+                >
+                  <Upload style={{ color: '#0a6a56', fontSize: 18 }} />
+                  <span style={{ color: '#0b3d33' }}>Upload Health Data</span>
                 </button>
                 <button
                   onClick={() => handleQuickAction("mystats")}

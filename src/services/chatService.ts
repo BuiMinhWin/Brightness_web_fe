@@ -89,15 +89,28 @@ export const getLimits = async (): Promise<MessageLimits> => {
   });
 };
 
-export const createScheduleFromChat = async (request: CreateScheduleRequest): Promise<any> => {
-  return httpRequest<any>("/chat/create-schedule", {
+export interface CreateScheduleResponse {
+  schedule: any;
+  remainingMessages: number;
+  dailyLimit: number;
+  message: string;
+}
+
+export const createScheduleFromChat = async (request: CreateScheduleRequest): Promise<CreateScheduleResponse> => {
+  return httpRequest<CreateScheduleResponse>("/chat/create-schedule", {
     method: "POST",
     body: JSON.stringify(request),
   });
 };
 
-export const updatePreferenceFromChat = async (request: PreferenceUpdateRequest): Promise<{ message: string }> => {
-  return httpRequest<{ message: string }>("/chat/update-preference", {
+export interface UpdatePreferenceResponse {
+  message: string;
+  remainingMessages: number;
+  dailyLimit: number;
+}
+
+export const updatePreferenceFromChat = async (request: PreferenceUpdateRequest): Promise<UpdatePreferenceResponse> => {
+  return httpRequest<UpdatePreferenceResponse>("/chat/update-preference", {
     method: "POST",
     body: JSON.stringify(request),
   });
@@ -125,6 +138,18 @@ export const analyzeProfile = async (): Promise<{
   });
 };
 
+export const invalidateCache = async (): Promise<{ message: string }> => {
+  return httpRequest<{ message: string }>("/chat/invalidate-cache", {
+    method: "POST",
+  });
+};
+
+export const trackAiAction = async (): Promise<{ remainingMessages: number; dailyLimit: number }> => {
+  return httpRequest<{ remainingMessages: number; dailyLimit: number }>("/chat/track-ai-action", {
+    method: "POST",
+  });
+};
+
 const chatService = {
   sendMessage,
   getSessions,
@@ -135,6 +160,8 @@ const chatService = {
   updatePreferenceFromChat,
   getSchedules,
   analyzeProfile,
+  invalidateCache,
+  trackAiAction,
 };
 
 export default chatService;

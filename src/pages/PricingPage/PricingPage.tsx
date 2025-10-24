@@ -9,12 +9,14 @@ import type { SubscriptionPlan } from "@/models/subscriptionPlan";
 import { useAppSelector } from "@/store/hooks";
 import { selectUserId, selectIsAuthenticated } from "@/store/slices/authSlice";
 import { ArrowLeft } from "lucide-react";
+import { useToast } from "@/hooks/useToast";
 
 interface PricingPageProps {
   onNavigateBack: () => void;
 }
 
 const PricingPage: React.FC = () => {
+  const { showToast } = useToast();
   const [selectedPlan, setSelectedPlan] = useState<string>("free");
   const [showConfirmModal, setShowConfirmModal] = useState<boolean>(false);
   const [pendingPlan, setPendingPlan] = useState<PricingPlan | null>(null);
@@ -102,7 +104,7 @@ const PricingPage: React.FC = () => {
         setPricingPlans([freePlan]);
 
         // Show error in UI
-        alert("Failed to load subscription plans. Please try again later.");
+        showToast({ message: "Failed to load subscription plans. Please try again later.", severity: "error" });
       } finally {
         setLoading(false);
       }
@@ -125,7 +127,7 @@ const PricingPage: React.FC = () => {
   const handleConfirmPurchase = async () => {
     // Check authentication and userId
     if (!isAuthenticated || !userId) {
-      alert("Please log in to purchase a subscription plan");
+      showToast({ message: "Please log in to purchase a subscription plan", severity: "warning" });
       navigate("/auth");
       return;
     }
@@ -195,7 +197,7 @@ const PricingPage: React.FC = () => {
       } catch (error) {
         const errorMessage =
           error instanceof Error ? error.message : "An error occurred. Please try again.";
-        alert(errorMessage);
+        showToast({ message: errorMessage, severity: "error" });
 
         // Đóng modal và reset state
         setShowConfirmModal(false);
@@ -203,7 +205,7 @@ const PricingPage: React.FC = () => {
       }
     } else {
       // Xử lý trường hợp không có pendingPlan hoặc userId
-      alert("Could not proceed with purchase. Plan or user information is missing.");
+      showToast({ message: "Could not proceed with purchase. Plan or user information is missing.", severity: "error" });
       setShowConfirmModal(false);
       setPendingPlan(null);
     }
@@ -217,7 +219,7 @@ const PricingPage: React.FC = () => {
 
   const handlePremiumTrial = () => {
     // Implement trial logic here
-    alert("Premium trial feature coming soon!");
+    showToast({ message: "Premium trial feature coming soon!", severity: "info" });
   };
 
   // User authentication management functions are handled by the hooks and navigation

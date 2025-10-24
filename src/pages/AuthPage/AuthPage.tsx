@@ -271,7 +271,11 @@ const AuthPage: React.FC = () => {
 
     if (authMode === "signup") {
       if (!agreeTerms) {
-        alert("Please accept the terms to create an account");
+        setToast({
+          open: true,
+          message: "Please accept the terms to create an account",
+          severity: "warning",
+        });
         return;
       }
 
