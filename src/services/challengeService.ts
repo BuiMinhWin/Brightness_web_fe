@@ -134,7 +134,7 @@
 //       method: "PATCH",
 //       headers: { "Content-Type": "application/json-patch+json" },
 //       body: JSON.stringify(patchData),
-//     }); 
+//     });
 //   },
 
 //   async deleteChallenge(id: string): Promise<ApiResponse<string>> {
@@ -163,15 +163,15 @@
 //       console.error("❌ Invalid challengeId provided to getRulesByChallengeId:", challengeId);
 //       return [];
 //     }
-    
+
 //     try {
 //       console.log(`🔍 Fetching rules for challenge: ${challengeId}`);
 //       const url = `/challenge/api/challenges/${challengeId}/rules`;
 //       console.log(`📡 API URL: ${url}`);
-      
+
 //       const result = await httpRequest<ChallengeRule[]>(url, { method: "GET" });
 //       console.log(`✅ Rules response:`, result);
-      
+
 //       return result;
 //     } catch (error) {
 //       console.error(`❌ Error fetching rules for challenge ${challengeId}:`, error);
@@ -221,15 +221,15 @@
 //       console.error("❌ Invalid challengeId provided to getTasksByChallengeId:", challengeId);
 //       return [];
 //     }
-    
+
 //     try {
 //       console.log(`🔍 Fetching tasks for challenge: ${challengeId}`);
 //       const url = `/challenge/api/challenges/${challengeId}/tasks`;
 //       console.log(`📡 API URL: ${url}`);
-      
+
 //       const result = await httpRequest<ChallengeTask[]>(url, { method: "GET" });
 //       console.log(`✅ Tasks response:`, result);
-      
+
 //       return result;
 //     } catch (error) {
 //       console.error(`❌ Error fetching tasks for challenge ${challengeId}:`, error);
@@ -271,15 +271,15 @@
 //       console.error("❌ Invalid challengeId provided to getParticipantsByChallengeId:", challengeId);
 //       return [];
 //     }
-    
+
 //     try {
 //       console.log(`🔍 Fetching participants for challenge: ${challengeId}`);
 //       const url = `/challenge/api/challenges/${challengeId}/participants`;
 //       console.log(`📡 API URL: ${url}`);
-      
+
 //       const result = await httpRequest<ChallengeParticipant[]>(url, { method: "GET" });
 //       console.log(`✅ Participants response:`, result);
-      
+
 //       return result;
 //     } catch (error) {
 //       console.error(`❌ Error fetching participants for challenge ${challengeId}:`, error);
@@ -454,6 +454,7 @@ export interface ChallengeParticipantDTO {
 
 export interface ChallengeParticipant extends ChallengeParticipantDTO {
   id: string;
+  progress?: ChallengeTaskProgress[]; // Add progress to the participant type
 }
 
 // Challenge Task Progress Models
@@ -524,11 +525,13 @@ export const challengeService = {
       method: "PATCH",
       headers: { "Content-Type": "application/json-patch+json" },
       body: JSON.stringify(patchData),
-    }); 
+    });
   },
 
   async deleteChallenge(id: string): Promise<ApiResponse<string>> {
-    return httpRequest<ApiResponse<string>>(`/challenge/api/Challenges/${id}`, { method: "DELETE" });
+    return httpRequest<ApiResponse<string>>(`/challenge/api/Challenges/${id}`, {
+      method: "DELETE",
+    });
   },
 
   // ============ CHALLENGE RULE ENDPOINTS ============
@@ -549,11 +552,11 @@ export const challengeService = {
   },
 
   async getRulesByChallengeId(challengeId: string): Promise<ChallengeRule[]> {
-    if (!challengeId || challengeId === 'undefined' || challengeId === 'null') {
+    if (!challengeId || challengeId === "undefined" || challengeId === "null") {
       console.error("❌ Invalid challengeId provided to getRulesByChallengeId:", challengeId);
       return [];
     }
-    
+
     try {
       const url = `/challenge/api/challenges/${challengeId}/rules`;
       const result = await httpRequest<ChallengeRule[]>(url, { method: "GET" });
@@ -572,7 +575,10 @@ export const challengeService = {
     });
   },
 
-  async patchChallengeRule(id: string, patchData: Record<string, any>): Promise<ApiResponse<string>> {
+  async patchChallengeRule(
+    id: string,
+    patchData: Record<string, any>
+  ): Promise<ApiResponse<string>> {
     return httpRequest<ApiResponse<string>>(`/challenge/api/ChallengeRules/${id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json-patch+json" },
@@ -581,7 +587,9 @@ export const challengeService = {
   },
 
   async deleteChallengeRule(id: string): Promise<ApiResponse<string>> {
-    return httpRequest<ApiResponse<string>>(`/challenge/api/ChallengeRules/${id}`, { method: "DELETE" });
+    return httpRequest<ApiResponse<string>>(`/challenge/api/ChallengeRules/${id}`, {
+      method: "DELETE",
+    });
   },
 
   // ============ CHALLENGE TASK ENDPOINTS ============
@@ -602,11 +610,11 @@ export const challengeService = {
   },
 
   async getTasksByChallengeId(challengeId: string): Promise<ChallengeTask[]> {
-    if (!challengeId || challengeId === 'undefined' || challengeId === 'null') {
+    if (!challengeId || challengeId === "undefined" || challengeId === "null") {
       console.error("❌ Invalid challengeId provided to getTasksByChallengeId:", challengeId);
       return [];
     }
-    
+
     try {
       const url = `/challenge/api/challenges/${challengeId}/tasks`;
       const result = await httpRequest<ChallengeTask[]>(url, { method: "GET" });
@@ -626,7 +634,9 @@ export const challengeService = {
   },
 
   async deleteChallengeTask(id: string): Promise<ApiResponse<string>> {
-    return httpRequest<ApiResponse<string>>(`/challenge/api/ChallengeTasks/${id}`, { method: "DELETE" });
+    return httpRequest<ApiResponse<string>>(`/challenge/api/ChallengeTasks/${id}`, {
+      method: "DELETE",
+    });
   },
 
   // ============ CHALLENGE PARTICIPANT ENDPOINTS ============
@@ -639,23 +649,27 @@ export const challengeService = {
   },
 
   async getChallengeParticipant(id: string): Promise<ChallengeParticipant> {
-    return httpRequest<ChallengeParticipant>(`/challenge/api/ChallengeParticipants/${id}`, { method: "GET" });
+    return httpRequest<ChallengeParticipant>(`/challenge/api/ChallengeParticipants/${id}`, {
+      method: "GET",
+    });
   },
 
   async getAllChallengeParticipants(): Promise<ChallengeParticipant[]> {
-    return httpRequest<ChallengeParticipant[]>("/challenge/api/ChallengeParticipants", { method: "GET" });
+    return httpRequest<ChallengeParticipant[]>("/challenge/api/ChallengeParticipants", {
+      method: "GET",
+    });
   },
 
-  // ✅ NEW: Get participants by user ID
   async getParticipantsByUserId(userId: string): Promise<ChallengeParticipant[]> {
-    if (!userId || userId === 'undefined' || userId === 'null') {
+    if (!userId || userId === "undefined" || userId === "null") {
       console.error("❌ Invalid userId provided to getParticipantsByUserId:", userId);
       return [];
     }
-    
+
     try {
+      // Reverting to client-side filtering as the direct API endpoint is not found.
       const allParticipants = await this.getAllChallengeParticipants();
-      return allParticipants.filter(p => p.userId === userId);
+      return allParticipants.filter((p) => p.userId === userId);
     } catch (error) {
       console.error(`❌ Error fetching participants for user ${userId}:`, error);
       return [];
@@ -663,11 +677,14 @@ export const challengeService = {
   },
 
   async getParticipantsByChallengeId(challengeId: string): Promise<ChallengeParticipant[]> {
-    if (!challengeId || challengeId === 'undefined' || challengeId === 'null') {
-      console.error("❌ Invalid challengeId provided to getParticipantsByChallengeId:", challengeId);
+    if (!challengeId || challengeId === "undefined" || challengeId === "null") {
+      console.error(
+        "❌ Invalid challengeId provided to getParticipantsByChallengeId:",
+        challengeId
+      );
       return [];
     }
-    
+
     try {
       const url = `/challenge/api/challenges/${challengeId}/participants`;
       const result = await httpRequest<ChallengeParticipant[]>(url, { method: "GET" });
@@ -678,7 +695,10 @@ export const challengeService = {
     }
   },
 
-  async updateChallengeParticipant(id: string, data: ChallengeParticipantDTO): Promise<ApiResponse<string>> {
+  async updateChallengeParticipant(
+    id: string,
+    data: ChallengeParticipantDTO
+  ): Promise<ApiResponse<string>> {
     return httpRequest<ApiResponse<string>>(`/challenge/api/ChallengeParticipants/${id}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
@@ -687,11 +707,15 @@ export const challengeService = {
   },
 
   async deleteChallengeParticipant(id: string): Promise<ApiResponse<string>> {
-    return httpRequest<ApiResponse<string>>(`/challenge/api/ChallengeParticipants/${id}`, { method: "DELETE" });
+    return httpRequest<ApiResponse<string>>(`/challenge/api/ChallengeParticipants/${id}`, {
+      method: "DELETE",
+    });
   },
 
   // ============ CHALLENGE TASK PROGRESS ENDPOINTS ============
-  async createChallengeTaskProgress(data: ChallengeTaskProgressDTO): Promise<ChallengeTaskProgress> {
+  async createChallengeTaskProgress(
+    data: ChallengeTaskProgressDTO
+  ): Promise<ChallengeTaskProgress> {
     return httpRequest<ChallengeTaskProgress>("/challenge/api/ChallengeTaskProgresses", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -700,18 +724,28 @@ export const challengeService = {
   },
 
   async getChallengeTaskProgress(id: string): Promise<ChallengeTaskProgress> {
-    return httpRequest<ChallengeTaskProgress>(`/challenge/api/ChallengeTaskProgresses/${id}`, { method: "GET" });
+    return httpRequest<ChallengeTaskProgress>(`/challenge/api/ChallengeTaskProgresses/${id}`, {
+      method: "GET",
+    });
   },
 
   async getAllChallengeTaskProgresses(): Promise<ChallengeTaskProgress[]> {
-    return httpRequest<ChallengeTaskProgress[]>("/challenge/api/ChallengeTaskProgresses", { method: "GET" });
+    return httpRequest<ChallengeTaskProgress[]>("/challenge/api/ChallengeTaskProgresses", {
+      method: "GET",
+    });
   },
 
   async getProgressByParticipantId(participantId: string): Promise<ChallengeTaskProgress[]> {
-    return httpRequest<ChallengeTaskProgress[]>(`/challenge/api/participants/${participantId}/progresses`, { method: "GET" });
+    return httpRequest<ChallengeTaskProgress[]>(
+      `/challenge/api/participants/${participantId}/progresses`,
+      { method: "GET" }
+    );
   },
 
-  async updateChallengeTaskProgress(id: string, data: ChallengeTaskProgressDTO): Promise<ApiResponse<string>> {
+  async updateChallengeTaskProgress(
+    id: string,
+    data: ChallengeTaskProgressDTO
+  ): Promise<ApiResponse<string>> {
     return httpRequest<ApiResponse<string>>(`/challenge/api/ChallengeTaskProgresses/${id}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
@@ -719,7 +753,10 @@ export const challengeService = {
     });
   },
 
-  async patchChallengeTaskProgress(id: string, patchData: Record<string, any>): Promise<ApiResponse<string>> {
+  async patchChallengeTaskProgress(
+    id: string,
+    patchData: Record<string, any>
+  ): Promise<ApiResponse<string>> {
     return httpRequest<ApiResponse<string>>(`/challenge/api/ChallengeTaskProgresses/${id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
@@ -728,7 +765,9 @@ export const challengeService = {
   },
 
   async deleteChallengeTaskProgress(id: string): Promise<ApiResponse<string>> {
-    return httpRequest<ApiResponse<string>>(`/challenge/api/ChallengeTaskProgresses/${id}`, { method: "DELETE" });
+    return httpRequest<ApiResponse<string>>(`/challenge/api/ChallengeTaskProgresses/${id}`, {
+      method: "DELETE",
+    });
   },
 
   // ============ ACHIEVEMENT ENDPOINTS ============
@@ -758,7 +797,9 @@ export const challengeService = {
   },
 
   async deleteAchievement(id: string): Promise<ApiResponse<string>> {
-    return httpRequest<ApiResponse<string>>(`/challenge/api/Achievements/${id}`, { method: "DELETE" });
+    return httpRequest<ApiResponse<string>>(`/challenge/api/Achievements/${id}`, {
+      method: "DELETE",
+    });
   },
 
   // ============ LEADERBOARD ENDPOINTS ============
@@ -767,11 +808,16 @@ export const challengeService = {
   },
 
   async getLeaderboard(challengeId: string): Promise<LeaderboardEntry[]> {
-    return httpRequest<LeaderboardEntry[]>(`/challenge/api/leaderboard/${challengeId}`, { method: "GET" });
+    return httpRequest<LeaderboardEntry[]>(`/challenge/api/leaderboard/${challengeId}`, {
+      method: "GET",
+    });
   },
 
   async getUserRank(challengeId: string, userId: string): Promise<LeaderboardEntry> {
-    return httpRequest<LeaderboardEntry>(`/challenge/api/leaderboard/${challengeId}/users/${userId}`, { method: "GET" });
+    return httpRequest<LeaderboardEntry>(
+      `/challenge/api/leaderboard/${challengeId}/users/${userId}`,
+      { method: "GET" }
+    );
   },
 
   async resetLeaderboard(challengeId: string): Promise<void> {

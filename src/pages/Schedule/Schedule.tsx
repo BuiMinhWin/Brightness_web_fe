@@ -8,6 +8,13 @@ import {
   ScheduleDayDetail,
   AIUsageLimits,
 } from "@/services/personalCoachService";
+import {
+  challengeService,
+  type Challenge,
+  type ChallengeTask,
+  type ChallengeTaskProgressDTO,
+  type ChallengeTaskProgress,
+} from "@/services/challengeService";
 import chatService from "@/services/chatService";
 import WorkoutFeedbackModal, { WorkoutFeedbackData } from "@/components/WorkoutFeedbackModal";
 import RegenerateScheduleModal, {
@@ -28,6 +35,7 @@ import {
   Refresh,
   History,
   CheckCircle,
+  EmojiEvents,
 } from "@mui/icons-material";
 import { Tooltip, Snackbar, Alert } from "@mui/material";
 import {
@@ -49,6 +57,29 @@ interface WorkoutEvent {
   dayDetail: ScheduleDayDetail; // Full day details
 }
 
+interface ChallengeCalendarEvent {
+  id: string;
+  date: string;
+  title: string;
+  challengeId: string;
+  challengeTitle: string;
+  participantId: string;
+  task?: ChallengeTask; // Made optional
+  status?: string;
+  progress: number;
+  completed: boolean;
+  targetDate?: string;
+  completionPercentage?: number; // Add completion percentage for the whole challenge
+  isChallengeDurationEvent?: boolean; // New flag to distinguish duration events
+}
+
+// Define a local interface to extend ChallengeTask with missing properties
+interface ChallengeTaskWithScheduleInfo extends ChallengeTask {
+  scheduledDate?: string;
+  dayOffset?: number;
+}
+type CalendarEvent = WorkoutEvent | ChallengeCalendarEvent;
+
 const Schedule: React.FC = () => {
   const { showToast } = useToast();
   const navigate = useNavigate();
@@ -56,8 +87,12 @@ const Schedule: React.FC = () => {
   const [selectedDate, setSelectedDate] = useState<Date | null>(new Date());
   const [workoutSchedules, setWorkoutSchedules] = useState<WorkoutScheduleResponse[]>([]);
   const [events, setEvents] = useState<WorkoutEvent[]>([]);
+  const [challengeEvents, setChallengeEvents] = useState<ChallengeCalendarEvent[]>([]);
+  const [allEvents, setAllEvents] = useState<CalendarEvent[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [challengeLoading, setChallengeLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [challengeError, setChallengeError] = useState<string | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
   const [selectedWorkout, setSelectedWorkout] = useState<ScheduleDayDetail | null>(null);
   const [selectedWorkoutDate, setSelectedWorkoutDate] = useState<string>("");
@@ -88,10 +123,57 @@ const Schedule: React.FC = () => {
 
   const weekdays = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 
+  const toDateOnlyString = (value?: string | null): string | null => {
+    if (!value) {
+      return null;
+    }
+    const parsed = Date.parse(value);
+    if (Number.isNaN(parsed)) {
+      return null;
+    }
+    return new Date(parsed).toISOString().split("T")[0];
+  };
+
+  const pickFirstValidDate = (values: Array<string | null | undefined>): string | null => {
+    for (const candidate of values) {
+      const normalized = toDateOnlyString(candidate ?? null);
+      if (normalized) {
+        return normalized;
+      }
+    }
+    return null;
+  };
+
+  const formatDisplayDate = (dateString: string): string => {
+    const date = new Date(`${dateString}T00:00:00`);
+    if (Number.isNaN(date.getTime())) {
+      return dateString;
+    }
+    return date.toLocaleDateString(undefined, {
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+    });
+  };
+
+  const isProgressEntryCompleted = (progress: ChallengeTaskProgress): boolean => {
+    if (!progress) {
+      return false;
+    }
+    if (progress.completedAt) {
+      return true;
+    }
+    if (!progress.status) {
+      return false;
+    }
+    const normalized = progress.status.toLowerCase();
+    return normalized === "completed" || normalized === "done" || normalized === "finished";
+  };
+
   // Fetch AI usage limits
   const fetchAIUsageLimits = async () => {
     if (!userId) return;
-    
+
     try {
       const limits = await personalCoachService.getAIUsageLimits(userId);
       setAiUsageLimits(limits);
@@ -118,8 +200,13 @@ const Schedule: React.FC = () => {
 
       // Only use the latest schedule (prioritize IsLatest flag, fallback to most recent)
       if (schedules.length > 0) {
-        const latestSchedule = schedules.find(s => s.isLatest) || schedules[0];
-        console.log("📌 Using latest schedule:", latestSchedule.scheduleName, "IsLatest:", latestSchedule.isLatest);
+        const latestSchedule = schedules.find((s) => s.isLatest) || schedules[0];
+        console.log(
+          "📌 Using latest schedule:",
+          latestSchedule.scheduleName,
+          "IsLatest:",
+          latestSchedule.isLatest
+        );
 
         // Convert latest schedule to calendar events using actual dates from backend
         const calendarEvents: WorkoutEvent[] = [];
@@ -152,23 +239,218 @@ const Schedule: React.FC = () => {
     }
   };
 
+  const fetchChallenges = async () => {
+    if (!userId) return;
+
+    setChallengeLoading(true);
+    setChallengeError(null);
+
+    try {
+      const joinedChallenges = await challengeService.getParticipantsByUserId(userId);
+      console.log("Joined challenges participants:", joinedChallenges); // Log joined challenges
+      const calendarEvents: ChallengeCalendarEvent[] = [];
+
+      for (const participant of joinedChallenges) {
+        // Fetch all challenges once and then get details from the map. This avoids multiple API calls for getChallenge(id).
+        const allChallenges = await challengeService.getAllChallenges();
+        const challengeMap = new Map(allChallenges.map((c) => [c.id, c]));
+
+        const challengeDetails = challengeMap.get(participant.challengeId);
+
+        if (challengeDetails) {
+          // Fetch the latest progress for the current participant once
+          const participantProgress = await challengeService.getProgressByParticipantId(
+            participant.id
+          );
+          console.log(`Latest progress for participant ${participant.id}:`, participantProgress);
+          // Ensure challengeDetails exist
+          console.log("Participant data:", participant); // Log participant data
+          console.log("Challenge details for participant:", challengeDetails); // Log challenge details
+          // --- START: Calculate overall challenge progress ---
+          let totalDays = 0;
+          let completedDays = 0;
+          if (challengeDetails.startAt && challengeDetails.endAt) {
+            const start = new Date(challengeDetails.startAt);
+            const end = new Date(challengeDetails.endAt);
+            totalDays = Math.round((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)) + 1;
+
+            if (participantProgress) {
+              const completedDates = new Set(
+                participantProgress
+                  .filter((p) => isProgressEntryCompleted(p) && p.targetDate)
+                  .map((p) => toDateOnlyString(p.targetDate))
+              );
+              completedDays = completedDates.size;
+            }
+          }
+          const completionPercentage = totalDays > 0 ? (completedDays / totalDays) * 100 : 0;
+          // --- END: Calculate overall challenge progress ---
+
+          const tasks = await challengeService.getTasksByChallengeId(challengeDetails.id);
+
+          // Map tasks by their scheduled date or calculated date for quick lookup
+          // Also identify a general daily check-in task if it exists
+          const tasksBySpecificDate: { [date: string]: ChallengeTask[] } = {};
+          let dailyCheckInTask: ChallengeTask | undefined;
+
+          for (const task of tasks) {
+            const taskWithScheduleInfo = task as ChallengeTaskWithScheduleInfo;
+            if (taskWithScheduleInfo.scheduledDate) {
+              const taskEventDate = toDateOnlyString(taskWithScheduleInfo.scheduledDate);
+              if (taskEventDate) {
+                if (!tasksBySpecificDate[taskEventDate]) {
+                  tasksBySpecificDate[taskEventDate] = [];
+                }
+                tasksBySpecificDate[taskEventDate].push(task);
+              }
+            } else if (taskWithScheduleInfo.dayOffset !== undefined && challengeDetails.startAt) {
+              const startDate = new Date(challengeDetails.startAt);
+              startDate.setDate(startDate.getDate() + taskWithScheduleInfo.dayOffset);
+              const taskEventDate = toDateOnlyString(startDate.toISOString());
+              if (taskEventDate) {
+                if (!tasksBySpecificDate[taskEventDate]) {
+                  tasksBySpecificDate[taskEventDate] = [];
+                }
+                tasksBySpecificDate[taskEventDate].push(task);
+              }
+            } else if (task.taskType === "Daily" || task.taskType === "DailyCheckIn") {
+              // This is a general daily task, not tied to a specific scheduledDate or dayOffset
+              dailyCheckInTask = task;
+            }
+          }
+
+          // Iterate through each day of the challenge duration to create events
+          if (challengeDetails.startAt && challengeDetails.endAt) {
+            const startDate = new Date(challengeDetails.startAt);
+            const endDate = new Date(challengeDetails.endAt);
+            let currentDateIterator = new Date(startDate);
+
+            while (currentDateIterator <= endDate) {
+              const dateStr = toDateOnlyString(currentDateIterator.toISOString());
+              if (dateStr) {
+                const tasksForThisDate = tasksBySpecificDate[dateStr] || [];
+                let eventAddedForThisDate = false;
+
+                if (tasksForThisDate.length > 0) {
+                  // Add events for specific tasks scheduled for this date
+                  for (const task of tasksForThisDate) {
+                    console.log(
+                      `  Processing task "${task.name}" (ID: ${task.id}) for date: ${dateStr}`
+                    );
+                    const taskProgress = participantProgress?.find((p: ChallengeTaskProgress) => {
+                      const progressTargetDate = toDateOnlyString(p.targetDate);
+                      console.log(
+                        `    Comparing progress (ID: ${p.id}, TaskID: ${p.challengeTaskId}, TargetDate: ${progressTargetDate}, Status: ${p.status}) with current (TaskID: ${task.id}, Date: ${dateStr})`
+                      );
+                      return p.challengeTaskId === task.id && progressTargetDate === dateStr;
+                    });
+                    const completed = taskProgress ? isProgressEntryCompleted(taskProgress) : false;
+
+                    calendarEvents.push({
+                      id: `challenge-${task.id}-${participant.id}-${dateStr}`, // Unique ID for task on specific date
+                      date: dateStr,
+                      title: task.name,
+                      challengeId: participant.challengeId,
+                      challengeTitle: challengeDetails.title,
+                      participantId: participant.id,
+                      task: task,
+                      completed: completed,
+                      progress:
+                        (taskProgress as ChallengeTaskProgress & { progressValue: number })
+                          ?.progressValue || 0,
+                      completionPercentage: completionPercentage,
+                      isChallengeDurationEvent: false,
+                    });
+                    eventAddedForThisDate = true;
+                  }
+                } else if (dailyCheckInTask) {
+                  // If no specific tasks, but there's a general daily check-in task
+                  console.log(
+                    `  Processing daily check-in task "${dailyCheckInTask.name}" (ID: ${dailyCheckInTask.id}) for date: ${dateStr}`
+                  );
+                  const taskProgress = participantProgress?.find((p: ChallengeTaskProgress) => {
+                    const progressTargetDate = toDateOnlyString(p.targetDate);
+                    console.log(
+                      `    Comparing progress (ID: ${p.id}, TaskID: ${p.challengeTaskId}, TargetDate: ${progressTargetDate}, Status: ${p.status}) with current (TaskID: ${dailyCheckInTask.id}, Date: ${dateStr})`
+                    );
+                    return (
+                      p.challengeTaskId === dailyCheckInTask.id && progressTargetDate === dateStr
+                    );
+                  });
+                  const completed = taskProgress ? isProgressEntryCompleted(taskProgress) : false;
+
+                  calendarEvents.push({
+                    id: `challenge-${dailyCheckInTask.id}-${participant.id}-${dateStr}`,
+                    date: dateStr,
+                    title: dailyCheckInTask.name,
+                    challengeId: participant.challengeId,
+                    challengeTitle: challengeDetails.title,
+                    participantId: participant.id,
+                    task: dailyCheckInTask,
+                    completed: completed,
+                    progress:
+                      (taskProgress as ChallengeTaskProgress & { progressValue: number })
+                        ?.progressValue || 0,
+                    completionPercentage: completionPercentage,
+                    isChallengeDurationEvent: false, // It's a task, not just duration
+                  });
+                  eventAddedForThisDate = true;
+                }
+
+                // If no task-specific event was added for this date, add a general duration event
+                if (!eventAddedForThisDate) {
+                  calendarEvents.push({
+                    id: `challenge-duration-${challengeDetails.id}-${dateStr}`, // Unique ID for duration event
+                    date: dateStr,
+                    title: challengeDetails.title, // Challenge title for duration event
+                    challengeId: challengeDetails.id,
+                    challengeTitle: challengeDetails.title,
+                    participantId: participant.id,
+                    completed: false, // Not completed as a duration event
+                    progress: 0, // No specific task progress
+                    completionPercentage: completionPercentage,
+                    isChallengeDurationEvent: true, // Mark as duration event
+                  });
+                }
+              }
+              currentDateIterator.setDate(currentDateIterator.getDate() + 1);
+            }
+          }
+        }
+      }
+      setChallengeEvents(calendarEvents);
+    } catch (err) {
+      setChallengeError(err instanceof Error ? err.message : "Failed to load challenges");
+    } finally {
+      setChallengeLoading(false);
+    }
+  };
+
   useEffect(() => {
     fetchSchedules();
     fetchAIUsageLimits();
+    fetchChallenges();
   }, [userId]);
+
+  useEffect(() => {
+    const combinedEvents = [...events, ...challengeEvents];
+    setAllEvents(combinedEvents);
+  }, [events, challengeEvents]);
 
   // Auto-select workout when date is selected
   useEffect(() => {
     if (!selectedDate) return;
-    
+
     // Format date as YYYY-MM-DD
     const year = selectedDate.getFullYear();
     const month = String(selectedDate.getMonth() + 1).padStart(2, "0");
     const day = String(selectedDate.getDate()).padStart(2, "0");
     const dateStr = `${year}-${month}-${day}`;
-    
-    const workoutsForDate = events.filter((event) => event.date === dateStr);
-    
+
+    const workoutsForDate = allEvents.filter(
+      (event) => event.date === dateStr && "dayDetail" in event
+    ) as WorkoutEvent[];
+
     if (workoutsForDate.length > 0) {
       // Automatically select the first workout for this date
       setSelectedWorkout(workoutsForDate[0].dayDetail);
@@ -178,7 +460,7 @@ const Schedule: React.FC = () => {
       setSelectedWorkout(null);
       setSelectedWorkoutDate("");
     }
-  }, [selectedDate, events]);
+  }, [selectedDate, allEvents]);
 
   const handleGenerateWorkout = async (formData: GenerateWorkoutFormData) => {
     if (!userId) {
@@ -191,11 +473,11 @@ const Schedule: React.FC = () => {
 
     try {
       console.log("🎯 Generating workout schedule...");
-      
+
       // Track AI action and get credits
       const credits = await chatService.trackAiAction();
       console.log("Credits response:", credits);
-      
+
       // Generate schedule using Personal Coach service
       await personalCoachService.generateSchedule({
         userId,
@@ -214,7 +496,7 @@ const Schedule: React.FC = () => {
 
       setToast({
         open: true,
-        message: `Workout plan generated successfully! (${credits?.remainingMessages ?? '?'}/${credits?.dailyLimit ?? '?'} AI credits remaining)`,
+        message: `Workout plan generated successfully! (${credits?.remainingMessages ?? "?"}/${credits?.dailyLimit ?? "?"} AI credits remaining)`,
         severity: "success",
       });
     } catch (err) {
@@ -250,7 +532,7 @@ const Schedule: React.FC = () => {
       // Track AI action and get credits
       const credits = await chatService.trackAiAction();
       console.log("Credits response:", credits);
-      
+
       // Regenerate schedule using Personal Coach service
       await personalCoachService.regenerateSchedule(requestData);
       console.log("✅ Schedule regenerated");
@@ -262,7 +544,7 @@ const Schedule: React.FC = () => {
       setShowRegenerateModal(false);
       setToast({
         open: true,
-        message: `Schedule regenerated successfully! Your progress has been preserved. (${credits?.remainingMessages ?? '?'}/${credits?.dailyLimit ?? '?'} AI credits remaining)`,
+        message: `Schedule regenerated successfully! Your progress has been preserved. (${credits?.remainingMessages ?? "?"}/${credits?.dailyLimit ?? "?"} AI credits remaining)`,
         severity: "success",
       });
     } catch (error) {
@@ -300,6 +582,79 @@ const Schedule: React.FC = () => {
     }
   };
 
+  const handleToggleChallengeTask = async (challengeEvent: ChallengeCalendarEvent) => {
+    if (!userId) return;
+
+    const { task, participantId, completed, date, challengeId } = challengeEvent;
+
+    try {
+      // If there's no specific task on the event, it means it's a daily-tracking challenge.
+      // We need to find or create a task to track progress against.
+      let taskToUpdate = task;
+      if (!taskToUpdate) {
+        const tasks = await challengeService.getTasksByChallengeId(challengeId);
+        if (tasks.length > 0) {
+          taskToUpdate = tasks[0]; // Assume the first task is the one to track daily
+        } else {
+          // No tasks exist, create a default daily check-in task for this day.
+          console.log(
+            `No tasks found for challenge ${challengeId}. Creating a new one for ${date}.`
+          );
+          const newTaskPayload = {
+            challengeId: challengeId,
+            name: `Daily Check-in: ${new Date(date!).toLocaleDateString()}`,
+            description: `Daily check-in for challenge: ${challengeEvent.challengeTitle}`,
+            taskType: "DailyCheckIn",
+            isRequired: true,
+            // scheduledDate is not in the DTO, but the backend might handle it based on targetDate of progress.
+          };
+          taskToUpdate = await challengeService.createChallengeTask(newTaskPayload);
+          console.log("✅ New task created:", taskToUpdate);
+        }
+      }
+
+      if (!taskToUpdate) {
+        showToast({ message: "Could not find or create a task to track.", severity: "error" });
+        return;
+      }
+
+      // Find the participant object to get the progress array
+      // Fetch the latest progress for the participant to find the specific taskProgress
+      const currentParticipantProgress =
+        await challengeService.getProgressByParticipantId(participantId);
+      const taskProgress = currentParticipantProgress?.find(
+        (p) => p.challengeTaskId === taskToUpdate!.id && toDateOnlyString(p.targetDate) === date
+      );
+
+      const newStatus = completed ? "Pending" : "Completed";
+
+      if (taskProgress) {
+        // Update existing progress
+        const updatedProgress: ChallengeTaskProgressDTO = {
+          ...taskProgress,
+          status: newStatus,
+          completedAt: newStatus === "Completed" ? new Date().toISOString() : undefined,
+        };
+        await challengeService.updateChallengeTaskProgress(taskProgress.id, updatedProgress);
+      } else {
+        // Create new progress
+        const newProgress: ChallengeTaskProgressDTO = {
+          participantId: participantId,
+          challengeTaskId: taskToUpdate!.id,
+          targetDate: date,
+          status: newStatus,
+          completedAt: newStatus === "Completed" ? new Date().toISOString() : undefined,
+        };
+        await challengeService.createChallengeTaskProgress(newProgress);
+      }
+
+      showToast({ message: `Task marked as ${newStatus.toLowerCase()}`, severity: "success" });
+      await fetchChallenges(); // Refresh challenge data
+    } catch (error) {
+      console.error("Failed to update challenge task status:", error);
+      showToast({ message: "Failed to update task status.", severity: "error" });
+    }
+  };
   const getDaysInMonth = (date: Date) => {
     return new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate();
   };
@@ -332,18 +687,18 @@ const Schedule: React.FC = () => {
 
   const getEventCountForDate = (date: Date) => {
     const dateStr = formatDateLocal(date);
-    return events.filter((event) => event.date === dateStr).length;
+    return allEvents.filter((event) => event.date === dateStr).length;
   };
 
   const getEventsForDate = (date: Date) => {
     const dateStr = formatDateLocal(date);
-    return events.filter((event) => event.date === dateStr);
+    return allEvents.filter((event) => event.date === dateStr);
   };
 
   const getEventsForSelectedDate = () => {
     if (!selectedDate) return [];
     const dateStr = formatDateLocal(selectedDate);
-    return events.filter((event) => event.date === dateStr);
+    return allEvents.filter((event) => event.date === dateStr);
   };
 
   const renderCalendar = () => {
@@ -372,12 +727,17 @@ const Schedule: React.FC = () => {
           {eventCount > 0 &&
             (() => {
               const dayEvents = getEventsForDate(date);
-              const hasWorkout = dayEvents.some((e) => e.dayDetail.dayType === "workout");
-              
+              const hasWorkout = dayEvents.some(
+                (e) => "dayDetail" in e && e.dayDetail.dayType === "workout"
+              );
+              const hasChallenge = dayEvents.some((e) => "challengeId" in e);
+
               // Calculate progress
               let progressPercentage = 0;
               if (hasWorkout) {
-                const workoutEvent = dayEvents.find((e) => e.dayDetail.dayType === "workout");
+                const workoutEvent = dayEvents.find(
+                  (e) => "dayDetail" in e && e.dayDetail.dayType === "workout"
+                ) as WorkoutEvent;
                 if (workoutEvent) {
                   const completedExercises = workoutEvent.dayDetail.exercises.filter(
                     (ex) => ex.completed
@@ -393,13 +753,15 @@ const Schedule: React.FC = () => {
                   <div
                     className="absolute w-6 h-6 rounded-full flex items-center justify-center"
                     style={{
-                      background: hasWorkout 
-                        ? progressPercentage === 100 
-                          ? "#22c55e" 
-                          : progressPercentage > 0 
-                            ? "#f59e0b" 
+                      background: hasWorkout
+                        ? progressPercentage === 100
+                          ? "#22c55e"
+                          : progressPercentage > 0
+                            ? "#f59e0b"
                             : "#0a6a56"
-                        : "#69c68d",
+                        : hasChallenge
+                          ? "#ff9800"
+                          : "#69c68d",
                       color: "white",
                       top: "4px",
                       right: "4px",
@@ -412,6 +774,8 @@ const Schedule: React.FC = () => {
                       ) : (
                         <FitnessCenter style={{ fontSize: 14 }} />
                       )
+                    ) : hasChallenge ? (
+                      <EmojiEvents style={{ fontSize: 14 }} />
                     ) : (
                       <Hotel style={{ fontSize: 14 }} />
                     )}
@@ -511,13 +875,26 @@ const Schedule: React.FC = () => {
           {eventCount > 0 &&
             (() => {
               const dayEvents = getEventsForDate(date);
-              const hasWorkout = dayEvents.some((e) => e.dayDetail.dayType === "workout");
-              const hasRest = dayEvents.some((e) => e.dayDetail.dayType === "rest");
-              
+              const hasWorkout = dayEvents.some(
+                (e) => "dayDetail" in e && e.dayDetail.dayType === "workout"
+              );
+              const hasChallenge = dayEvents.some((e) => "challengeId" in e);
+              const hasChallengeTask = dayEvents.some(
+                (e) => "challengeId" in e && !e.isChallengeDurationEvent
+              );
+              const hasChallengeDuration = dayEvents.some(
+                (e) => "challengeId" in e && e.isChallengeDurationEvent
+              );
+              const hasRest = dayEvents.some(
+                (e) => "dayDetail" in e && e.dayDetail.dayType === "rest"
+              );
+
               // Calculate progress for workout days
               let progressPercentage = 0;
               if (hasWorkout) {
-                const workoutEvent = dayEvents.find((e) => e.dayDetail.dayType === "workout");
+                const workoutEvent = dayEvents.find(
+                  (e) => "dayDetail" in e && e.dayDetail.dayType === "workout"
+                ) as WorkoutEvent;
                 if (workoutEvent) {
                   const completedExercises = workoutEvent.dayDetail.exercises.filter(
                     (ex) => ex.completed
@@ -535,13 +912,15 @@ const Schedule: React.FC = () => {
                     <div
                       className="absolute w-7 h-7 rounded-full flex items-center justify-center"
                       style={{
-                        background: hasWorkout 
-                          ? progressPercentage === 100 
-                            ? "#22c55e" 
-                            : progressPercentage > 0 
-                              ? "#f59e0b" 
+                        background: hasWorkout
+                          ? progressPercentage === 100
+                            ? "#22c55e"
+                            : progressPercentage > 0
+                              ? "#f59e0b"
                               : "#0a6a56"
-                          : "#69c68d",
+                          : hasChallenge
+                            ? "#ff9800"
+                            : "#69c68d",
                         color: "white",
                         top: "4px",
                         right: "4px",
@@ -553,12 +932,18 @@ const Schedule: React.FC = () => {
                         ) : (
                           <FitnessCenter style={{ fontSize: 16 }} />
                         )
+                      ) : hasChallengeTask ? (
+                        // If there is a specific task, show the trophy
+                        <EmojiEvents style={{ fontSize: 16 }} />
+                      ) : hasChallenge ? (
+                        // If it's just a duration event, show the schedule icon
+                        <ScheduleIcon style={{ fontSize: 16 }} />
                       ) : (
                         <Hotel style={{ fontSize: 16 }} />
                       )}
                     </div>
                   )}
-                  
+
                   {/* Progress bar at bottom */}
                   {hasWorkout && (
                     <div
@@ -609,12 +994,17 @@ const Schedule: React.FC = () => {
             {eventCount > 0 &&
               (() => {
                 const dayEvents = getEventsForDate(date);
-                const hasWorkout = dayEvents.some((e) => e.dayDetail.dayType === "workout");
-                
+                const hasWorkout = dayEvents.some(
+                  (e) => "dayDetail" in e && e.dayDetail.dayType === "workout"
+                );
+                const hasChallenge = dayEvents.some((e) => "challengeId" in e);
+
                 // Calculate progress
                 let progressPercentage = 0;
                 if (hasWorkout) {
-                  const workoutEvent = dayEvents.find((e) => e.dayDetail.dayType === "workout");
+                  const workoutEvent = dayEvents.find(
+                    (e) => "dayDetail" in e && e.dayDetail.dayType === "workout"
+                  ) as WorkoutEvent;
                   if (workoutEvent) {
                     const completedExercises = workoutEvent.dayDetail.exercises.filter(
                       (ex) => ex.completed
@@ -630,13 +1020,15 @@ const Schedule: React.FC = () => {
                     <div
                       className="absolute w-6 h-6 rounded-full flex items-center justify-center"
                       style={{
-                        background: hasWorkout 
-                          ? progressPercentage === 100 
-                            ? "#22c55e" 
-                            : progressPercentage > 0 
-                              ? "#f59e0b" 
+                        background: hasWorkout
+                          ? progressPercentage === 100
+                            ? "#22c55e"
+                            : progressPercentage > 0
+                              ? "#f59e0b"
                               : "#0a6a56"
-                          : "#69c68d",
+                          : hasChallenge
+                            ? "#ff9800"
+                            : "#69c68d",
                         color: "white",
                         top: "4px",
                         right: "4px",
@@ -649,6 +1041,8 @@ const Schedule: React.FC = () => {
                         ) : (
                           <FitnessCenter style={{ fontSize: 14 }} />
                         )
+                      ) : hasChallenge ? (
+                        <EmojiEvents style={{ fontSize: 14 }} />
                       ) : (
                         <Hotel style={{ fontSize: 14 }} />
                       )}
@@ -703,286 +1097,400 @@ const Schedule: React.FC = () => {
       >
         {/* Calendar content */}
         <main className="flex flex-col h-full">
-        {/* Heading row */}
-        <div className="flex items-center justify-between px-3 py-1 flex-shrink-0">
-          <div className="font-black text-4xl" style={{ color: "#0b3d33" }}>
-            Schedule
-          </div>
-          <div className="flex items-center gap-4">
-            {/* AI Usage Badge */}
-            {!isPaidUser && aiUsageLimits && (
-              <div className="flex items-center gap-2 text-sm">
-                <span style={{ color: "#0a6a56", fontWeight: "500" }}>
-                  AI:
-                </span>
-                <span
-                  className="px-2 py-1 rounded-lg font-semibold"
-                  style={{
-                    background: aiUsageLimits.remainingGenerations > 0 ? "#dcfce7" : "#fee2e2",
-                    color: aiUsageLimits.remainingGenerations > 0 ? "#16a34a" : "#dc2626",
-                  }}
+          {/* Heading row */}
+          <div className="flex items-center justify-between px-3 py-1 flex-shrink-0">
+            <div className="font-black text-4xl" style={{ color: "#0b3d33" }}>
+              Schedule
+            </div>
+            <div className="flex items-center gap-4">
+              {/* AI Usage Badge */}
+              {!isPaidUser && aiUsageLimits && (
+                <div className="flex items-center gap-2 text-sm">
+                  <span style={{ color: "#0a6a56", fontWeight: "500" }}>AI:</span>
+                  <span
+                    className="px-2 py-1 rounded-lg font-semibold"
+                    style={{
+                      background: aiUsageLimits.remainingGenerations > 0 ? "#dcfce7" : "#fee2e2",
+                      color: aiUsageLimits.remainingGenerations > 0 ? "#16a34a" : "#dc2626",
+                    }}
+                  >
+                    {aiUsageLimits.remainingGenerations}/{aiUsageLimits.monthlyLimit}
+                  </span>
+                </div>
+              )}
+
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={() => navigateMonth("prev")}
+                  className="w-8 h-8 flex items-center justify-center hover:bg-opacity-10 hover:bg-white transition-all rounded-full"
+                  style={{ color: "#0a6a56" }}
                 >
-                  {aiUsageLimits.remainingGenerations}/{aiUsageLimits.monthlyLimit}
-                </span>
+                  <ChevronLeft fontSize="small" />
+                </button>
+
+                <div className="flex items-center gap-2">
+                  <Select
+                    value={currentDate.getMonth().toString()}
+                    onValueChange={(value) => {
+                      const newDate = new Date(currentDate);
+                      newDate.setMonth(parseInt(value));
+                      setCurrentDate(newDate);
+                    }}
+                  >
+                    <SelectTrigger
+                      className="w-32 border-2 rounded-xl focus:ring-2 focus:ring-green-500/20"
+                      style={{ borderColor: "#c8ead6" }}
+                    >
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent
+                      className="border border-green-200 bg-white shadow-lg z-[10000]"
+                      style={{ zIndex: 10000 }}
+                      position="popper"
+                    >
+                      {Array.from({ length: 12 }, (_, i) => {
+                        const monthName = new Date(0, i).toLocaleDateString("en-US", {
+                          month: "long",
+                        });
+                        return (
+                          <SelectItem key={i} value={i.toString()}>
+                            {monthName}
+                          </SelectItem>
+                        );
+                      })}
+                    </SelectContent>
+                  </Select>
+
+                  <Select
+                    value={currentDate.getFullYear().toString()}
+                    onValueChange={(value) => {
+                      const newDate = new Date(currentDate);
+                      newDate.setFullYear(parseInt(value));
+                      setCurrentDate(newDate);
+                    }}
+                  >
+                    <SelectTrigger
+                      className="w-24 border-2 rounded-xl focus:ring-2 focus:ring-green-500/20"
+                      style={{ borderColor: "#c8ead6" }}
+                    >
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent
+                      className="border border-green-200 bg-white shadow-lg z-[10000]"
+                      style={{ zIndex: 10000 }}
+                      position="popper"
+                    >
+                      {Array.from({ length: 10 }, (_, i) => {
+                        const year = new Date().getFullYear() - 5 + i;
+                        return (
+                          <SelectItem key={year} value={year.toString()}>
+                            {year}
+                          </SelectItem>
+                        );
+                      })}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <button
+                  onClick={() => navigateMonth("next")}
+                  className="w-8 h-8 flex items-center justify-center hover:bg-opacity-10 hover:bg-white transition-all rounded-full"
+                  style={{ color: "#0a6a56" }}
+                >
+                  <ChevronRight fontSize="small" />
+                </button>
               </div>
-            )}
-
-
-            <div className="flex items-center gap-3">
-              <button
-                onClick={() => navigateMonth("prev")}
-                className="w-8 h-8 flex items-center justify-center hover:bg-opacity-10 hover:bg-white transition-all rounded-full"
-                style={{ color: "#0a6a56" }}
-              >
-                <ChevronLeft fontSize="small" />
-              </button>
-
-              <div className="flex items-center gap-2">
-                <Select
-                  value={currentDate.getMonth().toString()}
-                  onValueChange={(value) => {
-                    const newDate = new Date(currentDate);
-                    newDate.setMonth(parseInt(value));
-                    setCurrentDate(newDate);
-                  }}
-                >
-                  <SelectTrigger
-                    className="w-32 border-2 rounded-xl focus:ring-2 focus:ring-green-500/20"
-                    style={{ borderColor: "#c8ead6" }}
-                  >
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent
-                    className="border border-green-200 bg-white shadow-lg z-[10000]"
-                    style={{ zIndex: 10000 }}
-                    position="popper"
-                  >
-                    {Array.from({ length: 12 }, (_, i) => {
-                      const monthName = new Date(0, i).toLocaleDateString("en-US", {
-                        month: "long",
-                      });
-                      return (
-                        <SelectItem key={i} value={i.toString()}>
-                          {monthName}
-                        </SelectItem>
-                      );
-                    })}
-                  </SelectContent>
-                </Select>
-
-                <Select
-                  value={currentDate.getFullYear().toString()}
-                  onValueChange={(value) => {
-                    const newDate = new Date(currentDate);
-                    newDate.setFullYear(parseInt(value));
-                    setCurrentDate(newDate);
-                  }}
-                >
-                  <SelectTrigger
-                    className="w-24 border-2 rounded-xl focus:ring-2 focus:ring-green-500/20"
-                    style={{ borderColor: "#c8ead6" }}
-                  >
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent
-                    className="border border-green-200 bg-white shadow-lg z-[10000]"
-                    style={{ zIndex: 10000 }}
-                    position="popper"
-                  >
-                    {Array.from({ length: 10 }, (_, i) => {
-                      const year = new Date().getFullYear() - 5 + i;
-                      return (
-                        <SelectItem key={year} value={year.toString()}>
-                          {year}
-                        </SelectItem>
-                      );
-                    })}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <button
-                onClick={() => navigateMonth("next")}
-                className="w-8 h-8 flex items-center justify-center hover:bg-opacity-10 hover:bg-white transition-all rounded-full"
-                style={{ color: "#0a6a56" }}
-              >
-                <ChevronRight fontSize="small" />
-              </button>
             </div>
           </div>
-        </div>
 
-        {/* Calendar */}
-        <section className="flex-1 flex flex-col">
-          {/* Weekdays */}
-          <div
-            className="grid grid-cols-7 px-3 pt-2 pb-2 font-bold text-base"
-            style={{ color: "#0a6a56" }}
-          >
-            {weekdays.map((d, i) => (
-              <div
-                key={d}
-                className="flex items-center justify-center py-3 border-b-2 border-green-400 font-semibold"
-                style={{ color: i === 6 ? "#ff7b17" : "#0a6a56" }}
-              >
-                {d}
-              </div>
-            ))}
-          </div>
-
-          {/* Calendar grid */}
-          <div className="flex-1 flex flex-col justify-center">
-            <div className="border-l border-t border-green-300 rounded-lg overflow-hidden">
-              {renderCalendar().map((row, ri) => (
-                <div key={ri} className="grid grid-cols-7 px-3 flex-1">
-                  {row}
+          {/* Calendar */}
+          <section className="flex-1 flex flex-col">
+            {/* Weekdays */}
+            <div
+              className="grid grid-cols-7 px-3 pt-2 pb-2 font-bold text-base"
+              style={{ color: "#0a6a56" }}
+            >
+              {weekdays.map((d, i) => (
+                <div
+                  key={d}
+                  className="flex items-center justify-center py-3 border-b-2 border-green-400 font-semibold"
+                  style={{ color: i === 6 ? "#ff7b17" : "#0a6a56" }}
+                >
+                  {d}
                 </div>
               ))}
             </div>
+
+            {/* Calendar grid */}
+            <div className="flex-1 flex flex-col justify-center">
+              <div className="border-l border-t border-green-300 rounded-lg overflow-hidden">
+                {renderCalendar().map((row, ri) => (
+                  <div key={ri} className="grid grid-cols-7 px-3 flex-1">
+                    {row}
+                  </div>
+                ))}
+              </div>
+            </div>
+          </section>
+
+          {/* Separator */}
+          <div
+            className="h-0.5 mx-3 my-6 rounded-sm flex-shrink-0"
+            style={{
+              background: "#0a6a56",
+              opacity: 0.6,
+              height: "2px",
+            }}
+          />
+
+          {/* Event tiles - fixed height, no scroll */}
+          <div className="px-3 py-2" style={{ maxHeight: "280px" }}>
+            {isLoading || challengeLoading ? (
+              <div className="text-center py-8 text-opacity-60" style={{ color: "#0a6a56" }}>
+                Loading activities...
+              </div>
+            ) : error ? (
+              <div className="text-center py-4 text-red-600">{error}</div>
+            ) : challengeError ? (
+              <div className="text-center py-4 text-red-600">{challengeError}</div>
+            ) : displayEvents.length > 0 ? (
+              displayEvents.map((event) => {
+                if ("dayDetail" in event) {
+                  const workoutEvent = event as WorkoutEvent;
+                  const completedExercises = workoutEvent.dayDetail.exercises.filter(
+                    (ex) => ex.completed
+                  ).length;
+                  const totalExercises = workoutEvent.dayDetail.exercises.length;
+                  const progressPercentage =
+                    totalExercises > 0 ? (completedExercises / totalExercises) * 100 : 0;
+
+                  return (
+                    <div
+                      key={workoutEvent.id}
+                      onClick={() => {
+                        setSelectedWorkout(workoutEvent.dayDetail);
+                        setSelectedWorkoutDate(workoutEvent.date);
+                      }}
+                      className="rounded-xl px-3 py-3 flex flex-col gap-2 mb-2 cursor-pointer hover:shadow-lg transition-all"
+                      style={{
+                        background: "linear-gradient(90deg, #dce642 0%, #ffaf72 100%)",
+                        boxShadow: "0 2px 8px rgba(0, 0, 0, 0.08)",
+                      }}
+                    >
+                      {/* Header Row */}
+                      <div className="flex items-center gap-2">
+                        <div
+                          className="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0"
+                          style={{ background: "rgba(255, 123, 23, 0.2)", color: "#ff7b17" }}
+                        >
+                          <FitnessCenter fontSize="small" />
+                        </div>
+                        <div className="flex-1">
+                          <div className="font-bold text-base" style={{ color: "#0a6a56" }}>
+                            {workoutEvent.title}
+                          </div>
+                          <div
+                            className="text-xs mt-0.5 flex items-center gap-3"
+                            style={{ color: "#0b3d33", opacity: 0.85 }}
+                          >
+                            <span className="flex items-center gap-1">
+                              <AccessTime style={{ fontSize: 14 }} />
+                              {workoutEvent.time}
+                            </span>
+                            <span>•</span>
+                            <span className="flex items-center gap-1">
+                              <FitnessCenter style={{ fontSize: 14 }} />
+                              {workoutEvent.exercises} exercises
+                            </span>
+                          </div>
+                        </div>
+                        <div
+                          className="px-3 py-1 rounded-full text-xs font-semibold"
+                          style={{ background: "#0a6a56", color: "white" }}
+                        >
+                          {workoutEvent.focusArea}
+                        </div>
+                      </div>
+
+                      {/* Progress Section */}
+                      <div className="space-y-1.5">
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs font-medium" style={{ color: "#0a6a56" }}>
+                            {completedExercises}/{totalExercises} exercises •{" "}
+                            {Math.round(progressPercentage)}%
+                          </span>
+                          <span
+                            className="text-xs font-bold px-2 py-0.5 rounded-md"
+                            style={{
+                              color: "white",
+                              background: progressPercentage === 100 ? "#10b981" : "#0a6a56",
+                            }}
+                          >
+                            {progressPercentage === 100
+                              ? "Complete!"
+                              : `${totalExercises - completedExercises} left`}
+                          </span>
+                        </div>
+
+                        {/* Progress Bar with Orange to Green Gradient */}
+                        <div className="w-full bg-gray-200 rounded-full h-2">
+                          <div
+                            className="h-2 rounded-full transition-all duration-300"
+                            style={{
+                              width: `${progressPercentage}%`,
+                              background:
+                                "linear-gradient(90deg, #fbbf24 0%, #f59e0b 25%, #84cc16 75%, #22c55e 100%)",
+                            }}
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  );
+                } else {
+                  const challengeEvent = event as ChallengeCalendarEvent;
+                  return (
+                    <div
+                      key={challengeEvent.id}
+                      className="rounded-xl px-3 py-3 flex flex-col gap-2 mb-2 cursor-pointer hover:shadow-lg transition-all"
+                      style={{
+                        background: "linear-gradient(90deg, #ffcc80 0%, #ffb74d 100%)",
+                        boxShadow: "0 2px 8px rgba(0, 0, 0, 0.08)",
+                      }}
+                    >
+                      {/* Header Row */}
+                      <div className="flex items-center gap-2">
+                        <div
+                          className="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0"
+                          style={{ background: "rgba(255, 152, 0, 0.2)", color: "#ff9800" }}
+                        >
+                          <EmojiEvents fontSize="small" />
+                        </div>
+                        <div className="flex-1">
+                          <div className="font-bold text-base" style={{ color: "#bf360c" }}>
+                            {challengeEvent.title}
+                          </div>
+                          <div
+                            className="text-xs mt-0.5 flex items-center gap-3"
+                            style={{ color: "#bf360c", opacity: 0.85 }}
+                          >
+                            <span>{challengeEvent.challengeTitle}</span>
+                          </div>
+                        </div>
+                        <div
+                          className="px-3 py-1 rounded-full text-xs font-semibold"
+                          style={{ background: "#ff9800", color: "white" }}
+                        >
+                          Challenge
+                        </div>
+                      </div>
+                      {/* Progress Section */}
+                      <div className="space-y-1.5">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            {/* Logic to determine if checkbox should be disabled */}
+                            {(() => {
+                              const today = new Date();
+                              const eventDateObj = new Date(challengeEvent.date);
+                              const todayMidnight = today.setHours(0, 0, 0, 0);
+                              const eventDateMidnight = eventDateObj.setHours(0, 0, 0, 0);
+
+                              const isFutureDate = eventDateMidnight > todayMidnight;
+                              const isPastDate = eventDateMidnight < todayMidnight;
+                              // const isCurrentDate = eventDateMidnight === todayMidnight; // Not strictly needed for disabled logic
+
+                              // Disable checkbox if:
+                              // 1. It's a future date.
+                              // 2. It's a past date AND the task is not completed.
+                              // 3. It's a duration event (no specific task to check).
+                              const isCheckboxDisabled =
+                                isFutureDate ||
+                                (isPastDate && !challengeEvent.completed) ||
+                                challengeEvent.isChallengeDurationEvent;
+
+                              // Determine the status text
+                              let statusText = "In Progress";
+                              if (challengeEvent.completed) {
+                                statusText = "Completed";
+                              } else if (isFutureDate) {
+                                statusText = "Upcoming";
+                              } else if (isPastDate && !challengeEvent.completed) {
+                                statusText = "Not Completed"; // Explicitly for past, uncompleted
+                              }
+
+                              return (
+                                <>
+                                  {!challengeEvent.isChallengeDurationEvent && (
+                                    <input
+                                      type="checkbox"
+                                      checked={challengeEvent.completed}
+                                      onChange={() => handleToggleChallengeTask(challengeEvent)}
+                                      className="w-4 h-4 rounded text-orange-600 bg-orange-100 border-orange-300 focus:ring-orange-500"
+                                      onClick={(e) => e.stopPropagation()} // Prevent card click when toggling
+                                      disabled={isCheckboxDisabled} // Apply disabled attribute
+                                    />
+                                  )}
+                                  <span
+                                    className="text-xs font-medium"
+                                    style={{ color: "#bf360c" }}
+                                  >
+                                    {statusText} {/* Use the new statusText */}
+                                  </span>
+                                </>
+                              );
+                            })()}
+                          </div>
+                          <span className="text-xs font-bold" style={{ color: "#bf360c" }}>
+                            {Math.round(challengeEvent.completionPercentage ?? 0)}%
+                          </span>
+                        </div>
+                        {/* Overall Challenge Progress Bar */}
+                        <div className="w-full bg-orange-100 rounded-full h-2">
+                          <div
+                            className="h-2 rounded-full transition-all duration-300"
+                            style={{
+                              width: `${challengeEvent.completionPercentage ?? 0}%`,
+                              background:
+                                challengeEvent.completionPercentage === 100
+                                  ? "linear-gradient(90deg, #4caf50 0%, #81c784 100%)" // Green gradient for 100%
+                                  : "linear-gradient(90deg, #ff9800 0%, #ffb74d 100%)", // Orange gradient
+                            }}
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  );
+                }
+              })
+            ) : (
+              <div className="text-center py-4">
+                <div className="flex justify-center mb-3">
+                  <div
+                    className="w-12 h-12 rounded-full flex items-center justify-center"
+                    style={{ background: "rgba(10, 106, 86, 0.1)" }}
+                  >
+                    <ScheduleIcon style={{ fontSize: 24, color: "#0a6a56", opacity: 0.5 }} />
+                  </div>
+                </div>
+                <div
+                  className="font-semibold text-base mb-1"
+                  style={{ color: "#0a6a56", opacity: 0.7 }}
+                >
+                  No activities scheduled for this day
+                </div>
+                {!userId && (
+                  <div className="text-xs" style={{ color: "#0a6a56", opacity: 0.5 }}>
+                    Please log in to view your schedule
+                  </div>
+                )}
+                {userId && workoutSchedules.length === 0 && challengeEvents.length === 0 && (
+                  <div className="text-xs mt-1" style={{ color: "#0a6a56", opacity: 0.5 }}>
+                    Click the + button to generate your first AI workout plan or join a challenge.
+                  </div>
+                )}
+              </div>
+            )}
           </div>
-        </section>
-
-        {/* Separator */}
-        <div
-          className="h-0.5 mx-3 my-6 rounded-sm flex-shrink-0"
-          style={{
-            background: "#0a6a56",
-            opacity: 0.6,
-            height: "2px",
-          }}
-        />
-
-        {/* Event tiles - fixed height, no scroll */}
-        <div className="px-3 py-2" style={{ maxHeight: "280px" }}>
-          {isLoading ? (
-            <div className="text-center py-8 text-opacity-60" style={{ color: "#0a6a56" }}>
-              Loading workouts...
-            </div>
-          ) : error ? (
-            <div className="text-center py-4 text-red-600">{error}</div>
-          ) : displayEvents.length > 0 ? (
-            displayEvents.map((event) => {
-              // Calculate progress based on completed exercises
-              const completedExercises = event.dayDetail.exercises.filter(
-                (ex) => ex.completed
-              ).length;
-              const totalExercises = event.dayDetail.exercises.length;
-              const progressPercentage =
-                totalExercises > 0 ? (completedExercises / totalExercises) * 100 : 0;
-
-              return (
-                <div
-                  key={event.id}
-                  onClick={() => {
-                    setSelectedWorkout(event.dayDetail);
-                    setSelectedWorkoutDate(event.date);
-                  }}
-                  className="rounded-xl px-3 py-3 flex flex-col gap-2 mb-2 cursor-pointer hover:shadow-lg transition-all"
-                  style={{
-                    background: "linear-gradient(90deg, #dce642 0%, #ffaf72 100%)",
-                    boxShadow: "0 2px 8px rgba(0, 0, 0, 0.08)",
-                  }}
-                >
-                  {/* Header Row */}
-                  <div className="flex items-center gap-2">
-                    <div
-                      className="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0"
-                      style={{ background: "rgba(255, 123, 23, 0.2)", color: "#ff7b17" }}
-                    >
-                      <FitnessCenter fontSize="small" />
-                    </div>
-                    <div className="flex-1">
-                      <div className="font-bold text-base" style={{ color: "#0a6a56" }}>
-                        {event.title}
-                      </div>
-                      <div
-                        className="text-xs mt-0.5 flex items-center gap-3"
-                        style={{ color: "#0b3d33", opacity: 0.85 }}
-                      >
-                        <span className="flex items-center gap-1">
-                          <AccessTime style={{ fontSize: 14 }} />
-                          {event.time}
-                        </span>
-                        <span>•</span>
-                        <span className="flex items-center gap-1">
-                          <FitnessCenter style={{ fontSize: 14 }} />
-                          {event.exercises} exercises
-                        </span>
-                      </div>
-                    </div>
-                    <div
-                      className="px-3 py-1 rounded-full text-xs font-semibold"
-                      style={{ background: "#0a6a56", color: "white" }}
-                    >
-                      {event.focusArea}
-                    </div>
-                  </div>
-
-                  {/* Progress Section */}
-                  <div className="space-y-1.5">
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs font-medium" style={{ color: "#0a6a56" }}>
-                        {completedExercises}/{totalExercises} exercises •{" "}
-                        {Math.round(progressPercentage)}%
-                      </span>
-                      <span
-                        className="text-xs font-bold px-2 py-0.5 rounded-md"
-                        style={{
-                          color: "white",
-                          background: progressPercentage === 100 ? "#10b981" : "#0a6a56",
-                        }}
-                      >
-                        {progressPercentage === 100
-                          ? "Complete!"
-                          : `${totalExercises - completedExercises} left`}
-                      </span>
-                    </div>
-
-                    {/* Progress Bar with Orange to Green Gradient */}
-                    <div className="w-full bg-gray-200 rounded-full h-2">
-                      <div
-                        className="h-2 rounded-full transition-all duration-300"
-                        style={{
-                          width: `${progressPercentage}%`,
-                          background:
-                            "linear-gradient(90deg, #fbbf24 0%, #f59e0b 25%, #84cc16 75%, #22c55e 100%)",
-                        }}
-                      />
-                    </div>
-                  </div>
-                </div>
-              );
-            })
-          ) : (
-            <div className="text-center py-4">
-              <div className="flex justify-center mb-3">
-                <div
-                  className="w-12 h-12 rounded-full flex items-center justify-center"
-                  style={{ background: "rgba(10, 106, 86, 0.1)" }}
-                >
-                  <ScheduleIcon style={{ fontSize: 24, color: "#0a6a56", opacity: 0.5 }} />
-                </div>
-              </div>
-              <div
-                className="font-semibold text-base mb-1"
-                style={{ color: "#0a6a56", opacity: 0.7 }}
-              >
-                No workouts scheduled for this day
-              </div>
-              {!userId && (
-                <div className="text-xs" style={{ color: "#0a6a56", opacity: 0.5 }}>
-                  Please log in to view your workout schedule
-                </div>
-              )}
-              {userId && workoutSchedules.length === 0 && (
-                <div className="text-xs mt-1" style={{ color: "#0a6a56", opacity: 0.5 }}>
-                  Click the + button to generate your first AI workout plan
-                </div>
-              )}
-            </div>
-          )}
-        </div>
-      </main>
+        </main>
       </div>
 
       {/* Schedule Sidebar - Always Visible */}
