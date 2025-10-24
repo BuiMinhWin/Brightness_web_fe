@@ -291,7 +291,7 @@ const RegenerateScheduleModal: React.FC<RegenerateScheduleModalProps> = ({
           </button>
           <button
             onClick={handleSubmit}
-            disabled={isGenerating || (aiUsageLimits && !aiUsageLimits.canGenerate)}
+            disabled={isGenerating || !!(aiUsageLimits && !aiUsageLimits.canGenerate)}
             className="flex-1 px-6 py-3 rounded-xl font-semibold text-white hover:opacity-90 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
             style={{ background: "#0a6a56" }}
           >
