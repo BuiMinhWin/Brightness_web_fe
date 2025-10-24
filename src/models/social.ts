@@ -12,6 +12,7 @@ export interface Post {
   reactionCount: number;
   dislikeCount: number;
   commentCount: number;
+  reportCount?: number;
   images?: PostImageMetadata[];
   imagesWithData?: Array<PostImageMetadata & { imageUrl: string | null }>;
   userVoteStatus?: { hasVoted: boolean; voteType: string | null };
@@ -34,12 +35,14 @@ export interface Comment {
   id: string;
   postId: string;
   userId: string;
+  userName?: string | null;
   content: string;
   parentCommentId: string | null;
   createdAt: string;
   updatedAt: string | null;
   reactionCount: number;
   dislikeCount: number;
+  userVoteStatus?: { hasVoted: boolean; voteType: string | null };
 }
 
 export interface Tag {
