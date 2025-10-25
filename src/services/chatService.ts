@@ -16,6 +16,18 @@ export interface SendMessageResponse {
   remainingCredits?: number;
   monthlyCredits?: number;
   subscriptionTier?: "free" | "basic" | "premium";
+  // AI Agent fields
+  requiresConfirmation?: boolean;
+  pendingActionType?: string;
+  pendingActionParams?: { [key: string]: string };
+  actionResult?: {
+    success: boolean;
+    message: string;
+    data?: any;
+    errorCode?: string;
+    creditsUsed?: number;
+    remainingCredits?: number;
+  };
 }
 
 export interface ChatMessage {
