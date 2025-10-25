@@ -530,21 +530,7 @@ const AuthPage: React.FC = () => {
                       d="M249 97.8c36 0 68.1 12.4 93.6 36.6l70-70C370.8 25 315.3 0 249 0 153.6 0 70.9 55 30 142l81.6 63.4C131 140.9 185.1 97.8 249 97.8z"
                     ></path>
                   </svg>
-                  Google
-                </button>
-
-                <button type="button" className="social-icon" onClick={handleFacebookAuth}>
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    viewBox="0 0 320 512"
-                    width="26"
-                    height="26"
-                    fill="#1877F2"
-                    style={{ marginRight: 8 }}
-                  >
-                    <path d="M279.14 288l14.22-92.66h-88.91v-60.13c0-25.35 12.42-50.06 52.24-50.06H293V6.26S259.5 0 225.36 0C141.09 0 89.09 54.42 89.09 153.31v68.03H0v92.66h89.09V512h107.83V288z"></path>
-                  </svg>
-                  Facebook
+                  Sign in with Google
                 </button>
               </div>
             </form>
@@ -738,22 +724,9 @@ const AuthPage: React.FC = () => {
                       d="M249 97.8c36 0 68.1 12.4 93.6 36.6l70-70C370.8 25 315.3 0 249 0 153.6 0 70.9 55 30 142l81.6 63.4C131 140.9 185.1 97.8 249 97.8z"
                     ></path>
                   </svg>
-                  Google
+                  Sign up with Google
                 </button>
 
-                <button type="button" className="social-icon" onClick={handleFacebookAuth}>
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    viewBox="0 0 320 512"
-                    width="26"
-                    height="26"
-                    fill="#1877F2"
-                    style={{ marginRight: 8 }}
-                  >
-                    <path d="M279.14 288l14.22-92.66h-88.91v-60.13c0-25.35 12.42-50.06 52.24-50.06H293V6.26S259.5 0 225.36 0C141.09 0 89.09 54.42 89.09 153.31v68.03H0v92.66h89.09V512h107.83V288z"></path>
-                  </svg>
-                  Facebook
-                </button>
               </div>
             </form>
           </div>
