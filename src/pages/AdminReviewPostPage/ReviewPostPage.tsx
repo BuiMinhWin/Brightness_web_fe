@@ -3,8 +3,10 @@ import { useNavigate } from "react-router-dom";
 import "./ReviewPostPage.css";
 import GameFooter from "../../components/layout/GameFooter";
 import { socialService } from "../../services/socialService";
+import { authService } from "../../services/authService";
 import type { Post } from "../../models/social";
 import PostDialog from "../../components/blogs/PostDialog";
+import { resolveApiAssetUrl } from "@/utils/media";
 
 interface ReviewPost extends Post {
   author: string;
@@ -45,12 +47,77 @@ const ReviewPostPage: React.FC = () => {
 
       // Fetch flagged posts from API
       const flagged = await socialService.getFlaggedPosts();
-      const transformedFlagged: ReviewPost[] = flagged.map((post) => ({
-        ...post,
-        author: post.userData?.userName || `User ${post.userId.substring(0, 8)}`,
-        category: "health" as const, // You might want to derive this from post content or tags
-      }));
-      setFlaggedPosts(transformedFlagged);
+      
+      // Fetch images metadata, full data, and user data for each post
+      const postsWithData = await Promise.all(
+        flagged.map(async (post) => {
+          try {
+            // Fetch image metadata
+            const imagesMeta = await socialService.getPostImages(post.id);
+            
+            // Fetch full image data
+            const imagesWithData = await Promise.all(
+              imagesMeta.map(async (imgMeta) => {
+                try {
+                  const imgDetail = await socialService.getPostImageById(imgMeta.id);
+                  return {
+                    ...imgMeta,
+                    imageUrl: imgDetail?.imageData 
+                      ? `data:${imgMeta.contentType || 'image/jpeg'};base64,${imgDetail.imageData}`
+                      : null
+                  };
+                } catch (err) {
+                  console.error(`Failed to load image ${imgMeta.id}:`, err);
+                  return { ...imgMeta, imageUrl: null };
+                }
+              })
+            );
+
+            // Fetch user data for this post
+            let userData = undefined;
+            try {
+              const user = await authService.getUser(post.userId);
+              userData = {
+                userName: user.userName,
+                fullName: user.fullName || null,
+                profilePicture: user.profilePicture || null,
+              };
+            } catch (err) {
+              console.error(`Failed to fetch user data for user ${post.userId}:`, err);
+            }
+
+            // Fetch user's vote status for this post
+            let userVoteStatus = { hasVoted: false, voteType: null as string | null };
+            try {
+              userVoteStatus = await socialService.getUserVote(post.id);
+            } catch (err) {
+              console.error(`Failed to fetch vote status for post ${post.id}:`, err);
+            }
+            
+            return { 
+              ...post, 
+              images: imagesMeta, 
+              imagesWithData, 
+              userData,
+              userVoteStatus,
+              author: userData?.userName || `User ${post.userId.substring(0, 8)}`,
+              category: "health" as const, // You might want to derive this from post content or tags
+            };
+          } catch (err) {
+            console.error(`Failed to fetch data for post ${post.id}:`, err);
+            return { 
+              ...post, 
+              images: [], 
+              imagesWithData: [], 
+              userVoteStatus: { hasVoted: false, voteType: null },
+              author: `User ${post.userId.substring(0, 8)}`,
+              category: "health" as const,
+            };
+          }
+        })
+      );
+      
+      setFlaggedPosts(postsWithData);
     } catch (err) {
       console.error("Error loading posts:", err);
       setError("Failed to load posts. Please try again later.");
@@ -174,86 +241,132 @@ const ReviewPostPage: React.FC = () => {
               </div>
             ) : (
               <div className="review-posts-grid">
-                {flaggedPosts.map((post) => (
-                  <div key={post.id} className="review-post-card">
-                    <div className="post-info">
-                      <h3 className="post-title">{post.title}</h3>
-                      <div className={`post-category ${getCategoryClass(post.category)}`}>
-                        {post.category}
-                      </div>
-                      <div className="post-author">{post.author}</div>
-                      {post.reportCount !== undefined && (
-                        <div
+                {flaggedPosts.map((post) => {
+                  const displayName = post.userData?.userName || post.author;
+                  const resolvedAvatar = resolveApiAssetUrl(post.userData?.profilePicture);
+                  const avatarUrl = resolvedAvatar || 
+                    `https://ui-avatars.com/api/?name=${encodeURIComponent(displayName)}&background=random`;
+
+                  return (
+                    <div key={post.id} className="review-post-card">
+                      <div className="post-info" style={{ 
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "16px",
+                        flex: 1
+                      }}>
+                        {/* User avatar */}
+                        <img 
+                          src={avatarUrl}
+                          alt={displayName}
                           style={{
-                            padding: "6px 16px",
-                            borderRadius: "20px",
-                            fontSize: "12px",
+                            width: "48px",
+                            height: "48px",
+                            borderRadius: "50%",
+                            objectFit: "cover",
+                            flexShrink: 0
+                          }}
+                        />
+                        
+                        {/* Post and user info */}
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <h3 className="post-title" style={{
+                            margin: "0 0 4px 0",
+                            fontSize: "16px",
                             fontWeight: "600",
-                            backgroundColor: "#fecaca",
-                            color: "#b91c1c",
-                            minWidth: "80px",
-                            textAlign: "center",
+                            whiteSpace: "nowrap",
+                            overflow: "hidden",
+                            textOverflow: "ellipsis"
+                          }}>
+                            {post.title}
+                          </h3>
+                          <div className="post-author" style={{ 
+                            fontSize: "14px",
+                            color: "#6b7280",
+                            margin: 0
+                          }}>
+                            Posted by {displayName}
+                          </div>
+                        </div>
+
+                        {/* Report count badge */}
+                        {post.reportCount !== undefined && (
+                          <div
+                            style={{
+                              padding: "6px 16px",
+                              borderRadius: "20px",
+                              fontSize: "12px",
+                              fontWeight: "600",
+                              backgroundColor: "#fecaca",
+                              color: "#b91c1c",
+                              whiteSpace: "nowrap",
+                              flexShrink: 0
+                            }}
+                          >
+                            {post.reportCount} {post.reportCount === 1 ? "report" : "reports"}
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="post-actions" style={{
+                        display: "flex",
+                        gap: "8px",
+                        marginLeft: "16px"
+                      }}>
+                        <button
+                          className="action-btn"
+                          onClick={() => setSelectedPost(post)}
+                          title="View post details"
+                          style={{
+                            backgroundColor: "#3b82f6",
+                            color: "white",
+                            padding: "8px 16px",
+                            borderRadius: "8px",
+                            border: "none",
+                            cursor: "pointer",
+                            fontSize: "14px",
+                            fontWeight: "500",
+                            transition: "all 0.2s",
+                          }}
+                          onMouseEnter={(e) => {
+                            e.currentTarget.style.backgroundColor = "#2563eb";
+                          }}
+                          onMouseLeave={(e) => {
+                            e.currentTarget.style.backgroundColor = "#3b82f6";
                           }}
                         >
-                          {post.reportCount} {post.reportCount === 1 ? "report" : "reports"}
-                        </div>
-                      )}
-                    </div>
+                          View Post
+                        </button>
+                        
+                        <button
+                          className="action-btn approve-btn"
+                          onClick={() => handleActionClick("keep", post.id, post.title)}
+                          title="Keep post (dismiss reports)"
+                        >
+                          <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                            <polyline points="20,6 9,17 4,12" stroke="currentColor" strokeWidth="2" />
+                          </svg>
+                        </button>
 
-                    <div className="post-actions">
-                      <button
-                        className="action-btn"
-                        onClick={() => setSelectedPost(post)}
-                        title="View post details"
-                        style={{
-                          backgroundColor: "#3b82f6",
-                          color: "white",
-                          padding: "8px 16px",
-                          borderRadius: "8px",
-                          border: "none",
-                          cursor: "pointer",
-                          fontSize: "14px",
-                          fontWeight: "500",
-                          transition: "all 0.2s",
-                        }}
-                        onMouseEnter={(e) => {
-                          e.currentTarget.style.backgroundColor = "#2563eb";
-                        }}
-                        onMouseLeave={(e) => {
-                          e.currentTarget.style.backgroundColor = "#3b82f6";
-                        }}
-                      >
-                        View Post
-                      </button>
-                      
-                      <button
-                        className="action-btn approve-btn"
-                        onClick={() => handleActionClick("keep", post.id, post.title)}
-                        title="Keep post (dismiss reports)"
-                      >
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-                          <polyline points="20,6 9,17 4,12" stroke="currentColor" strokeWidth="2" />
-                        </svg>
-                      </button>
-
-                      <button
-                        className="action-btn reject-btn"
-                        onClick={() => handleActionClick("delete", post.id, post.title)}
-                        title="Delete post"
-                      >
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-                          <path
-                            d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6h14z"
-                            stroke="currentColor"
-                            strokeWidth="2"
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                          />
-                        </svg>
-                      </button>
+                        <button
+                          className="action-btn reject-btn"
+                          onClick={() => handleActionClick("delete", post.id, post.title)}
+                          title="Delete post"
+                        >
+                          <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                            <path
+                              d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6h14z"
+                              stroke="currentColor"
+                              strokeWidth="2"
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                            />
+                          </svg>
+                        </button>
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             )}
           </>
@@ -346,6 +459,11 @@ const ReviewPostPage: React.FC = () => {
           ?.filter(img => img.imageUrl !== null)
           .map(img => img.imageUrl!) || [];
 
+        const displayName = selectedPost.userData?.userName || selectedPost.author;
+        const resolvedAvatar = resolveApiAssetUrl(selectedPost.userData?.profilePicture);
+        const avatarUrl = resolvedAvatar ||
+          `https://ui-avatars.com/api/?name=${encodeURIComponent(displayName)}&background=random`;
+
         return (
           <PostDialog
             isOpen={true}
@@ -353,8 +471,8 @@ const ReviewPostPage: React.FC = () => {
             post={{
               postId: selectedPost.id,
               user: {
-                name: selectedPost.userData?.userName || selectedPost.author,
-                avatar: selectedPost.userData?.profilePicture || `https://ui-avatars.com/api/?name=${encodeURIComponent(selectedPost.author)}&background=random`,
+                name: displayName,
+                avatar: avatarUrl,
               },
               timestamp: new Date(selectedPost.createdAt).toLocaleString(),
               content: {

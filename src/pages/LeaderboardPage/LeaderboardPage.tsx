@@ -9,7 +9,6 @@ import {
   challengeService,
   Challenge,
   LeaderboardEntry as APILeaderboardEntry,
-  ChallengeParticipant,
 } from "../../services/challengeService";
 import { authService } from "../../services/authService";
 
@@ -22,7 +21,6 @@ interface LeaderboardEntry {
   isCurrentUser?: boolean;
 }
 
-type TabType = "today" | "this-week" | "all-time";
 
 const LeaderboardPage: React.FC = () => {
   const navigate = useNavigate();
@@ -331,27 +329,6 @@ const LeaderboardPage: React.FC = () => {
               {currentUserStreak} Day Streak
             </div>
           )}
-        </div>
-
-        <div className="leaderboard-tabs">
-          <button
-            className={`tab-button ${activeTab === "today" ? "active" : ""}`}
-            onClick={() => setActiveTab("today")}
-          >
-            Today
-          </button>
-          <button
-            className={`tab-button ${activeTab === "this-week" ? "active" : ""}`}
-            onClick={() => setActiveTab("this-week")}
-          >
-            This week
-          </button>
-          <button
-            className={`tab-button ${activeTab === "all-time" ? "active" : ""}`}
-            onClick={() => setActiveTab("all-time")}
-          >
-            All time
-          </button>
         </div>
 
         <div className="leaderboard-main">
