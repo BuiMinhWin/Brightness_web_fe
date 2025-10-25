@@ -10,6 +10,7 @@ export interface SubscriptionPlan {
   price: number;
   currency: string;
   durationDays: number;
+  monthlyAICredits: number;
   isActive: boolean;
   createdAt?: string;
   updatedAt?: string;
@@ -24,6 +25,7 @@ export interface SubscriptionPlanPayload {
   price: number;
   currency: string;
   durationDays: number;
+  monthlyAICredits: number;
   isActive: boolean;
 }
 

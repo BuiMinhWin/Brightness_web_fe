@@ -24,6 +24,7 @@ export const SubscriptionPlansManager: React.FC = () => {
     price: 0,
     currency: "VND",
     durationDays: 30,
+    monthlyAICredits: 0,
     isActive: true,
   });
   const [filter, setFilter] = useState<SubscriptionPlanFilter>({
@@ -102,6 +103,7 @@ export const SubscriptionPlansManager: React.FC = () => {
       price: 0,
       currency: "VND",
       durationDays: 30,
+      monthlyAICredits: 0,
       isActive: true,
     });
     setSelectedPlan(null);
@@ -116,6 +118,7 @@ export const SubscriptionPlansManager: React.FC = () => {
       price: plan.price,
       currency: plan.currency,
       durationDays: plan.durationDays,
+      monthlyAICredits: plan.monthlyAICredits,
       isActive: plan.isActive,
     });
     setSelectedPlan(plan);
@@ -146,6 +149,7 @@ export const SubscriptionPlansManager: React.FC = () => {
         price: 0,
         currency: "VND",
         durationDays: 30,
+        monthlyAICredits: 0,
         isActive: true,
       });
 
@@ -358,6 +362,7 @@ export const SubscriptionPlansManager: React.FC = () => {
                       <th className="py-2 px-4 text-left">Name</th>
                       <th className="py-2 px-4 text-left">Price</th>
                       <th className="py-2 px-4 text-left">Duration</th>
+                      <th className="py-2 px-4 text-left">AI Credits</th>
                       <th className="py-2 px-4 text-left">Status</th>
                       <th className="py-2 px-4 text-left">Actions</th>
                     </tr>
@@ -370,6 +375,11 @@ export const SubscriptionPlansManager: React.FC = () => {
                           {plan.price.toLocaleString()} {plan.currency}
                         </td>
                         <td className="py-2 px-4">{plan.durationDays} days</td>
+                        <td className="py-2 px-4">
+                          <span className="font-semibold text-purple-600">
+                            {plan.monthlyAICredits} credits/mo
+                          </span>
+                        </td>
                         <td className="py-2 px-4">
                           <span
                             className={`px-2 py-1 rounded text-xs ${plan.isActive ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"}`}
@@ -476,6 +486,10 @@ export const SubscriptionPlansManager: React.FC = () => {
                 <div className="mb-4">
                   <h3 className="font-semibold">Duration</h3>
                   <p>{selectedPlan.durationDays} days</p>
+                </div>
+                <div className="mb-4">
+                  <h3 className="font-semibold">Monthly AI Credits</h3>
+                  <p className="text-purple-600 font-bold">{selectedPlan.monthlyAICredits} credits</p>
                 </div>
                 <div className="mb-4">
                   <h3 className="font-semibold">Status</h3>
@@ -588,6 +602,25 @@ export const SubscriptionPlansManager: React.FC = () => {
                   />
                 </div>
 
+                <div className="mb-4">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Monthly AI Credits
+                  </label>
+                  <input
+                    type="number"
+                    name="monthlyAICredits"
+                    value={formData.monthlyAICredits}
+                    onChange={handleInputChange}
+                    className="w-full p-2 border border-gray-300 rounded"
+                    min="0"
+                    step="10"
+                    required
+                  />
+                  <p className="text-xs text-gray-500 mt-1">
+                    Number of AI credits allocated per month (0 for free tier, 20+ for paid tiers)
+                  </p>
+                </div>
+
                 <div className="mb-6">
                   <label className="flex items-center">
                     <input
@@ -619,6 +652,7 @@ export const SubscriptionPlansManager: React.FC = () => {
                         price: 0,
                         currency: "VND",
                         durationDays: 30,
+                        monthlyAICredits: 0,
                         isActive: true,
                       });
                     }}
