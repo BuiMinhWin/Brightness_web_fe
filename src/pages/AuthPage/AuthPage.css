@@ -83,7 +83,7 @@
   align-items: center;
   justify-content: center;
   flex-direction: column;
-  padding: 0px 30px 30px 30px; /* ĐỔI từ 0px 30px thành 20px 30px */
+  padding: 60px 30px 20px 30px; /* ĐỔI từ 0px 30px thành 20px 30px */
   transition: opacity 0.3s ease-in-out;
   overflow: hidden;
   grid-column: 1 / 2;
@@ -238,7 +238,7 @@
   font-size: 17px;
   color: #444;
   transition: all 0.2s ease;
-  min-width: 140px; /* đảm bảo nút to đều */
+  min-width: 300px; /* đảm bảo nút to đều */
   height: 48px; /* nút cao hơn một chút */
 }
 
@@ -295,16 +295,7 @@
   transform: none;
 }
 
-/* .btn.transparent {
-  background: none;
-  border: 2px solid #fff;
-  width: 130px;
-  height: 41px;
-  font-weight: 600;
-  font-size: 14px;
-  margin: 0;
-  max-width: none;
-} */
+
 .btn.transparent {
   background: none;
   border: 2px solid #fff;
@@ -860,7 +851,7 @@
 }
 
 .panel-blur .content .btn.transparent:hover {
-  background: linear-gradient(90deg, #007bff, #ff8c00);
+  background: linear-gradient(90deg, rgb(143, 215, 110), #c6dea3);
   box-shadow: 0 0 12px rgba(255, 255, 255, 0.4);
 }
 
