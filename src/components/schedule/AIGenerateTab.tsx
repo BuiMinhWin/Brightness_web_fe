@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from "react";
 import { gsap } from "gsap";
 import { DotLottieReact } from "@lottiefiles/dotlottie-react";
+import { format } from "date-fns";
 import {
   FitnessCenter,
   CalendarMonth,
@@ -19,6 +20,11 @@ import {
 } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
+import { Button } from "@/components/ui/button";
+import { AICreditBalance } from "../../services/personalCoachService";
+import CreditCostBadge from "../CreditCostBadge";
 
 export interface GenerateWorkoutFormData {
   goal: string;
@@ -27,7 +33,7 @@ export interface GenerateWorkoutFormData {
   availableDays: string[];
   equipmentAvailable: string[];
   additionalNotes: string;
-  startFromToday: boolean;
+  startDate: Date | undefined;
 }
 
 interface AIGenerateTabProps {
@@ -39,9 +45,19 @@ interface AIGenerateTabProps {
     canGenerate: boolean;
     subscriptionTier: string;
   } | null;
+  creditBalance?: AICreditBalance | null;
 }
 
-const AIGenerateTab: React.FC<AIGenerateTabProps> = ({ onSubmit, isGenerating, aiUsageLimits }) => {
+const AIGenerateTab: React.FC<AIGenerateTabProps> = ({ onSubmit, isGenerating, aiUsageLimits, creditBalance }) => {
+  const tomorrow = new Date();
+  tomorrow.setDate(tomorrow.getDate() + 1);
+
+  // Use credit balance if available, otherwise fall back to legacy usage limits
+  const scheduleGenerationCost = creditBalance?.creditCostBreakdown?.ScheduleGeneration ?? 10;
+  const currentCredits = creditBalance?.remainingCredits ?? (aiUsageLimits?.remainingGenerations ?? 0) * 10;
+  const canGenerate = creditBalance ? creditBalance.remainingCredits >= scheduleGenerationCost : (aiUsageLimits?.canGenerate ?? true);
+  const tier = creditBalance?.subscriptionTier ?? aiUsageLimits?.subscriptionTier ?? "free";
+  
   const [formData, setFormData] = useState<GenerateWorkoutFormData>({
     goal: "Weight Loss",
     durationDays: 7,
@@ -49,7 +65,7 @@ const AIGenerateTab: React.FC<AIGenerateTabProps> = ({ onSubmit, isGenerating, a
     availableDays: ["Monday", "Wednesday", "Friday"],
     equipmentAvailable: ["Dumbbells", "Bodyweight"],
     additionalNotes: "",
-    startFromToday: false,
+    startDate: tomorrow,
   });
 
   const [showLottie, setShowLottie] = useState(false);
@@ -96,30 +112,147 @@ const AIGenerateTab: React.FC<AIGenerateTabProps> = ({ onSubmit, isGenerating, a
   };
 
   return (
+    <>
+      <style>{`
+        /* AI Generate Calendar Subtle Green Theme - Force Override */
+        .ai-generate-calendar,
+        .ai-generate-calendar *,
+        .ai-generate-calendar [data-radix-popper-content-wrapper],
+        .ai-generate-calendar .rdp,
+        .ai-generate-calendar .rdp-months,
+        .ai-generate-calendar .rdp-month,
+        .ai-generate-calendar .rdp-table,
+        .ai-generate-calendar .rdp-tbody,
+        .ai-generate-calendar table {
+          background-color: transparent !important;
+        }
+        
+        .ai-generate-calendar [data-radix-popper-content-wrapper] {
+          background: linear-gradient(180deg, #e5f7ed 0%, #f5fce8 100%) !important;
+        }
+        
+        .ai-generate-calendar .rdp-day {
+          color: #2d5349 !important;
+          background-color: transparent !important;
+        }
+        
+        .ai-generate-calendar .rdp-day:hover:not(.rdp-day_selected):not(.rdp-day_disabled) {
+          background-color: rgba(255, 255, 255, 0.5) !important;
+          box-shadow: 0 1px 2px rgba(10, 106, 86, 0.1) !important;
+        }
+        
+        .ai-generate-calendar button[role="gridcell"] {
+          background-color: transparent !important;
+        }
+        
+        .ai-generate-calendar button[role="gridcell"]:hover:not([aria-selected="true"]):not([disabled]) {
+          background-color: rgba(255, 255, 255, 0.5) !important;
+        }
+        
+        .ai-generate-calendar .rdp-day_selected,
+        .ai-generate-calendar button[role="gridcell"][aria-selected="true"] {
+          background-color: #0a6a56 !important;
+          color: white !important;
+          font-weight: 600 !important;
+        }
+        
+        .ai-generate-calendar .rdp-day_selected:hover,
+        .ai-generate-calendar button[role="gridcell"][aria-selected="true"]:hover {
+          background-color: #085544 !important;
+        }
+        
+        .ai-generate-calendar .rdp-day_today:not(.rdp-day_selected) {
+          background-color: rgba(255, 255, 255, 0.6) !important;
+          color: #0a6a56 !important;
+          font-weight: 700 !important;
+          border: 2px solid #69c68d !important;
+        }
+        
+        .ai-generate-calendar .rdp-head_cell {
+          color: #53756c !important;
+          font-weight: 600 !important;
+          background-color: transparent !important;
+        }
+        
+        .ai-generate-calendar .rdp-day_outside {
+          color: #a8c9bd !important;
+          opacity: 0.6 !important;
+        }
+        
+        .ai-generate-calendar .rdp-day_disabled,
+        .ai-generate-calendar button[role="gridcell"][disabled] {
+          color: #c8ead6 !important;
+          opacity: 0.5 !important;
+          text-decoration: line-through !important;
+          background-color: transparent !important;
+        }
+        
+        .ai-generate-calendar .rdp-button:hover:not([disabled]):not(.rdp-day_selected) {
+          background-color: rgba(255, 255, 255, 0.5) !important;
+        }
+        
+        .ai-generate-calendar .rdp-nav_button {
+          background-color: rgba(255, 255, 255, 0.4) !important;
+          color: #53756c !important;
+        }
+        
+        .ai-generate-calendar .rdp-nav_button:hover {
+          background-color: rgba(255, 255, 255, 0.7) !important;
+        }
+        
+        .ai-generate-calendar .rdp-caption,
+        .ai-generate-calendar .rdp-head,
+        .ai-generate-calendar thead,
+        .ai-generate-calendar tbody,
+        .ai-generate-calendar tr {
+          background-color: transparent !important;
+        }
+        
+        /* Force all day cells and buttons to be transparent */
+        .ai-generate-calendar .rdp-cell,
+        .ai-generate-calendar td,
+        .ai-generate-calendar th,
+        .ai-generate-calendar button {
+          background-color: transparent !important;
+        }
+        
+        .ai-generate-calendar .rdp-day_range_start,
+        .ai-generate-calendar .rdp-day_range_end,
+        .ai-generate-calendar .rdp-day_range_middle {
+          background-color: transparent !important;
+        }
+        
+        /* Override Shadcn button styles */
+        .ai-generate-calendar button.inline-flex,
+        .ai-generate-calendar .items-center,
+        .ai-generate-calendar [class*="day"] {
+          background-color: transparent !important;
+        }
+      `}</style>
     <div className="space-y-6">
-      {/* AI Usage Warning */}
-      {aiUsageLimits && aiUsageLimits.subscriptionTier === "free" && aiUsageLimits.remainingGenerations <= 1 && (
+      {/* Credit Balance Warning */}
+      {tier === "free" && currentCredits <= scheduleGenerationCost && (
         <div 
           className="p-4 rounded-xl"
           style={{ 
-            background: aiUsageLimits.remainingGenerations === 0 ? "#fee2e2" : "#fff7ed",
-            border: `2px solid ${aiUsageLimits.remainingGenerations === 0 ? "#fecaca" : "#fed7aa"}`
+            background: currentCredits < scheduleGenerationCost ? "#fee2e2" : "#fff7ed",
+            border: `2px solid ${currentCredits < scheduleGenerationCost ? "#fecaca" : "#fed7aa"}`
           }}
         >
           <p className="font-semibold text-sm" style={{ 
-            color: aiUsageLimits.remainingGenerations === 0 ? "#991b1b" : "#9a3412"
+            color: currentCredits < scheduleGenerationCost ? "#991b1b" : "#9a3412"
           }}>
-            {aiUsageLimits.remainingGenerations === 0 
-              ? "No AI generations remaining" 
-              : `Last AI generation (${aiUsageLimits.remainingGenerations}/${aiUsageLimits.monthlyLimit})`
+            {currentCredits < scheduleGenerationCost
+              ? `Insufficient credits (need ${scheduleGenerationCost}, have ${currentCredits})` 
+              : `Low credits (${currentCredits} remaining, need ${scheduleGenerationCost} to generate)`
             }
           </p>
           <p className="text-xs mt-1" style={{ 
-            color: aiUsageLimits.remainingGenerations === 0 ? "#dc2626" : "#ea580c"
+            color: currentCredits < scheduleGenerationCost ? "#dc2626" : "#ea580c"
           }}>
-            {aiUsageLimits.remainingGenerations === 0
-              ? "Use manual builder or upgrade to Premium."
-              : "After this, use manual builder or upgrade."
+            {currentCredits < scheduleGenerationCost
+              ? "Use manual builder or upgrade to Basic/Premium for more credits."
+              : "After this, upgrade for more credits or use manual builder."
             }
           </p>
         </div>
@@ -174,18 +307,122 @@ const AIGenerateTab: React.FC<AIGenerateTabProps> = ({ onSubmit, isGenerating, a
           <CalendarMonth fontSize="small" />
           Start Date
         </label>
-        <Select
-          value={formData.startFromToday ? "today" : "tomorrow"}
-          onValueChange={(value) => setFormData({ ...formData, startFromToday: value === "today" })}
-        >
-          <SelectTrigger className="w-full border-2 rounded-xl" style={{ borderColor: "#c8ead6" }}>
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent className="bg-white shadow-lg z-[10000]" position="popper">
-            <SelectItem value="today">Start Today</SelectItem>
-            <SelectItem value="tomorrow">Start Tomorrow</SelectItem>
-          </SelectContent>
-        </Select>
+        <Popover>
+          <PopoverTrigger asChild>
+            <Button
+              variant="outline"
+              className="w-full justify-between text-left font-normal h-[44px] border-2 border-[#c8ead6] hover:border-[#b8dbd0] focus:border-[#0b7e63]"
+              style={{
+                borderRadius: "12px",
+                fontSize: "14px",
+                color: formData.startDate ? "#0b3d33" : "#9ca3af",
+                padding: "12px 14px",
+                background: "linear-gradient(135deg, rgba(255, 255, 255, 0.4) 0%, rgba(229, 247, 237, 0.6) 100%)",
+                backdropFilter: "blur(8px)",
+              }}
+            >
+              <span className="flex items-center gap-2">
+                <CalendarMonth fontSize="small" style={{ color: "#0a6a56" }} />
+                {formData.startDate ? format(formData.startDate, "MMMM dd, yyyy") : "Select a date"}
+              </span>
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent 
+            className="w-auto p-0 z-[10000] ai-generate-calendar" 
+            align="start" 
+            style={{ 
+              boxShadow: "0 8px 24px rgba(10, 106, 86, 0.12)",
+              background: "linear-gradient(180deg, #e5f7ed 0%, #f5fce8 100%)",
+              border: "1px solid rgba(200, 234, 214, 0.6)",
+              borderRadius: "12px",
+              overflow: "hidden"
+            }}
+          >
+            <div className="p-3 border-b" style={{ borderColor: "rgba(200, 234, 214, 0.4)" }}>
+              <div className="flex gap-2">
+                <Select
+                  value={(formData.startDate ? formData.startDate.getMonth() : new Date().getMonth()).toString()}
+                  onValueChange={(value) => {
+                    const currentDate = formData.startDate ? new Date(formData.startDate) : new Date();
+                    currentDate.setMonth(parseInt(value));
+                    setFormData({ ...formData, startDate: currentDate });
+                  }}
+                >
+                  <SelectTrigger className="w-[130px] h-8 bg-white" style={{ borderColor: "#c8ead6" }}>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent className="z-[11000] bg-white">
+                    {["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"].map((month, idx) => (
+                      <SelectItem key={month} value={idx.toString()}>{month}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Select
+                  value={(formData.startDate ? formData.startDate.getFullYear() : new Date().getFullYear()).toString()}
+                  onValueChange={(value) => {
+                    const currentDate = formData.startDate ? new Date(formData.startDate) : new Date();
+                    currentDate.setFullYear(parseInt(value));
+                    setFormData({ ...formData, startDate: currentDate });
+                  }}
+                >
+                  <SelectTrigger className="w-[100px] h-8 bg-white" style={{ borderColor: "#c8ead6" }}>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent className="z-[11000] max-h-[200px] bg-white">
+                    {Array.from({ length: 3 }, (_, i) => new Date().getFullYear() + i).map((year) => (
+                      <SelectItem key={year} value={year.toString()}>{year}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <div style={{ padding: "12px", backgroundColor: "transparent" }}>
+              <Calendar
+                mode="single"
+                selected={formData.startDate}
+                onSelect={(date) => setFormData({ ...formData, startDate: date })}
+                month={formData.startDate}
+                onMonthChange={(date) => {
+                  setFormData({ ...formData, startDate: date });
+                }}
+                disabled={(date) => {
+                  const today = new Date();
+                  today.setHours(0, 0, 0, 0);
+                  const maxDate = new Date();
+                  maxDate.setDate(maxDate.getDate() + 30);
+                  return date < today || date > maxDate;
+                }}
+                initialFocus
+                className="[&_*]:!bg-transparent [&_button]:!bg-transparent [&_td]:!bg-transparent [&_th]:!bg-transparent"
+                classNames={{
+                  months: "space-y-4 !bg-transparent",
+                  month: "space-y-4 !bg-transparent",
+                  caption: "flex justify-center pt-1 relative items-center !bg-transparent",
+                  caption_label: "hidden",
+                  nav: "space-x-1 flex items-center",
+                  nav_button: "h-7 w-7 p-0 hover:opacity-100 rounded-md !bg-[rgba(255,255,255,0.4)]",
+                  nav_button_previous: "absolute left-1",
+                  nav_button_next: "absolute right-1",
+                  table: "w-full border-collapse space-y-1 !bg-transparent",
+                  head_row: "flex !bg-transparent",
+                  head_cell: "rounded-md w-9 font-semibold text-[0.8rem] !bg-transparent",
+                  row: "flex w-full mt-2 !bg-transparent",
+                  cell: "text-center text-sm p-0 relative first:[&:has([aria-selected])]:rounded-l-md last:[&:has([aria-selected])]:rounded-r-md focus-within:relative focus-within:z-20 !bg-transparent",
+                  day: "h-9 w-9 p-0 font-medium aria-selected:opacity-100 rounded-md transition-all !bg-transparent",
+                  day_selected: "shadow-md !bg-[#0a6a56] !text-white",
+                  day_today: "font-bold !bg-[rgba(255,255,255,0.6)] !text-[#0a6a56] !border-2 !border-[#69c68d]",
+                  day_outside: "opacity-40",
+                  day_disabled: "opacity-30 line-through",
+                  day_range_middle: "",
+                  day_hidden: "invisible",
+                }}
+              />
+            </div>
+          </PopoverContent>
+        </Popover>
+        <p className="text-xs mt-1" style={{ color: "#6b7280" }}>
+          Select a start date up to 30 days ahead
+        </p>
       </div>
 
       {/* Difficulty Level */}
@@ -317,27 +554,40 @@ const AIGenerateTab: React.FC<AIGenerateTabProps> = ({ onSubmit, isGenerating, a
       </div>
 
       {/* Generate Button */}
-      <button
-        onClick={handleSubmit}
-        disabled={isGenerating || formData.availableDays.length === 0}
-        className="w-full px-4 py-3 rounded-xl font-semibold text-white hover:opacity-90 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-        style={{ background: "linear-gradient(90deg, #0a6a56 0%, #69c68d 100%)" }}
-      >
-        <div ref={iconRef} className="flex items-center">
-          {showLottie ? (
-            <DotLottieReact
-              src="/animations/LoadingAI_Gen.lottie"
-              loop
-              autoplay
-              style={{ width: 20, height: 20 }}
-            />
-          ) : (
-            <AutoAwesome fontSize="small" />
-          )}
+      <div className="space-y-3">
+        {/* Credit Cost Badge */}
+        <div className="flex items-center justify-center">
+          <CreditCostBadge 
+            cost={scheduleGenerationCost}
+            currentBalance={currentCredits}
+            operationName="schedule generation"
+            showWarning={true}
+          />
         </div>
-        <span>{isGenerating ? "Generating..." : "Generate Workout"}</span>
-      </button>
+
+        <button
+          onClick={handleSubmit}
+          disabled={isGenerating || formData.availableDays.length === 0 || !canGenerate}
+          className="w-full px-4 py-3 rounded-xl font-semibold text-white hover:opacity-90 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+          style={{ background: "linear-gradient(90deg, #0a6a56 0%, #69c68d 100%)" }}
+        >
+          <div ref={iconRef} className="flex items-center">
+            {showLottie ? (
+              <DotLottieReact
+                src="/animations/LoadingAI_Gen.lottie"
+                loop
+                autoplay
+                style={{ width: 20, height: 20 }}
+              />
+            ) : (
+              <AutoAwesome fontSize="small" />
+            )}
+          </div>
+          <span>{isGenerating ? "Generating..." : "Generate Workout"}</span>
+        </button>
+      </div>
     </div>
+    </>
   );
 };
 

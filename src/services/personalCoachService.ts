@@ -10,6 +10,7 @@ export interface GenerateScheduleRequest {
   availableDays: string[];
   equipmentAvailable: string[];
   additionalNotes?: string;
+  startDate?: string;
 }
 
 export interface ExerciseDetail {
@@ -58,6 +59,28 @@ export interface AIUsageLimits {
   usedThisMonth: number;
   daysUntilReset: number;
   subscriptionTier: "free" | "paid";
+}
+
+// New credit-based interface
+export interface AICreditBalance {
+  remainingCredits: number;
+  monthlyCredits: number;
+  canAffordOperation: boolean;
+  usedCreditsThisMonth: number;
+  daysUntilReset: number;
+  subscriptionTier: "free" | "basic" | "premium";
+  creditCostBreakdown: {
+    [key: string]: number;
+  };
+}
+
+export interface CreditHistoryItem {
+  id: string;
+  operationType: string;
+  creditCost: number;
+  remainingCreditsAfter: number;
+  createdAt: string;
+  relatedScheduleId?: string;
 }
 
 export interface ExerciseLibraryDTO {
@@ -216,10 +239,39 @@ export interface ScheduleAdjustmentResponse {
   summary: string;
 }
 
+export interface ConflictingWorkout {
+  date: string;
+  focusArea: string;
+  exerciseCount: number;
+  isCompleted: boolean;
+}
+
+export interface ScheduleConflictInfo {
+  hasConflicts: boolean;
+  conflictingWorkouts: ConflictingWorkout[];
+  totalConflicts: number;
+}
+
+export interface CheckConflictsRequest {
+  userId: string;
+  startDate: string;
+  durationDays: number;
+  availableDays: string[];
+}
+
 export const personalCoachService = {
   /** Generate AI-powered workout schedule */
   async generateSchedule(request: GenerateScheduleRequest): Promise<WorkoutScheduleResponse> {
     return httpRequest<WorkoutScheduleResponse>("/coach/api/Schedule/generate", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(request),
+    });
+  },
+
+  /** Check for conflicts with existing workouts before generating */
+  async checkScheduleConflicts(request: CheckConflictsRequest): Promise<ScheduleConflictInfo> {
+    return httpRequest<ScheduleConflictInfo>("/coach/api/Schedule/check-conflicts", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(request),
@@ -384,10 +436,23 @@ export const personalCoachService = {
   },
 
   /** Get user profile */
-  async getUserProfile(userId: string) {
+  async getUserProfile(userId: string): Promise<any> {
     return httpRequest(`/coach/api/UserProfile/${userId}`, {
       method: "GET",
     });
+  },
+
+  /** Get user health metrics (latest measurements) */
+  async getLatestHealthMetrics(userId: string) {
+    try {
+      // This would ideally be a dedicated endpoint, but we can try the OCR health profile endpoint
+      return await httpRequest(`/ai-ocr/api/OCR/users/${userId}/health-profile`, {
+        method: "GET",
+      });
+    } catch (error) {
+      console.error("Error fetching health metrics:", error);
+      return null;
+    }
   },
 
   /** Process health lab result with AI OCR */
@@ -434,10 +499,28 @@ export const personalCoachService = {
 
   // ==================== MANUAL SCHEDULE BUILDER METHODS ====================
 
-  // AI Usage Limits
+  // AI Usage Limits (Legacy)
   getAIUsageLimits: async (userId: string): Promise<AIUsageLimits> => {
     const response = await httpRequest<{ success: boolean; data: AIUsageLimits }>(
       `/coach/api/schedule/ai-usage-limits/${userId}`,
+      { method: 'GET' }
+    );
+    return response.data;
+  },
+
+  // AI Credit Balance (NEW)
+  getAICreditBalance: async (userId: string): Promise<AICreditBalance> => {
+    const response = await httpRequest<{ success: boolean; data: AICreditBalance }>(
+      `/coach/api/schedule/ai-credit-balance/${userId}`,
+      { method: 'GET' }
+    );
+    return response.data;
+  },
+
+  // AI Credit History
+  getAICreditHistory: async (userId: string, limit: number = 50): Promise<CreditHistoryItem[]> => {
+    const response = await httpRequest<{ success: boolean; data: CreditHistoryItem[]; count: number }>(
+      `/coach/api/schedule/ai-credit-history/${userId}?limit=${limit}`,
       { method: 'GET' }
     );
     return response.data;

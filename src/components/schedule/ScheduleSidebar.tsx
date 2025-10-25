@@ -21,7 +21,8 @@ import WorkoutDetailTab from "./WorkoutDetailTab";
 import ExerciseLibraryTab from "./ExerciseLibraryTab";
 import WorkoutTemplatesTab from "./WorkoutTemplatesTab";
 import CustomBuilderTab from "./CustomBuilderTab";
-import { ScheduleDayDetail } from "@/services/personalCoachService";
+import { ScheduleDayDetail, AICreditBalance } from "@/services/personalCoachService";
+import CreditBalance from "../CreditBalance";
 
 export type { GenerateWorkoutFormData };
 
@@ -36,9 +37,11 @@ interface ScheduleSidebarProps {
     canGenerate: boolean;
     subscriptionTier: string;
   } | null;
+  creditBalance?: AICreditBalance | null;
   // Workout detail props
   selectedWorkout?: ScheduleDayDetail | null;
   selectedWorkoutDate?: string;
+  workoutClickTrigger?: number;
   onWorkoutClose?: () => void;
   onExerciseComplete?: (exerciseId: string, completed: boolean) => void;
   onFeedbackClick?: () => void;
@@ -47,6 +50,7 @@ interface ScheduleSidebarProps {
   scheduleId?: string;
   // Schedule management
   onScheduleUpdated?: () => void;
+  ensureScheduleExists?: () => Promise<string | null>;
 }
 
 type SidebarSection = "ai-generate" | "history" | "exercises" | "templates" | "custom" | "custom-create" | "custom-saved" | "workout-detail" | null;
@@ -57,8 +61,10 @@ const ScheduleSidebar: React.FC<ScheduleSidebarProps> = ({
   hasSchedules,
   userId,
   aiUsageLimits,
+  creditBalance,
   selectedWorkout,
   selectedWorkoutDate,
+  workoutClickTrigger,
   onWorkoutClose,
   onExerciseComplete,
   onFeedbackClick,
@@ -66,6 +72,7 @@ const ScheduleSidebar: React.FC<ScheduleSidebarProps> = ({
   onRegenerateClick,
   scheduleId,
   onScheduleUpdated,
+  ensureScheduleExists,
 }) => {
   const [isExpanded, setIsExpanded] = useState(false); // Start collapsed
   const [activeSection, setActiveSection] = useState<SidebarSection>(null);
@@ -91,6 +98,14 @@ const ScheduleSidebar: React.FC<ScheduleSidebarProps> = ({
       return "workout-detail";
     });
   }, [selectedWorkout]);
+
+  // Force show workout detail when user clicks on a workout tile
+  React.useEffect(() => {
+    if (workoutClickTrigger && workoutClickTrigger > 0 && selectedWorkout) {
+      setIsExpanded(true);
+      setActiveSection("workout-detail");
+    }
+  }, [workoutClickTrigger, selectedWorkout]);
 
   const handleSectionClick = (section: SidebarSection) => {
     if (!isExpanded) {
@@ -166,7 +181,7 @@ const ScheduleSidebar: React.FC<ScheduleSidebarProps> = ({
         }
       `}</style>
       <div
-        className="shadow-2xl transition-all duration-300 ease-in-out flex flex-col overflow-hidden h-full rounded-l-3xl ml-2"
+        className="shadow-2xl transition-all duration-300 ease-in-out flex flex-col overflow-hidden h-full rounded-l-2xl ml-2"
         style={{
           width: sidebarWidth,
           minWidth: sidebarWidth,
@@ -236,22 +251,33 @@ const ScheduleSidebar: React.FC<ScheduleSidebarProps> = ({
           /* Section Content View */
           <div className="flex-1 overflow-y-auto no-scrollbar p-4">
             {activeSection === "ai-generate" && (
-              <AIGenerateTab
-                onSubmit={onGenerateSubmit}
-                isGenerating={isGenerating}
-                aiUsageLimits={aiUsageLimits}
-              />
+              <>
+                {/* Credit Balance Display */}
+                {creditBalance && (
+                  <div className="mb-4">
+                    <CreditBalance balance={creditBalance} compact={false} />
+                  </div>
+                )}
+                
+                <AIGenerateTab
+                  onSubmit={onGenerateSubmit}
+                  isGenerating={isGenerating}
+                  aiUsageLimits={aiUsageLimits}
+                  creditBalance={creditBalance}
+                />
+              </>
             )}
             {activeSection === "history" && (
               <HistoryTab userId={userId} isVisible={activeSection === "history"} />
             )}
             {activeSection === "exercises" && (
-              <ExerciseLibraryTab isDragDisabled={isGenerating || !scheduleId} />
+              <ExerciseLibraryTab isDragDisabled={isGenerating} />
             )}
             {activeSection === "templates" && (
               <WorkoutTemplatesTab
                 scheduleId={scheduleId}
                 onTemplateApplied={onScheduleUpdated}
+                ensureScheduleExists={ensureScheduleExists}
               />
             )}
             {activeSection === "custom" && (
@@ -260,6 +286,7 @@ const ScheduleSidebar: React.FC<ScheduleSidebarProps> = ({
                 loadedTemplateData={loadedTemplateData}
                 scheduleId={scheduleId}
                 onTemplateApplied={onScheduleUpdated}
+                ensureScheduleExists={ensureScheduleExists}
               />
             )}
             {activeSection === "custom-create" && (
@@ -269,6 +296,7 @@ const ScheduleSidebar: React.FC<ScheduleSidebarProps> = ({
                 loadedTemplateData={loadedTemplateData}
                 scheduleId={scheduleId}
                 onTemplateApplied={onScheduleUpdated}
+                ensureScheduleExists={ensureScheduleExists}
               />
             )}
             {activeSection === "custom-saved" && (
@@ -278,6 +306,7 @@ const ScheduleSidebar: React.FC<ScheduleSidebarProps> = ({
                 loadedTemplateData={loadedTemplateData}
                 scheduleId={scheduleId}
                 onTemplateApplied={onScheduleUpdated}
+                ensureScheduleExists={ensureScheduleExists}
               />
             )}
             {activeSection === "workout-detail" && (

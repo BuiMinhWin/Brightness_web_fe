@@ -7,7 +7,9 @@ import {
   WorkoutScheduleResponse,
   ScheduleDayDetail,
   AIUsageLimits,
+  AICreditBalance,
   ExerciseLibraryDTO,
+  ConflictingWorkout,
 } from "@/services/personalCoachService";
 import {
   challengeService,
@@ -24,6 +26,7 @@ import RegenerateScheduleModal, {
 import EditWorkoutDayModal, { EditWorkoutDayData } from "@/components/EditWorkoutDayModal";
 import UpgradePrompt from "@/components/UpgradePrompt";
 import ScheduleSidebar, { GenerateWorkoutFormData } from "@/components/schedule/ScheduleSidebar";
+import ScheduleConflictDialog from "@/components/schedule/ScheduleConflictDialog";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -118,6 +121,7 @@ const Schedule: React.FC = () => {
   const [showEditModal, setShowEditModal] = useState(false);
   const [editingWorkout, setEditingWorkout] = useState<ScheduleDayDetail | null>(null);
   const [aiUsageLimits, setAiUsageLimits] = useState<AIUsageLimits | null>(null);
+  const [creditBalance, setCreditBalance] = useState<AICreditBalance | null>(null);
   const [showUpgradePrompt, setShowUpgradePrompt] = useState(false);
   const [dragOverDate, setDragOverDate] = useState<string | null>(null);
   const [showDropConfirm, setShowDropConfirm] = useState(false);
@@ -136,6 +140,16 @@ const Schedule: React.FC = () => {
     message: "",
     severity: "info",
   });
+  const [showConflictDialog, setShowConflictDialog] = useState(false);
+  const [conflictingWorkouts, setConflictingWorkouts] = useState<ConflictingWorkout[]>([]);
+  const [pendingGeneration, setPendingGeneration] = useState<GenerateWorkoutFormData | null>(null);
+  const [showTemplateReplaceDialog, setShowTemplateReplaceDialog] = useState(false);
+  const [pendingTemplateReplace, setPendingTemplateReplace] = useState<{
+    template: any;
+    date: Date;
+    existingWorkout: any;
+  } | null>(null);
+  const [workoutClickTrigger, setWorkoutClickTrigger] = useState(0);
   const userId = useAppSelector((state) => state.auth.userId);
   const userInfo = useAppSelector((state) => state.auth.userInfo);
   const isPaidUser = userInfo?.subscriptionPlanId != null;
@@ -189,7 +203,7 @@ const Schedule: React.FC = () => {
     return normalized === "completed" || normalized === "done" || normalized === "finished";
   };
 
-  // Fetch AI usage limits
+  // Fetch AI usage limits (Legacy)
   const fetchAIUsageLimits = async () => {
     if (!userId) return;
 
@@ -198,6 +212,20 @@ const Schedule: React.FC = () => {
       setAiUsageLimits(limits);
     } catch (error) {
       console.error("Failed to fetch AI usage limits:", error);
+    }
+  };
+
+  // Fetch AI credit balance (NEW)
+  const fetchAICreditBalance = async () => {
+    if (!userId) return;
+
+    try {
+      const balance = await personalCoachService.getAICreditBalance(userId);
+      setCreditBalance(balance);
+    } catch (error) {
+      console.error("Failed to fetch AI credit balance:", error);
+      // Fall back to legacy limits if credit balance fails
+      await fetchAIUsageLimits();
     }
   };
 
@@ -447,7 +475,7 @@ const Schedule: React.FC = () => {
 
   useEffect(() => {
     fetchSchedules();
-    fetchAIUsageLimits();
+    fetchAICreditBalance(); // Will fall back to fetchAIUsageLimits if needed
     fetchChallenges();
   }, [userId]);
 
@@ -487,8 +515,52 @@ const Schedule: React.FC = () => {
       return;
     }
 
-    setIsGenerating(true);
+    if (!formData.startDate) {
+      showToast({ message: "Please select a start date", severity: "warning" });
+      return;
+    }
+
     setError(null);
+
+    try {
+      console.log("🔍 Checking for schedule conflicts...");
+
+      // Format start date as YYYY-MM-DD without timezone conversion
+      const year = formData.startDate.getFullYear();
+      const month = String(formData.startDate.getMonth() + 1).padStart(2, '0');
+      const day = String(formData.startDate.getDate()).padStart(2, '0');
+      const startDateStr = `${year}-${month}-${day}`;
+
+      // Check for conflicts before generating
+      const conflictInfo = await personalCoachService.checkScheduleConflicts({
+        userId,
+        startDate: startDateStr,
+        durationDays: formData.durationDays,
+        availableDays: formData.availableDays,
+      });
+
+      if (conflictInfo.hasConflicts) {
+        console.log(`⚠️ Found ${conflictInfo.totalConflicts} conflicts`);
+        // Show conflict dialog
+        setConflictingWorkouts(conflictInfo.conflictingWorkouts);
+        setPendingGeneration(formData);
+        setShowConflictDialog(true);
+        return;
+      }
+
+      // No conflicts, proceed with generation
+      await executeGeneration(formData);
+    } catch (err) {
+      console.error("❌ Error checking conflicts:", err);
+      setError(err instanceof Error ? err.message : "Failed to check conflicts");
+      throw err;
+    }
+  };
+
+  const executeGeneration = async (formData: GenerateWorkoutFormData) => {
+    if (!userId || !formData.startDate) return;
+
+    setIsGenerating(true);
 
     try {
       console.log("🎯 Generating workout schedule...");
@@ -496,6 +568,12 @@ const Schedule: React.FC = () => {
       // Track AI action and get credits
       const credits = await chatService.trackAiAction();
       console.log("Credits response:", credits);
+
+      // Format start date as YYYY-MM-DD without timezone conversion
+      const year = formData.startDate.getFullYear();
+      const month = String(formData.startDate.getMonth() + 1).padStart(2, '0');
+      const day = String(formData.startDate.getDate()).padStart(2, '0');
+      const startDateStr = `${year}-${month}-${day}`;
 
       // Generate schedule using Personal Coach service
       await personalCoachService.generateSchedule({
@@ -506,12 +584,13 @@ const Schedule: React.FC = () => {
         availableDays: formData.availableDays,
         equipmentAvailable: formData.equipmentAvailable,
         additionalNotes: formData.additionalNotes,
+        startDate: startDateStr,
       });
       console.log("✅ Schedule generated");
 
-      // Refetch schedules and AI usage limits
+      // Refetch schedules and AI credit balance
       await fetchSchedules();
-      await fetchAIUsageLimits();
+      await fetchAICreditBalance();
 
       setToast({
         open: true,
@@ -524,6 +603,69 @@ const Schedule: React.FC = () => {
       throw err; // Let the modal handle the error display
     } finally {
       setIsGenerating(false);
+    }
+  };
+
+  const handleConfirmGeneration = async () => {
+    if (!pendingGeneration) return;
+
+    setShowConflictDialog(false);
+    await executeGeneration(pendingGeneration);
+    setPendingGeneration(null);
+    setConflictingWorkouts([]);
+  };
+
+  const handleConfirmTemplateReplace = async () => {
+    if (!pendingTemplateReplace) return;
+    
+    setShowTemplateReplaceDialog(false);
+    const { template, date } = pendingTemplateReplace;
+    
+    try {
+      const dateStrForComparison = formatDateString(date);
+      const utcDate = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+      const dateStrForBackend = utcDate.toISOString();
+      
+      const scheduleId = workoutSchedules[0]?.scheduleId;
+      if (!scheduleId) return;
+      
+      const dayNumber = calculateDayNumber(date);
+      
+      const customExercises = template.exercises.map((ex: any, index: number) => ({
+        exerciseLibraryId: ex.exerciseId || null,
+        exerciseName: ex.exerciseName || ex.exerciseNameVi || "Unknown Exercise",
+        category: ex.category || "Strength",
+        sets: ex.sets || 3,
+        reps: String(ex.reps || "10"),
+        restSeconds: ex.restSeconds || 60,
+        orderIndex: index,
+        notes: ex.notes || "",
+      }));
+
+      await personalCoachService.addCustomDay(scheduleId, {
+        date: dateStrForBackend,
+        dayNumber,
+        dayType: "workout",
+        focusArea: template.focusArea,
+        estimatedDuration: template.estimatedDuration,
+        exercises: customExercises,
+        replaceExisting: true,
+      });
+
+      showToast({
+        message: `"${template.templateName}" applied to ${dateStrForComparison}`,
+        severity: "success",
+      });
+
+      await fetchSchedules();
+    } catch (error: any) {
+      console.error("Failed to apply template:", error);
+      showToast({
+        message: error?.response?.data?.message || "Failed to apply template. Please try again.",
+        severity: "error",
+      });
+    } finally {
+      setPendingTemplateReplace(null);
     }
   };
 
@@ -556,9 +698,9 @@ const Schedule: React.FC = () => {
       await personalCoachService.regenerateSchedule(requestData);
       console.log("✅ Schedule regenerated");
 
-      // Refetch schedules and AI usage limits
+      // Refetch schedules and AI credit balance
       await fetchSchedules();
-      await fetchAIUsageLimits();
+      await fetchAICreditBalance();
 
       setShowRegenerateModal(false);
       setToast({
@@ -674,12 +816,63 @@ const Schedule: React.FC = () => {
       showToast({ message: "Failed to update task status.", severity: "error" });
     }
   };
+
+  // Helper function to create an empty manual schedule if none exists
+  const ensureScheduleExists = async (): Promise<string | null> => {
+    if (!userId) {
+      showToast({ message: "Please log in to create a schedule", severity: "warning" });
+      return null;
+    }
+
+    // Check if schedule already exists
+    if (workoutSchedules.length > 0 && workoutSchedules[0]?.scheduleId) {
+      return workoutSchedules[0].scheduleId;
+    }
+
+    try {
+      // Create an empty manual schedule
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const endDate = new Date(today);
+      endDate.setDate(today.getDate() + 90); // Default 90 days duration
+
+      const newSchedule = await personalCoachService.createManualSchedule({
+        userId,
+        scheduleName: "My Workout Schedule",
+        goal: "Custom Training Plan",
+        startDate: today.toISOString(),
+        endDate: endDate.toISOString(),
+        durationDays: 90,
+        difficultyLevel: "Intermediate",
+      });
+
+      // Refresh schedules to update state
+      await fetchSchedules();
+
+      console.log("✅ Empty schedule created:", newSchedule.scheduleId);
+      return newSchedule.scheduleId;
+    } catch (error: any) {
+      console.error("❌ Failed to create schedule:", error);
+      showToast({
+        message: error?.response?.data?.message || "Failed to create schedule. Please try again.",
+        severity: "error",
+      });
+      return null;
+    }
+  };
   // Drag-and-drop handlers
-  const formatDateISO = (date: Date): string => {
+  // Format date for display and comparison (YYYY-MM-DD)
+  const formatDateString = (date: Date): string => {
     const year = date.getFullYear();
     const month = String(date.getMonth() + 1).padStart(2, "0");
     const day = String(date.getDate()).padStart(2, "0");
     return `${year}-${month}-${day}`;
+  };
+
+  // Format date for backend API (full ISO string with UTC)
+  const formatDateISO = (date: Date): string => {
+    const utcDate = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+    return utcDate.toISOString();
   };
 
   const calculateDayNumber = (date: Date): number => {
@@ -691,10 +884,10 @@ const Schedule: React.FC = () => {
   };
 
   const handleDragOver = (e: React.DragEvent, date: Date) => {
-    if (isGenerating || !workoutSchedules[0]?.scheduleId) return;
+    if (isGenerating) return;
     e.preventDefault();
     e.dataTransfer.dropEffect = "copy";
-    const dateStr = formatDateISO(date);
+    const dateStr = formatDateString(date);
     setDragOverDate(dateStr);
   };
 
@@ -704,45 +897,49 @@ const Schedule: React.FC = () => {
 
   const handleTemplateDrop = async (template: any, date: Date) => {
     try {
-      const dateStr = formatDateISO(date);
-      const scheduleId = workoutSchedules[0]?.scheduleId;
+      const dateStrForComparison = formatDateString(date);
+      // Create UTC date at midnight for backend
+      const utcDate = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+      const dateStrForBackend = utcDate.toISOString();
+      
+      // Ensure schedule exists before proceeding
+      const scheduleId = await ensureScheduleExists();
       if (!scheduleId) return;
 
       // Check if day already has a workout
-      const existingWorkout = events.find((ev) => ev.date === dateStr);
+      const existingWorkout = events.find((ev) => ev.date === dateStrForComparison);
       const dayNumber = calculateDayNumber(date);
 
       // Convert template exercises to custom day exercises
       const customExercises = template.exercises.map((ex: any, index: number) => ({
-        exerciseLibraryId: ex.exerciseId,
-        exerciseName: ex.exerciseName,
-        exerciseNameVi: ex.exerciseNameVi,
-        category: ex.category,
-        sets: ex.sets,
-        reps: ex.reps,
-        restSeconds: ex.restSeconds,
+        exerciseLibraryId: ex.exerciseId || null,
+        exerciseName: ex.exerciseName || ex.exerciseNameVi || "Unknown Exercise",
+        category: ex.category || "Strength",
+        sets: ex.sets || 3,
+        reps: String(ex.reps || "10"),
+        restSeconds: ex.restSeconds || 60,
         orderIndex: index,
         notes: ex.notes || "",
       }));
 
-      // If existing workout, ask user to replace or cancel
-      const replaceExisting = existingWorkout
-        ? window.confirm(
-            `A workout already exists on ${new Date(date).toLocaleDateString()}. Replace it with "${template.templateName}"?`
-          )
-        : true;
+      // If existing workout, show confirmation dialog
+      if (existingWorkout) {
+        setPendingTemplateReplace({ template, date, existingWorkout });
+        setShowTemplateReplaceDialog(true);
+        return;
+      }
 
-      if (!replaceExisting) return;
-
-      await personalCoachService.addCustomDay(scheduleId, {
-        date: dateStr,
+      const payload = {
+        date: dateStrForBackend,
         dayNumber,
         dayType: "workout",
         focusArea: template.focusArea,
         estimatedDuration: template.estimatedDuration,
         exercises: customExercises,
-        replaceExisting,
-      });
+        replaceExisting: false,
+      };
+
+      await personalCoachService.addCustomDay(scheduleId, payload);
 
       showToast({
         message: `"${template.templateName}" applied to ${new Date(date).toLocaleDateString()}`,
@@ -771,14 +968,6 @@ const Schedule: React.FC = () => {
       return;
     }
 
-    if (!workoutSchedules[0]?.scheduleId) {
-      showToast({
-        message: "Please create a schedule first (use AI Generate or add exercises manually)",
-        severity: "warning",
-      });
-      return;
-    }
-
     // Check if dropping a template
     const templateData = e.dataTransfer.getData("template");
     if (templateData) {
@@ -792,27 +981,84 @@ const Schedule: React.FC = () => {
 
     try {
       const exercise: ExerciseLibraryDTO = JSON.parse(exerciseData);
-      const dateStr = formatDateISO(date);
-      const scheduleId = workoutSchedules[0].scheduleId;
+      const dateStrForComparison = formatDateString(date);
+      const dateStrForBackend = formatDateISO(date);
+      
+      // Ensure schedule exists before proceeding
+      const scheduleId = await ensureScheduleExists();
+      if (!scheduleId) return;
 
       // Check if day already has a workout
-      const existingWorkout = events.find((ev) => ev.date === dateStr);
+      const existingWorkout = events.find((ev) => ev.date === dateStrForComparison);
 
       if (existingWorkout) {
-        // Show confirmation dialog
-        setPendingDrop({
-          exercise,
-          date,
-          dateStr,
-          existingWorkout,
-        });
-        setShowDropConfirm(true);
-        return;
+        // Check if the same exercise already exists in this workout
+        const exerciseExists = existingWorkout.dayDetail.exercises.some(
+          (ex) => ex.exerciseName.toLowerCase() === exercise.exerciseName.toLowerCase()
+        );
+
+        if (exerciseExists) {
+          // Show confirmation dialog only if exercise already exists
+          setPendingDrop({
+            exercise,
+            date,
+            dateStr: dateStrForBackend,
+            existingWorkout,
+          });
+          setShowDropConfirm(true);
+          return;
+        } else {
+          // Append directly without asking
+          try {
+            await personalCoachService.editWorkoutDay({
+              scheduleDayId: existingWorkout.dayDetail.scheduleDayId,
+              exercisesToAdd: [
+                {
+                  exerciseName: exercise.exerciseName,
+                  sets: exercise.defaultSets,
+                  reps: String(exercise.defaultReps),
+                  restSeconds: exercise.defaultRestSeconds,
+                  orderIndex: existingWorkout.dayDetail.exercises.length,
+                },
+              ],
+            });
+
+            // Refresh schedule to get updated data
+            await fetchSchedules();
+
+            // Manually update the selected workout with fresh data
+            if (userId) {
+              const updatedSchedules = await personalCoachService.getUserSchedules(userId);
+              if (updatedSchedules.length > 0) {
+                const latestSchedule = updatedSchedules.find((s) => s.isLatest) || updatedSchedules[0];
+                const updatedDay = latestSchedule.days.find(
+                  (d) => d.date.split("T")[0] === dateStrForComparison
+                );
+                if (updatedDay) {
+                  setSelectedWorkout(updatedDay);
+                  setSelectedWorkoutDate(updatedDay.date.split("T")[0]);
+                }
+              }
+            }
+
+            showToast({
+              message: `${exercise.exerciseName} added to ${dateStrForComparison}`,
+              severity: "success",
+            });
+          } catch (error: any) {
+            console.error("Failed to append exercise:", error);
+            showToast({
+              message: error?.response?.data?.message || "Failed to add exercise. Please try again.",
+              severity: "error",
+            });
+          }
+          return;
+        }
       } else {
         // Create new custom day
         const dayNumber = calculateDayNumber(date);
         await personalCoachService.addCustomDay(scheduleId, {
-          date: dateStr,
+          date: dateStrForBackend,
           dayNumber,
           dayType: "workout",
           focusArea: exercise.category || "general",
@@ -831,7 +1077,7 @@ const Schedule: React.FC = () => {
           ],
         });
         showToast({
-          message: `New workout created with ${exercise.exerciseName} on ${dateStr}`,
+          message: `New workout created with ${exercise.exerciseName} on ${dateStrForComparison}`,
           severity: "success",
         });
       }
@@ -860,19 +1106,36 @@ const Schedule: React.FC = () => {
           {
             exerciseName: exercise.exerciseName,
             sets: exercise.defaultSets,
-            reps: exercise.defaultReps,
+            reps: String(exercise.defaultReps), // Ensure it's a string
             restSeconds: exercise.defaultRestSeconds,
             orderIndex: existingWorkout.dayDetail.exercises.length,
           },
         ],
       });
 
+      // Refresh schedule to get updated data
+      await fetchSchedules();
+
+      // Manually update the selected workout with fresh data
+      if (userId) {
+        const updatedSchedules = await personalCoachService.getUserSchedules(userId);
+        if (updatedSchedules.length > 0) {
+          const latestSchedule = updatedSchedules.find((s) => s.isLatest) || updatedSchedules[0];
+          const dateForComparison = existingWorkout.date;
+          const updatedDay = latestSchedule.days.find(
+            (d) => d.date.split("T")[0] === dateForComparison
+          );
+          if (updatedDay) {
+            setSelectedWorkout(updatedDay);
+            setSelectedWorkoutDate(updatedDay.date.split("T")[0]);
+          }
+        }
+      }
+
       showToast({
         message: `${exercise.exerciseName} added to ${dateStr}`,
         severity: "success",
       });
-
-      await fetchSchedules();
     } catch (error: any) {
       console.error("Failed to add exercise:", error);
       showToast({
@@ -886,11 +1149,14 @@ const Schedule: React.FC = () => {
   };
 
   const handleOverrideWorkout = async () => {
-    if (!pendingDrop || !workoutSchedules[0]?.scheduleId) return;
+    if (!pendingDrop) return;
 
     try {
       const { exercise, date, dateStr, existingWorkout } = pendingDrop;
-      const scheduleId = workoutSchedules[0].scheduleId;
+      
+      // Ensure schedule exists before proceeding
+      const scheduleId = await ensureScheduleExists();
+      if (!scheduleId) return;
 
       // Delete existing workout
       await personalCoachService.deleteWorkoutDay(
@@ -1002,7 +1268,7 @@ const Schedule: React.FC = () => {
       days.push(
         <div
           key={`prev-${day}`}
-          className="h-20 flex items-center justify-center font-bold cursor-pointer relative text-base border-r border-b border-green-300 hover:border-green-400 hover:bg-green-50"
+          className="h-20 flex items-center justify-center font-bold cursor-pointer relative text-base border-r border-b border-green-300 hover:border-green-400 hover:bg-green-50 rounded-lg"
           style={{ opacity: 0.35, fontWeight: 700, color: "#0b3d33" }}
           onClick={() => setSelectedDate(date)}
         >
@@ -1108,8 +1374,8 @@ const Schedule: React.FC = () => {
       days.push(
         <div
           key={day}
-          className={`h-20 flex items-center justify-center font-bold cursor-pointer relative transition-all hover:scale-105 text-base border-r border-b border-green-300 hover:border-green-400 hover:bg-green-50 ${
-            dragOverDate === formatDateISO(date) ? "drag-over" : ""
+          className={`h-20 flex items-center justify-center font-bold cursor-pointer relative transition-all hover:scale-105 text-base border-r border-b border-green-300 hover:border-green-400 hover:bg-green-50 rounded-lg ${
+            dragOverDate === formatDateString(date) ? "drag-over" : ""
           }`}
           onClick={() => setSelectedDate(date)}
           onDragOver={(e) => handleDragOver(e, date)}
@@ -1274,7 +1540,7 @@ const Schedule: React.FC = () => {
         days.push(
           <div
             key={`next-${day}`}
-            className="h-20 flex items-center justify-center font-bold cursor-pointer relative text-base border-r border-b border-green-300 hover:border-green-400 hover:bg-green-50"
+            className="h-20 flex items-center justify-center font-bold cursor-pointer relative text-base border-r border-b border-green-300 hover:border-green-400 hover:bg-green-50 rounded-lg"
             style={{ opacity: 0.35, fontWeight: 700, color: "#0b3d33" }}
             onClick={() => setSelectedDate(date)}
           >
@@ -1511,7 +1777,7 @@ const Schedule: React.FC = () => {
 
             {/* Calendar grid */}
             <div className="flex-1 flex flex-col justify-center">
-              <div className="border-l border-t border-green-300 rounded-lg overflow-hidden">
+              <div className="border-l border-t border-green-300 rounded-2xl overflow-hidden">
                 {renderCalendar().map((row, ri) => (
                   <div key={ri} className="grid grid-cols-7 px-3 flex-1">
                     {row}
@@ -1558,6 +1824,7 @@ const Schedule: React.FC = () => {
                       onClick={() => {
                         setSelectedWorkout(workoutEvent.dayDetail);
                         setSelectedWorkoutDate(workoutEvent.date);
+                        setWorkoutClickTrigger(prev => prev + 1); // Force sidebar to show workout detail
                       }}
                       className="rounded-xl px-3 py-3 flex flex-col gap-2 mb-2 cursor-pointer hover:shadow-lg transition-all"
                       style={{
@@ -1788,8 +2055,10 @@ const Schedule: React.FC = () => {
         hasSchedules={workoutSchedules.length > 0}
         userId={userId || ""}
         aiUsageLimits={aiUsageLimits}
+        creditBalance={creditBalance}
         selectedWorkout={selectedWorkout}
         selectedWorkoutDate={selectedWorkoutDate}
+        workoutClickTrigger={workoutClickTrigger}
         onWorkoutClose={() => {
           setSelectedWorkout(null);
           setSelectedWorkoutDate("");
@@ -1822,6 +2091,7 @@ const Schedule: React.FC = () => {
         }}
         scheduleId={workoutSchedules[0]?.scheduleId}
         onScheduleUpdated={fetchSchedules}
+        ensureScheduleExists={ensureScheduleExists}
       />
 
       {/* Workout Feedback Modal */}
@@ -1872,6 +2142,20 @@ const Schedule: React.FC = () => {
         isOpen={showUpgradePrompt}
         onClose={() => setShowUpgradePrompt(false)}
         aiUsageLimits={aiUsageLimits}
+        creditBalance={creditBalance}
+      />
+
+      {/* Schedule Conflict Dialog */}
+      <ScheduleConflictDialog
+        isOpen={showConflictDialog}
+        onClose={() => {
+          setShowConflictDialog(false);
+          setPendingGeneration(null);
+          setConflictingWorkouts([]);
+        }}
+        onConfirm={handleConfirmGeneration}
+        conflicts={conflictingWorkouts}
+        isGenerating={isGenerating}
       />
 
       {/* Toast Notification */}
@@ -1898,13 +2182,12 @@ const Schedule: React.FC = () => {
           style={{ border: "2px solid #c8ead6" }}
         >
           <AlertDialogHeader>
-            <AlertDialogTitle style={{ color: "#0a6a56" }}>Workout Already Exists</AlertDialogTitle>
+            <AlertDialogTitle style={{ color: "#0a6a56" }}>Exercise Already Exists</AlertDialogTitle>
             <AlertDialogDescription>
-              This day already has a workout scheduled (
-              {pendingDrop?.existingWorkout?.dayDetail?.exercises?.length || 0} exercises).
+              This workout already contains "{pendingDrop?.exercise?.exerciseName}".
               <br />
               <br />
-              <strong>Append:</strong> Add this exercise to the existing workout.
+              <strong>Append:</strong> Add another set of this exercise to the workout.
               <br />
               <strong>Override:</strong> Replace the entire workout with just this exercise.
             </AlertDialogDescription>
@@ -1933,6 +2216,50 @@ const Schedule: React.FC = () => {
               style={{ background: "#dc2626" }}
             >
               Override
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Template Replace Confirmation Dialog */}
+      <AlertDialog open={showTemplateReplaceDialog} onOpenChange={setShowTemplateReplaceDialog}>
+        <AlertDialogContent
+          className="bg-white rounded-3xl"
+          style={{ border: "2px solid #c8ead6" }}
+        >
+          <AlertDialogHeader>
+            <AlertDialogTitle style={{ color: "#0a6a56" }}>
+              Replace Existing Workout?
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              A workout already exists on {pendingTemplateReplace?.date.toLocaleDateString()}.
+              <br />
+              <br />
+              Do you want to replace it with "<strong>{pendingTemplateReplace?.template?.templateName}</strong>"?
+              <br />
+              <br />
+              <span style={{ color: "#dc2626" }}>
+                This will remove all exercises from the existing workout.
+              </span>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel
+              onClick={() => {
+                setShowTemplateReplaceDialog(false);
+                setPendingTemplateReplace(null);
+              }}
+              className="rounded-xl"
+              style={{ borderColor: "#c8ead6" }}
+            >
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleConfirmTemplateReplace}
+              className="rounded-xl text-white hover:opacity-90"
+              style={{ background: "#0a6a56" }}
+            >
+              Replace Workout
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

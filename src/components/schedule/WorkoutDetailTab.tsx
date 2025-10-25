@@ -12,6 +12,7 @@ import {
   RateReview,
   Edit,
   Refresh,
+  Flag,
 } from "@mui/icons-material";
 import { Snackbar, Alert } from "@mui/material";
 import {
@@ -19,6 +20,7 @@ import {
   ScheduleDayDetail,
   personalCoachService,
 } from "@/services/personalCoachService";
+import ReportBrokenLinkDialog from "./ReportBrokenLinkDialog";
 
 interface WorkoutDetailTabProps {
   workout: ScheduleDayDetail | null;
@@ -41,6 +43,8 @@ const WorkoutDetailTab: React.FC<WorkoutDetailTabProps> = ({
 }) => {
   const [exercises, setExercises] = useState<ExerciseDetail[]>([]);
   const [updatingExercise, setUpdatingExercise] = useState<string | null>(null);
+  const [showReportDialog, setShowReportDialog] = useState(false);
+  const [reportingExercise, setReportingExercise] = useState<ExerciseDetail | null>(null);
   const [toast, setToast] = useState<{
     open: boolean;
     message: string;
@@ -203,7 +207,7 @@ const WorkoutDetailTab: React.FC<WorkoutDetailTabProps> = ({
 
       {/* Action Buttons */}
       <div className="flex gap-2">
-        {onFeedbackClick && (
+        {onFeedbackClick && allCompleted && (
           <button
             onClick={onFeedbackClick}
             className="flex-1 px-3 py-2 rounded-lg text-white font-medium text-sm transition-all hover:opacity-90"
@@ -323,7 +327,7 @@ const WorkoutDetailTab: React.FC<WorkoutDetailTabProps> = ({
             )}
 
             {exercise.videoUrl && (
-              <div className="mt-2">
+              <div className="mt-2 flex items-center gap-3">
                 <a
                   href={exercise.videoUrl}
                   target="_blank"
@@ -334,6 +338,18 @@ const WorkoutDetailTab: React.FC<WorkoutDetailTabProps> = ({
                   <PlayCircleOutline style={{ fontSize: 14 }} />
                   Watch Tutorial
                 </a>
+                <button
+                  onClick={() => {
+                    setReportingExercise(exercise);
+                    setShowReportDialog(true);
+                  }}
+                  className="inline-flex items-center gap-1 text-xs hover:underline"
+                  style={{ color: "#dc2626" }}
+                  title="Report broken video link"
+                >
+                  <Flag style={{ fontSize: 12 }} />
+                  Report
+                </button>
               </div>
             )}
           </div>
@@ -351,6 +367,27 @@ const WorkoutDetailTab: React.FC<WorkoutDetailTabProps> = ({
           {toast.message}
         </Alert>
       </Snackbar>
+
+      {/* Report Broken Link Dialog */}
+      {reportingExercise && (
+        <ReportBrokenLinkDialog
+          isOpen={showReportDialog}
+          onClose={() => {
+            setShowReportDialog(false);
+            setReportingExercise(null);
+          }}
+          exerciseId={reportingExercise.exerciseId}
+          exerciseName={reportingExercise.exerciseName}
+          videoUrl={reportingExercise.videoUrl || ""}
+          onReportSuccess={() => {
+            setToast({
+              open: true,
+              message: "Thank you for reporting! We'll review this issue soon.",
+              severity: "success",
+            });
+          }}
+        />
+      )}
     </div>
   );
 };

@@ -8,6 +8,7 @@ import ViewEditUser from "@/components/admin/ViewEditUser";
 import SubscriptionPlansManager from "@/components/admin/SubscriptionPlansManager";
 import ReviewPostPage from "../../pages/AdminReviewPostPage/ReviewPostPage";
 import EventManagementPage from "../../pages/EventManagementPage/EventManagementPage";
+import AdminBrokenLinks from "../../pages/AdminBrokenLinks/AdminBrokenLinks";
 
 const AdminMain: React.FC = () => {
   return (
@@ -21,6 +22,7 @@ const AdminMain: React.FC = () => {
         <Route path="post-management" element={<ReviewPostPage />} />
         <Route path="event-management" element={<EventManagementPage />} />
         <Route path="subscription-plans" element={<SubscriptionPlansManager />} />
+        <Route path="broken-links" element={<AdminBrokenLinks />} />
         <Route path="settings" element={<div>Settings - Coming Soon</div>} />
       </Route>
     </Routes>

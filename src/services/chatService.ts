@@ -9,9 +9,13 @@ export interface SendMessageResponse {
   sessionId: string;
   message: string;
   role: string;
-  remainingMessages: number;
-  dailyLimit: number;
+  remainingMessages: number;  // Legacy
+  dailyLimit: number;          // Legacy
   createdAt: string;
+  // New credit system fields
+  remainingCredits?: number;
+  monthlyCredits?: number;
+  subscriptionTier?: "free" | "basic" | "premium";
 }
 
 export interface ChatMessage {
@@ -91,9 +95,13 @@ export const getLimits = async (): Promise<MessageLimits> => {
 
 export interface CreateScheduleResponse {
   schedule: any;
-  remainingMessages: number;
-  dailyLimit: number;
+  remainingMessages: number;  // Legacy
+  dailyLimit: number;          // Legacy
   message: string;
+  // New credit system fields
+  remainingCredits?: number;
+  monthlyCredits?: number;
+  subscriptionTier?: string;
 }
 
 export const createScheduleFromChat = async (request: CreateScheduleRequest): Promise<CreateScheduleResponse> => {
@@ -105,8 +113,12 @@ export const createScheduleFromChat = async (request: CreateScheduleRequest): Pr
 
 export interface UpdatePreferenceResponse {
   message: string;
-  remainingMessages: number;
-  dailyLimit: number;
+  remainingMessages: number;  // Legacy
+  dailyLimit: number;          // Legacy
+  // New credit system fields
+  remainingCredits?: number;
+  monthlyCredits?: number;
+  subscriptionTier?: string;
 }
 
 export const updatePreferenceFromChat = async (request: PreferenceUpdateRequest): Promise<UpdatePreferenceResponse> => {

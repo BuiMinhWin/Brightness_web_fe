@@ -1,6 +1,7 @@
 import React, { useState, useRef } from 'react';
 import { Upload, Close, CheckCircle, Edit, Save, Cancel, PictureAsPdf } from '@mui/icons-material';
 import { DotLottieReact } from '@lottiefiles/dotlottie-react';
+import ReactMarkdown from 'react-markdown';
 import { personalCoachService } from '@/services/personalCoachService';
 import chatService from '@/services/chatService';
 
@@ -93,7 +94,7 @@ const HealthDataUploadWidget: React.FC<HealthDataUploadWidgetProps> = ({
     // Validate image using service
     const validation = personalCoachService.validateHealthImage(file);
     if (!validation.valid) {
-      setError(validation.error || 'Invalid file');
+      setError(` ${validation.error || 'Invalid file'}\n\nPlease upload a clear photo of your health document (PDF, JPG, or PNG).`);
       return;
     }
 
@@ -114,7 +115,7 @@ const HealthDataUploadWidget: React.FC<HealthDataUploadWidgetProps> = ({
 
   const handleProcessImage = async () => {
     if (!selectedFile || !userId) {
-      setError('Please log in to process documents');
+      setError(' Please log in to process health documents');
       return;
     }
 
@@ -138,8 +139,36 @@ const HealthDataUploadWidget: React.FC<HealthDataUploadWidgetProps> = ({
       setHealthMetrics(parsedMetrics);
       
     } catch (err: any) {
-      console.error('Error processing image:', err);
-      setError(err.message || 'Failed to process image. Please try again.');
+      console.log('Error processing image:', err);
+      
+      let errorMessage = '';
+      
+      if (err.status === 402) {
+        const backendMsg = err.details?.message || '';
+        const creditsNeeded = backendMsg.match(/requires (\d+) credits/)?.[1] || '5';
+        const creditsRemaining = backendMsg.match(/only (\d+) remaining/)?.[1];
+        const daysUntilReset = backendMsg.match(/Resets in (\d+) days/)?.[1] || backendMsg.match(/in (\d+) days/)?.[1] || backendMsg.match(/reset in (\d+) days/)?.[1];
+        
+        errorMessage = `💳 **Insufficient AI Credits**\n\nI need **${creditsNeeded} credits** to process your health document`;
+        
+        if (creditsRemaining) {
+          errorMessage += `, but you only have **${creditsRemaining} credits** remaining`;
+        }
+        
+        errorMessage += '.';
+        
+        if (daysUntilReset) {
+          errorMessage += `\n\n🔄 Your credits will reset in **${daysUntilReset} days**.`;
+        }
+        
+        errorMessage += '\n\n✨ **Upgrade your plan to get more credits:**\n- **Basic Plan** (79,000 VND): 500 credits/month (~100 health scans)\n- **Premium Plan** (149,000 VND): 1,200 credits/month (~240 health scans)\n\n[Upgrade Now →](/pricing)';
+      } else if (err.message?.includes('format') || err.message?.includes('invalid')) {
+        errorMessage = '📄 **Invalid Document Format**\n\nPlease ensure your document is a clear photo or scan in JPG, PNG, or PDF format.';
+      } else {
+        errorMessage = '❌ I had trouble reading your health document. Please make sure the image is clear and well-lit, then try again.';
+      }
+      
+      setError(errorMessage);
     } finally {
       setIsProcessing(false);
     }
@@ -196,7 +225,7 @@ const HealthDataUploadWidget: React.FC<HealthDataUploadWidgetProps> = ({
 
   const handleSave = async () => {
     if (!userId) {
-      setError('Please log in to save health data');
+      setError(' Please log in to save your health data');
       return;
     }
 
@@ -270,8 +299,19 @@ const HealthDataUploadWidget: React.FC<HealthDataUploadWidgetProps> = ({
       });
       
     } catch (err: any) {
-      console.error('Error saving health data:', err);
-      setError(err.message || 'Failed to save health data. Please try again.');
+      console.log('Error saving health data:', err);
+      
+      let errorMessage = ' I had trouble saving your health data. ';
+      
+      if (err.message?.includes('connection') || err.message?.includes('network')) {
+        errorMessage += 'Please check your internet connection and try again.';
+      } else if (err.message) {
+        errorMessage += err.message;
+      } else {
+        errorMessage += 'Please try again or contact support if the issue persists.';
+      }
+      
+      setError(errorMessage);
     } finally {
       setIsSaving(false);
     }
@@ -307,8 +347,24 @@ const HealthDataUploadWidget: React.FC<HealthDataUploadWidgetProps> = ({
 
       {/* Error Message */}
       {error && (
-        <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
-          {error}
+        <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg text-sm">
+          <div className="prose prose-sm max-w-none text-red-700">
+            <ReactMarkdown
+              components={{
+                a: ({ node, ...props }) => (
+                  <a {...props} className="text-red-600 hover:text-red-700 font-medium underline" />
+                ),
+                strong: ({ node, ...props }) => (
+                  <strong {...props} className="font-bold text-red-800" />
+                ),
+                p: ({ node, ...props }) => (
+                  <p {...props} className="mb-2 last:mb-0" />
+                ),
+              }}
+            >
+              {error}
+            </ReactMarkdown>
+          </div>
         </div>
       )}
 
