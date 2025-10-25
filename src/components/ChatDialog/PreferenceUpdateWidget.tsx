@@ -10,8 +10,9 @@ interface PreferenceUpdateWidgetProps {
     preferredWorkoutTime?: string;
     workoutDaysPerWeek?: number;
   };
-  onPreferenceUpdated: (remainingMessages: number, dailyLimit: number) => void;
+  onPreferenceUpdated: (remainingMessages: number, dailyLimit: number, creditInfo?: { remainingCredits?: number; monthlyCredits?: number; subscriptionTier?: string }) => void;
   onCancel: () => void;
+  onError?: (errorMessage: string) => void;
 }
 
 const PreferenceUpdateWidget: React.FC<PreferenceUpdateWidgetProps> = ({
@@ -20,6 +21,7 @@ const PreferenceUpdateWidget: React.FC<PreferenceUpdateWidgetProps> = ({
   detectedChanges,
   onPreferenceUpdated,
   onCancel,
+  onError,
 }) => {
   const [preferredWorkoutTime, setPreferredWorkoutTime] = useState(detectedChanges.preferredWorkoutTime || '');
   const [workoutDaysPerWeek, setWorkoutDaysPerWeek] = useState(detectedChanges.workoutDaysPerWeek || 3);
@@ -29,7 +31,7 @@ const PreferenceUpdateWidget: React.FC<PreferenceUpdateWidgetProps> = ({
 
   const handleConfirm = async () => {
     if (!userId || !sessionId) {
-      setError('Session information is missing');
+      onCancel();
       return;
     }
 
@@ -72,10 +74,41 @@ const PreferenceUpdateWidget: React.FC<PreferenceUpdateWidgetProps> = ({
         workoutDaysPerWeek,
       });
 
-      onPreferenceUpdated(response.remainingMessages, response.dailyLimit);
+      onPreferenceUpdated(
+        response.remainingMessages, 
+        response.dailyLimit,
+        {
+          remainingCredits: response.remainingCredits,
+          monthlyCredits: response.monthlyCredits,
+          subscriptionTier: response.subscriptionTier
+        }
+      );
     } catch (err: any) {
-      console.error('Error updating preferences:', err);
-      setError(err.message || 'Failed to update preferences');
+      console.log('Error updating preferences:', err);
+      
+      let errorMessage = '';
+      
+      if (err.status === 402) {
+        const backendMsg = err.details?.message || '';
+        const daysUntilReset = backendMsg.match(/Resets in (\d+) days/)?.[1] || backendMsg.match(/in (\d+) days/)?.[1];
+        
+        errorMessage = '💳 **Insufficient AI Credits**\n\nYou don\'t have enough credits to update your preferences with AI assistance.';
+        
+        if (daysUntilReset) {
+          errorMessage += ` Credits will reset in **${daysUntilReset} days**.`;
+        }
+        
+        errorMessage += '\n\n[Upgrade for More Credits →](/pricing)';
+      } else {
+        errorMessage = ' I had trouble updating your preferences. Please try again or update them manually in your profile settings.';
+      }
+      
+      // Pass error to parent to show as AI message
+      if (onError) {
+        onError(errorMessage);
+      } else {
+        setError(errorMessage);
+      }
     } finally {
       setIsUpdating(false);
     }

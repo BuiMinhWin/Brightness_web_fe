@@ -23,6 +23,8 @@ import { Label } from "@/components/ui/label";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 import { Button } from "@/components/ui/button";
+import { AICreditBalance } from "../../services/personalCoachService";
+import CreditCostBadge from "../CreditCostBadge";
 
 export interface GenerateWorkoutFormData {
   goal: string;
@@ -43,11 +45,18 @@ interface AIGenerateTabProps {
     canGenerate: boolean;
     subscriptionTier: string;
   } | null;
+  creditBalance?: AICreditBalance | null;
 }
 
-const AIGenerateTab: React.FC<AIGenerateTabProps> = ({ onSubmit, isGenerating, aiUsageLimits }) => {
+const AIGenerateTab: React.FC<AIGenerateTabProps> = ({ onSubmit, isGenerating, aiUsageLimits, creditBalance }) => {
   const tomorrow = new Date();
   tomorrow.setDate(tomorrow.getDate() + 1);
+
+  // Use credit balance if available, otherwise fall back to legacy usage limits
+  const scheduleGenerationCost = creditBalance?.creditCostBreakdown?.ScheduleGeneration ?? 10;
+  const currentCredits = creditBalance?.remainingCredits ?? (aiUsageLimits?.remainingGenerations ?? 0) * 10;
+  const canGenerate = creditBalance ? creditBalance.remainingCredits >= scheduleGenerationCost : (aiUsageLimits?.canGenerate ?? true);
+  const tier = creditBalance?.subscriptionTier ?? aiUsageLimits?.subscriptionTier ?? "free";
   
   const [formData, setFormData] = useState<GenerateWorkoutFormData>({
     goal: "Weight Loss",
@@ -221,29 +230,29 @@ const AIGenerateTab: React.FC<AIGenerateTabProps> = ({ onSubmit, isGenerating, a
         }
       `}</style>
     <div className="space-y-6">
-      {/* AI Usage Warning */}
-      {aiUsageLimits && aiUsageLimits.subscriptionTier === "free" && aiUsageLimits.remainingGenerations <= 1 && (
+      {/* Credit Balance Warning */}
+      {tier === "free" && currentCredits <= scheduleGenerationCost && (
         <div 
           className="p-4 rounded-xl"
           style={{ 
-            background: aiUsageLimits.remainingGenerations === 0 ? "#fee2e2" : "#fff7ed",
-            border: `2px solid ${aiUsageLimits.remainingGenerations === 0 ? "#fecaca" : "#fed7aa"}`
+            background: currentCredits < scheduleGenerationCost ? "#fee2e2" : "#fff7ed",
+            border: `2px solid ${currentCredits < scheduleGenerationCost ? "#fecaca" : "#fed7aa"}`
           }}
         >
           <p className="font-semibold text-sm" style={{ 
-            color: aiUsageLimits.remainingGenerations === 0 ? "#991b1b" : "#9a3412"
+            color: currentCredits < scheduleGenerationCost ? "#991b1b" : "#9a3412"
           }}>
-            {aiUsageLimits.remainingGenerations === 0 
-              ? "No AI generations remaining" 
-              : `Last AI generation (${aiUsageLimits.remainingGenerations}/${aiUsageLimits.monthlyLimit})`
+            {currentCredits < scheduleGenerationCost
+              ? `Insufficient credits (need ${scheduleGenerationCost}, have ${currentCredits})` 
+              : `Low credits (${currentCredits} remaining, need ${scheduleGenerationCost} to generate)`
             }
           </p>
           <p className="text-xs mt-1" style={{ 
-            color: aiUsageLimits.remainingGenerations === 0 ? "#dc2626" : "#ea580c"
+            color: currentCredits < scheduleGenerationCost ? "#dc2626" : "#ea580c"
           }}>
-            {aiUsageLimits.remainingGenerations === 0
-              ? "Use manual builder or upgrade to Premium."
-              : "After this, use manual builder or upgrade."
+            {currentCredits < scheduleGenerationCost
+              ? "Use manual builder or upgrade to Basic/Premium for more credits."
+              : "After this, upgrade for more credits or use manual builder."
             }
           </p>
         </div>
@@ -545,26 +554,38 @@ const AIGenerateTab: React.FC<AIGenerateTabProps> = ({ onSubmit, isGenerating, a
       </div>
 
       {/* Generate Button */}
-      <button
-        onClick={handleSubmit}
-        disabled={isGenerating || formData.availableDays.length === 0}
-        className="w-full px-4 py-3 rounded-xl font-semibold text-white hover:opacity-90 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-        style={{ background: "linear-gradient(90deg, #0a6a56 0%, #69c68d 100%)" }}
-      >
-        <div ref={iconRef} className="flex items-center">
-          {showLottie ? (
-            <DotLottieReact
-              src="/animations/LoadingAI_Gen.lottie"
-              loop
-              autoplay
-              style={{ width: 20, height: 20 }}
-            />
-          ) : (
-            <AutoAwesome fontSize="small" />
-          )}
+      <div className="space-y-3">
+        {/* Credit Cost Badge */}
+        <div className="flex items-center justify-center">
+          <CreditCostBadge 
+            cost={scheduleGenerationCost}
+            currentBalance={currentCredits}
+            operationName="schedule generation"
+            showWarning={true}
+          />
         </div>
-        <span>{isGenerating ? "Generating..." : "Generate Workout"}</span>
-      </button>
+
+        <button
+          onClick={handleSubmit}
+          disabled={isGenerating || formData.availableDays.length === 0 || !canGenerate}
+          className="w-full px-4 py-3 rounded-xl font-semibold text-white hover:opacity-90 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+          style={{ background: "linear-gradient(90deg, #0a6a56 0%, #69c68d 100%)" }}
+        >
+          <div ref={iconRef} className="flex items-center">
+            {showLottie ? (
+              <DotLottieReact
+                src="/animations/LoadingAI_Gen.lottie"
+                loop
+                autoplay
+                style={{ width: 20, height: 20 }}
+              />
+            ) : (
+              <AutoAwesome fontSize="small" />
+            )}
+          </div>
+          <span>{isGenerating ? "Generating..." : "Generate Workout"}</span>
+        </button>
+      </div>
     </div>
     </>
   );

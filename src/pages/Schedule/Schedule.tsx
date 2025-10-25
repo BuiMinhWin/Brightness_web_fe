@@ -7,6 +7,7 @@ import {
   WorkoutScheduleResponse,
   ScheduleDayDetail,
   AIUsageLimits,
+  AICreditBalance,
   ExerciseLibraryDTO,
   ConflictingWorkout,
 } from "@/services/personalCoachService";
@@ -120,6 +121,7 @@ const Schedule: React.FC = () => {
   const [showEditModal, setShowEditModal] = useState(false);
   const [editingWorkout, setEditingWorkout] = useState<ScheduleDayDetail | null>(null);
   const [aiUsageLimits, setAiUsageLimits] = useState<AIUsageLimits | null>(null);
+  const [creditBalance, setCreditBalance] = useState<AICreditBalance | null>(null);
   const [showUpgradePrompt, setShowUpgradePrompt] = useState(false);
   const [dragOverDate, setDragOverDate] = useState<string | null>(null);
   const [showDropConfirm, setShowDropConfirm] = useState(false);
@@ -201,7 +203,7 @@ const Schedule: React.FC = () => {
     return normalized === "completed" || normalized === "done" || normalized === "finished";
   };
 
-  // Fetch AI usage limits
+  // Fetch AI usage limits (Legacy)
   const fetchAIUsageLimits = async () => {
     if (!userId) return;
 
@@ -210,6 +212,20 @@ const Schedule: React.FC = () => {
       setAiUsageLimits(limits);
     } catch (error) {
       console.error("Failed to fetch AI usage limits:", error);
+    }
+  };
+
+  // Fetch AI credit balance (NEW)
+  const fetchAICreditBalance = async () => {
+    if (!userId) return;
+
+    try {
+      const balance = await personalCoachService.getAICreditBalance(userId);
+      setCreditBalance(balance);
+    } catch (error) {
+      console.error("Failed to fetch AI credit balance:", error);
+      // Fall back to legacy limits if credit balance fails
+      await fetchAIUsageLimits();
     }
   };
 
@@ -459,7 +475,7 @@ const Schedule: React.FC = () => {
 
   useEffect(() => {
     fetchSchedules();
-    fetchAIUsageLimits();
+    fetchAICreditBalance(); // Will fall back to fetchAIUsageLimits if needed
     fetchChallenges();
   }, [userId]);
 
@@ -572,9 +588,9 @@ const Schedule: React.FC = () => {
       });
       console.log("✅ Schedule generated");
 
-      // Refetch schedules and AI usage limits
+      // Refetch schedules and AI credit balance
       await fetchSchedules();
-      await fetchAIUsageLimits();
+      await fetchAICreditBalance();
 
       setToast({
         open: true,
@@ -682,9 +698,9 @@ const Schedule: React.FC = () => {
       await personalCoachService.regenerateSchedule(requestData);
       console.log("✅ Schedule regenerated");
 
-      // Refetch schedules and AI usage limits
+      // Refetch schedules and AI credit balance
       await fetchSchedules();
-      await fetchAIUsageLimits();
+      await fetchAICreditBalance();
 
       setShowRegenerateModal(false);
       setToast({
@@ -2039,6 +2055,7 @@ const Schedule: React.FC = () => {
         hasSchedules={workoutSchedules.length > 0}
         userId={userId || ""}
         aiUsageLimits={aiUsageLimits}
+        creditBalance={creditBalance}
         selectedWorkout={selectedWorkout}
         selectedWorkoutDate={selectedWorkoutDate}
         workoutClickTrigger={workoutClickTrigger}
@@ -2125,6 +2142,7 @@ const Schedule: React.FC = () => {
         isOpen={showUpgradePrompt}
         onClose={() => setShowUpgradePrompt(false)}
         aiUsageLimits={aiUsageLimits}
+        creditBalance={creditBalance}
       />
 
       {/* Schedule Conflict Dialog */}

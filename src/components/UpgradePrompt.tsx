@@ -1,7 +1,8 @@
 import React from "react";
 import { Dialog, DialogContent } from "@mui/material";
-import { Close, CheckCircle, AutoAwesome, TrendingUp } from "@mui/icons-material";
+import { Close, CheckCircle, AutoAwesome, TrendingUp, Star } from "@mui/icons-material";
 import { useNavigate } from "react-router-dom";
+import { AICreditBalance } from "../services/personalCoachService";
 
 interface UpgradePromptProps {
   isOpen: boolean;
@@ -11,15 +12,22 @@ interface UpgradePromptProps {
     monthlyLimit: number;
     daysUntilReset: number;
   } | null;
+  creditBalance?: AICreditBalance | null;
 }
 
-const UpgradePrompt: React.FC<UpgradePromptProps> = ({ isOpen, onClose, aiUsageLimits }) => {
+const UpgradePrompt: React.FC<UpgradePromptProps> = ({ isOpen, onClose, aiUsageLimits, creditBalance }) => {
   const navigate = useNavigate();
 
   const handleUpgrade = () => {
     navigate("/pricing");
     onClose();
   };
+
+  // Use credit balance if available, otherwise fall back to legacy usage limits
+  const currentCredits = creditBalance?.remainingCredits ?? 0;
+  const monthlyCredits = creditBalance?.monthlyCredits ?? (aiUsageLimits?.monthlyLimit ?? 0) * 10; // Convert generations to credits estimate
+  const daysUntilReset = creditBalance?.daysUntilReset ?? aiUsageLimits?.daysUntilReset ?? 30;
+  const tier = creditBalance?.subscriptionTier ?? "free";
 
   return (
     <Dialog 
@@ -55,31 +63,29 @@ const UpgradePrompt: React.FC<UpgradePromptProps> = ({ isOpen, onClose, aiUsageL
           </div>
 
           {/* Current Status */}
-          {aiUsageLimits && (
-            <div 
-              className="p-4 rounded-xl"
-              style={{ background: "#fee2e2", border: "1px solid #fecaca" }}
-            >
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium" style={{ color: "#991b1b" }}>
-                    Current Plan: Free
-                  </p>
-                  <p className="text-xs mt-1" style={{ color: "#dc2626" }}>
-                    {aiUsageLimits.monthlyLimit} AI generations per month
-                  </p>
-                </div>
-                <div className="text-right">
-                  <p className="text-2xl font-bold" style={{ color: "#dc2626" }}>
-                    {aiUsageLimits.remainingGenerations}/{aiUsageLimits.monthlyLimit}
-                  </p>
-                  <p className="text-xs" style={{ color: "#991b1b" }}>
-                    Resets in {aiUsageLimits.daysUntilReset} {aiUsageLimits.daysUntilReset === 1 ? 'day' : 'days'}
-                  </p>
-                </div>
+          <div 
+            className="p-4 rounded-xl"
+            style={{ background: "#fee2e2", border: "1px solid #fecaca" }}
+          >
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium" style={{ color: "#991b1b" }}>
+                  Current Plan: {tier === "free" ? "Free" : tier === "basic" ? "Basic" : "Premium"}
+                </p>
+                <p className="text-xs mt-1" style={{ color: "#dc2626" }}>
+                  {monthlyCredits} AI credits per month
+                </p>
+              </div>
+              <div className="text-right">
+                <p className="text-2xl font-bold" style={{ color: "#dc2626" }}>
+                  {currentCredits}/{monthlyCredits}
+                </p>
+                <p className="text-xs" style={{ color: "#991b1b" }}>
+                  Resets in {daysUntilReset} {daysUntilReset === 1 ? 'day' : 'days'}
+                </p>
               </div>
             </div>
-          )}
+          </div>
 
           {/* Options */}
           <div className="space-y-3">
@@ -110,7 +116,7 @@ const UpgradePrompt: React.FC<UpgradePromptProps> = ({ isOpen, onClose, aiUsageL
               </div>
             </div>
 
-            {/* Option 2: Upgrade (Highlighted) */}
+            {/* Option 2: Basic Plan */}
             <div 
               className="p-4 rounded-xl border-2"
               style={{ 
@@ -128,7 +134,7 @@ const UpgradePrompt: React.FC<UpgradePromptProps> = ({ isOpen, onClose, aiUsageL
                 <div className="flex-1">
                   <div className="flex items-center gap-2">
                     <h4 className="font-semibold" style={{ color: "#0b3d33" }}>
-                      Upgrade to Premium
+                      Basic Plan
                     </h4>
                     <span 
                       className="px-2 py-0.5 rounded-full text-xs font-bold"
@@ -138,10 +144,10 @@ const UpgradePrompt: React.FC<UpgradePromptProps> = ({ isOpen, onClose, aiUsageL
                     </span>
                   </div>
                   <p className="text-sm mt-1" style={{ color: "#065f46" }}>
-                    Get 50 AI generations per month + unlimited manual schedules
+                    500 AI credits/month (~50 schedules or 500 chat messages)
                   </p>
                   <ul className="mt-2 space-y-1">
-                    {["50 AI-powered schedule generations", "Advanced workout analytics", "Priority support", "All future features"].map((feature) => (
+                    {["500 AI credits per month", "All AI features", "Manual schedule builder", "Standard support"].map((feature) => (
                       <li key={feature} className="flex items-center gap-2 text-sm" style={{ color: "#065f46" }}>
                         <CheckCircle style={{ fontSize: 16, color: "#10b981" }} />
                         {feature}
@@ -150,6 +156,51 @@ const UpgradePrompt: React.FC<UpgradePromptProps> = ({ isOpen, onClose, aiUsageL
                   </ul>
                   <p className="text-sm font-bold mt-3" style={{ color: "#0b3d33" }}>
                     Only 79,000 VND/month
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Option 3: Premium Plan */}
+            <div 
+              className="p-4 rounded-xl border-2"
+              style={{ 
+                borderColor: "#8b5cf6",
+                background: "linear-gradient(135deg, #f3e8ff 0%, #e9d5ff 100%)"
+              }}
+            >
+              <div className="flex items-start gap-3">
+                <div
+                  className="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0"
+                  style={{ background: "#8b5cf6", color: "white" }}
+                >
+                  <Star />
+                </div>
+                <div className="flex-1">
+                  <div className="flex items-center gap-2">
+                    <h4 className="font-semibold" style={{ color: "#0b3d33" }}>
+                      Premium Plan
+                    </h4>
+                    <span 
+                      className="px-2 py-0.5 rounded-full text-xs font-bold"
+                      style={{ background: "#8b5cf6", color: "white" }}
+                    >
+                      Best Value
+                    </span>
+                  </div>
+                  <p className="text-sm mt-1" style={{ color: "#6b21a8" }}>
+                    1,200 AI credits/month (~120 schedules or 1,200 chat messages)
+                  </p>
+                  <ul className="mt-2 space-y-1">
+                    {["1,200 AI credits per month", "Advanced analytics", "Priority support", "Early access to features"].map((feature) => (
+                      <li key={feature} className="flex items-center gap-2 text-sm" style={{ color: "#6b21a8" }}>
+                        <CheckCircle style={{ fontSize: 16, color: "#8b5cf6" }} />
+                        {feature}
+                      </li>
+                    ))}
+                  </ul>
+                  <p className="text-sm font-bold mt-3" style={{ color: "#0b3d33" }}>
+                    149,000 VND/month
                   </p>
                 </div>
               </div>

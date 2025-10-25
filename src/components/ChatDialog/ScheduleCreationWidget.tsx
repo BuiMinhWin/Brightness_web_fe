@@ -17,8 +17,9 @@ import {
 
 interface ScheduleCreationWidgetProps {
   sessionId: string;
-  onScheduleCreated: (schedule: any, remainingMessages: number, dailyLimit: number) => void;
+  onScheduleCreated: (schedule: any, remainingMessages: number, dailyLimit: number, creditInfo?: { remainingCredits?: number; monthlyCredits?: number; subscriptionTier?: string }) => void;
   onCancel: () => void;
+  onError?: (errorMessage: string) => void;
   suggestedGoal?: string;
   suggestedDifficulty?: string;
 }
@@ -60,6 +61,7 @@ const ScheduleCreationWidget: React.FC<ScheduleCreationWidgetProps> = ({
   sessionId,
   onScheduleCreated,
   onCancel,
+  onError,
   suggestedGoal,
   suggestedDifficulty,
 }) => {
@@ -133,7 +135,7 @@ const ScheduleCreationWidget: React.FC<ScheduleCreationWidgetProps> = ({
         
         setIsAnalyzing(false);
       } catch (err) {
-        console.error('Failed to analyze profile:', err);
+        console.log('Could not auto-analyze profile, using defaults');
         
         // Fallback to defaults if analysis fails
         setGoal(suggestedGoal || 'weight_loss');
@@ -171,12 +173,60 @@ const ScheduleCreationWidget: React.FC<ScheduleCreationWidgetProps> = ({
       console.log('📦 Response structure:', {
         hasSchedule: !!response.schedule,
         schedule: response.schedule,
-        credits: `${response.remainingMessages}/${response.dailyLimit}`
+        credits: `${response.remainingMessages}/${response.dailyLimit}`,
+        remainingCredits: response.remainingCredits,
+        monthlyCredits: response.monthlyCredits
       });
-      onScheduleCreated(response.schedule, response.remainingMessages, response.dailyLimit);
+      onScheduleCreated(
+        response.schedule, 
+        response.remainingMessages, 
+        response.dailyLimit,
+        {
+          remainingCredits: response.remainingCredits,
+          monthlyCredits: response.monthlyCredits,
+          subscriptionTier: response.subscriptionTier
+        }
+      );
     } catch (err: any) {
-      console.error('❌ Failed to create schedule:', err);
-      setError(err.message || 'Failed to create schedule');
+      console.log('Failed to create schedule:', err);
+      
+      // Extract user-friendly error message
+      let userFriendlyMessage = '';
+      
+      if (err.status === 429) {
+        userFriendlyMessage = ' **You\'ve reached your daily AI usage limit.**\n\nPlease upgrade your subscription to continue generating schedules, or wait until tomorrow when your limit resets.\n\n[View Subscription Plans](/pricing)';
+      } else if (err.status === 402) {
+        // Parse the backend's insufficient credits message
+        const backendMsg = err.details?.message || '';
+        const creditsNeeded = backendMsg.match(/requires (\d+) credits/)?.[1] || '10';
+        const creditsRemaining = backendMsg.match(/only (\d+) remaining/)?.[1] || '0';
+        const daysUntilReset = backendMsg.match(/Resets in (\d+) days/)?.[1] || backendMsg.match(/in (\d+) days/)?.[1];
+        
+        userFriendlyMessage = `💳 **Insufficient AI Credits**\n\nI need **${creditsNeeded} credits** to generate your workout schedule, but you only have **${creditsRemaining} credits** remaining.`;
+        
+        if (daysUntilReset) {
+          userFriendlyMessage += `\n\n🔄 Your credits will reset in **${daysUntilReset} days**.`;
+        }
+        
+        userFriendlyMessage += '\n\n **Upgrade your plan to get more credits:**\n- **Basic Plan** (79,000 VND): 500 credits/month (~50 schedules)\n- **Premium Plan** (149,000 VND): 1,200 credits/month (~120 schedules)\n\n[Upgrade Now →](/pricing)';
+      } else if (err.message?.includes('Insufficient credits') || err.message?.includes('insufficient')) {
+        userFriendlyMessage = ' **Insufficient AI Credits**\n\nYou don\'t have enough AI credits to generate a schedule. Please upgrade your subscription to get more credits.\n\n[View Pricing →](/pricing)';
+      } else if (err.status === 500) {
+        // Use backend's user-friendly message if available
+        const backendMessage = err.details?.message || err.details?.error;
+        userFriendlyMessage = backendMessage || ' I apologize, but I encountered an unexpected error while creating your schedule.\n\nPlease try again in a moment, or contact support if the issue persists.';
+      } else if (err.message) {
+        userFriendlyMessage = ` ${err.message}`;
+      } else {
+        userFriendlyMessage = ' An unexpected error occurred. Please try again.';
+      }
+      
+      // Pass error to parent to show as AI message
+      if (onError) {
+        onError(userFriendlyMessage);
+      } else {
+        setError(userFriendlyMessage);
+      }
     } finally {
       setIsCreating(false);
     }

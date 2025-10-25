@@ -61,6 +61,28 @@ export interface AIUsageLimits {
   subscriptionTier: "free" | "paid";
 }
 
+// New credit-based interface
+export interface AICreditBalance {
+  remainingCredits: number;
+  monthlyCredits: number;
+  canAffordOperation: boolean;
+  usedCreditsThisMonth: number;
+  daysUntilReset: number;
+  subscriptionTier: "free" | "basic" | "premium";
+  creditCostBreakdown: {
+    [key: string]: number;
+  };
+}
+
+export interface CreditHistoryItem {
+  id: string;
+  operationType: string;
+  creditCost: number;
+  remainingCreditsAfter: number;
+  createdAt: string;
+  relatedScheduleId?: string;
+}
+
 export interface ExerciseLibraryDTO {
   id: string;
   exerciseName: string;
@@ -477,10 +499,28 @@ export const personalCoachService = {
 
   // ==================== MANUAL SCHEDULE BUILDER METHODS ====================
 
-  // AI Usage Limits
+  // AI Usage Limits (Legacy)
   getAIUsageLimits: async (userId: string): Promise<AIUsageLimits> => {
     const response = await httpRequest<{ success: boolean; data: AIUsageLimits }>(
       `/coach/api/schedule/ai-usage-limits/${userId}`,
+      { method: 'GET' }
+    );
+    return response.data;
+  },
+
+  // AI Credit Balance (NEW)
+  getAICreditBalance: async (userId: string): Promise<AICreditBalance> => {
+    const response = await httpRequest<{ success: boolean; data: AICreditBalance }>(
+      `/coach/api/schedule/ai-credit-balance/${userId}`,
+      { method: 'GET' }
+    );
+    return response.data;
+  },
+
+  // AI Credit History
+  getAICreditHistory: async (userId: string, limit: number = 50): Promise<CreditHistoryItem[]> => {
+    const response = await httpRequest<{ success: boolean; data: CreditHistoryItem[]; count: number }>(
+      `/coach/api/schedule/ai-credit-history/${userId}?limit=${limit}`,
       { method: 'GET' }
     );
     return response.data;

@@ -21,7 +21,8 @@ import WorkoutDetailTab from "./WorkoutDetailTab";
 import ExerciseLibraryTab from "./ExerciseLibraryTab";
 import WorkoutTemplatesTab from "./WorkoutTemplatesTab";
 import CustomBuilderTab from "./CustomBuilderTab";
-import { ScheduleDayDetail } from "@/services/personalCoachService";
+import { ScheduleDayDetail, AICreditBalance } from "@/services/personalCoachService";
+import CreditBalance from "../CreditBalance";
 
 export type { GenerateWorkoutFormData };
 
@@ -36,6 +37,7 @@ interface ScheduleSidebarProps {
     canGenerate: boolean;
     subscriptionTier: string;
   } | null;
+  creditBalance?: AICreditBalance | null;
   // Workout detail props
   selectedWorkout?: ScheduleDayDetail | null;
   selectedWorkoutDate?: string;
@@ -59,6 +61,7 @@ const ScheduleSidebar: React.FC<ScheduleSidebarProps> = ({
   hasSchedules,
   userId,
   aiUsageLimits,
+  creditBalance,
   selectedWorkout,
   selectedWorkoutDate,
   workoutClickTrigger,
@@ -248,11 +251,21 @@ const ScheduleSidebar: React.FC<ScheduleSidebarProps> = ({
           /* Section Content View */
           <div className="flex-1 overflow-y-auto no-scrollbar p-4">
             {activeSection === "ai-generate" && (
-              <AIGenerateTab
-                onSubmit={onGenerateSubmit}
-                isGenerating={isGenerating}
-                aiUsageLimits={aiUsageLimits}
-              />
+              <>
+                {/* Credit Balance Display */}
+                {creditBalance && (
+                  <div className="mb-4">
+                    <CreditBalance balance={creditBalance} compact={false} />
+                  </div>
+                )}
+                
+                <AIGenerateTab
+                  onSubmit={onGenerateSubmit}
+                  isGenerating={isGenerating}
+                  aiUsageLimits={aiUsageLimits}
+                  creditBalance={creditBalance}
+                />
+              </>
             )}
             {activeSection === "history" && (
               <HistoryTab userId={userId} isVisible={activeSection === "history"} />

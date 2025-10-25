@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import chatService, { MessageLimits } from "@/services/chatService";
+import { personalCoachService, AICreditBalance } from "@/services/personalCoachService";
 import { useAppSelector } from "@/store/hooks";
 import ScheduleCreationWidget from "./ScheduleCreationWidget";
 import PreferenceUpdateWidget from "./PreferenceUpdateWidget";
@@ -36,6 +37,7 @@ const ChatDialog: React.FC<ChatDialogProps> = ({ open, onClose, initialMessage }
   const [isLoading, setIsLoading] = useState(false);
   const [sessionId, setSessionId] = useState<string | undefined>();
   const [limits, setLimits] = useState<MessageLimits | null>(null);
+  const [creditBalance, setCreditBalance] = useState<AICreditBalance | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [activeWidget, setActiveWidget] = useState<WidgetType>("none");
   const [pendingWidget, setPendingWidget] = useState<WidgetType | null>(null);
@@ -60,10 +62,11 @@ const ChatDialog: React.FC<ChatDialogProps> = ({ open, onClose, initialMessage }
     }
   }, [open, initialMessage]);
 
-  // Fetch message limits when dialog opens
+  // Fetch message limits and credit balance when dialog opens
   useEffect(() => {
     if (open && userId) {
       fetchLimits();
+      fetchCreditBalance();
     }
   }, [open, userId]);
 
@@ -88,7 +91,19 @@ const ChatDialog: React.FC<ChatDialogProps> = ({ open, onClose, initialMessage }
       const limitsData = await chatService.getLimits();
       setLimits(limitsData);
     } catch (err) {
-      console.error("Failed to fetch limits:", err);
+      // Silent fail - not critical for chat functionality
+      console.log("Could not fetch message limits, continuing without them");
+    }
+  };
+
+  const fetchCreditBalance = async () => {
+    if (!userId) return;
+    try {
+      const balance = await personalCoachService.getAICreditBalance(userId);
+      setCreditBalance(balance);
+    } catch (err) {
+      // Silent fail - not critical for chat functionality
+      console.log("Could not fetch credit balance, continuing without it");
     }
   };
 
@@ -199,7 +214,14 @@ const ChatDialog: React.FC<ChatDialogProps> = ({ open, onClose, initialMessage }
 
     // Check if limit reached
     if (limits?.isLimitReached) {
-      setError("You've reached your daily message limit. Please upgrade your subscription for more messages.");
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: crypto.randomUUID?.() ?? String(Date.now()),
+          role: "ai",
+          text: " **Daily Message Limit Reached**\n\nYou've reached your daily AI message limit. Please upgrade your subscription for more messages or wait until tomorrow when your limit resets.\n\n[View Subscription Plans →](/pricing)",
+        },
+      ]);
       return;
     }
 
@@ -236,14 +258,49 @@ const ChatDialog: React.FC<ChatDialogProps> = ({ open, onClose, initialMessage }
         remainingDaily: response.remainingMessages,
         dailyLimit: response.dailyLimit,
       } : null);
+      
+      // Update credit balance from response if available
+      if (response.remainingCredits !== undefined) {
+        setCreditBalance((prev) => prev ? {
+          ...prev,
+          remainingCredits: response.remainingCredits!,
+          monthlyCredits: response.monthlyCredits ?? prev.monthlyCredits,
+          subscriptionTier: (response.subscriptionTier as "free" | "basic" | "premium") ?? prev.subscriptionTier,
+        } : null);
+      }
     } catch (err: any) {
       console.error("Failed to send message:", err);
       
+      let errorMessage = '';
+      
       if (err.status === 429) {
-        setError("You've reached your daily message limit. Please upgrade your subscription for more messages.");
+        errorMessage = '⚠️ **Daily message limit reached.**\n\nYou\'ve reached your daily AI message limit. Please upgrade your subscription for more messages or wait until tomorrow.\n\n[View Plans →](/pricing)';
+      } else if (err.status === 402) {
+        const backendMsg = err.details?.message || '';
+        const daysUntilReset = backendMsg.match(/Resets in (\d+) days/)?.[1] || backendMsg.match(/in (\d+) days/)?.[1];
+        
+        errorMessage = '💳 **Insufficient AI Credits**\n\nYou\'ve run out of AI credits for this month.';
+        
+        if (daysUntilReset) {
+          errorMessage += ` Credits will reset in **${daysUntilReset} days**.`;
+        }
+        
+        errorMessage += '\n\n[Upgrade for More Credits →](/pricing)';
       } else {
-        setError("Failed to send message. Please try again.");
+        errorMessage = '❌ Failed to send message. Please try again.';
       }
+      
+      // Show error as AI message
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: crypto.randomUUID?.() ?? String(Date.now()),
+          role: "ai",
+          text: errorMessage,
+        },
+      ]);
+      
+      setError(null); // Clear inline error since we're showing it as a message
     } finally {
       setIsLoading(false);
     }
@@ -370,19 +427,30 @@ const ChatDialog: React.FC<ChatDialogProps> = ({ open, onClose, initialMessage }
           remainingDaily: response.remainingMessages,
           dailyLimit: response.dailyLimit,
         } : null);
-      } catch (err) {
-        console.error("Failed to get profile:", err);
+      } catch (err: any) {
+        console.log("Could not analyze profile automatically");
+        
+        // Show error as AI message
+        setMessages((prev) => [
+          ...prev,
+          {
+            id: crypto.randomUUID?.() ?? String(Date.now()),
+            role: "ai",
+            text: "I had trouble analyzing your profile automatically. Let me help you customize your plan manually instead! 💪\n\nWhat's your main fitness goal?",
+          },
+        ]);
       } finally {
         setIsLoading(false);
       }
     }
   };
 
-  const handleScheduleCreated = (schedule: any, remainingMessages: number, dailyLimit: number) => {
+  const handleScheduleCreated = (schedule: any, remainingMessages: number, dailyLimit: number, creditInfo?: { remainingCredits?: number; monthlyCredits?: number; subscriptionTier?: string }) => {
     console.log('📅 handleScheduleCreated called with:', {
       schedule,
       remainingMessages,
       dailyLimit,
+      creditInfo,
       scheduleType: typeof schedule,
       scheduleKeys: schedule ? Object.keys(schedule) : 'null'
     });
@@ -409,12 +477,30 @@ const ChatDialog: React.FC<ChatDialogProps> = ({ open, onClose, initialMessage }
       dailyLimit: dailyLimit,
     } : null);
     
+    // Update credit balance if provided
+    if (creditInfo?.remainingCredits !== undefined) {
+      setCreditBalance((prev) => prev ? {
+        ...prev,
+        remainingCredits: creditInfo.remainingCredits!,
+        monthlyCredits: creditInfo.monthlyCredits ?? prev.monthlyCredits,
+        subscriptionTier: (creditInfo.subscriptionTier as "free" | "basic" | "premium") ?? prev.subscriptionTier,
+      } : null);
+    } else {
+      // Fallback: fetch credit balance
+      fetchCreditBalance();
+    }
+    
     // Extract schedule details (handle different response structures)
     const durationDays = schedule?.durationDays || schedule?.totalDays || schedule?.duration || 'unknown';
     const difficultyLevel = schedule?.difficultyLevel || schedule?.difficulty || 'unknown';
     const goal = schedule?.goal || schedule?.fitnessGoal || 'unknown';
     
     console.log('📊 Extracted values:', { durationDays, difficultyLevel, goal });
+    
+    // Determine what to display for credits
+    const creditsDisplay = creditInfo?.remainingCredits !== undefined 
+      ? `${creditInfo.remainingCredits} credits remaining (${creditInfo.subscriptionTier} plan)`
+      : `${remainingMessages} messages remaining`;
     
     // Add success message with clickable link
     const successMessage = {
@@ -426,7 +512,7 @@ const ChatDialog: React.FC<ChatDialogProps> = ({ open, onClose, initialMessage }
 - **Duration:** ${durationDays} days
 - **Difficulty:** ${difficultyLevel}
 - **Goal:** ${goal}
-- **Credits Remaining:** ${remainingMessages}/${dailyLimit}
+- **${creditsDisplay}**
 
 [Click here to view your schedule](/schedule) or navigate to the Schedule section of your dashboard.`,
     };
@@ -445,7 +531,7 @@ const ChatDialog: React.FC<ChatDialogProps> = ({ open, onClose, initialMessage }
     }, 500);
   };
 
-  const handlePreferenceUpdated = (remainingMessages: number, dailyLimit: number) => {
+  const handlePreferenceUpdated = (remainingMessages: number, dailyLimit: number, creditInfo?: { remainingCredits?: number; monthlyCredits?: number; subscriptionTier?: string }) => {
     setActiveWidget("none");
     setDetectedPreferenceChanges({});
     
@@ -455,6 +541,19 @@ const ChatDialog: React.FC<ChatDialogProps> = ({ open, onClose, initialMessage }
       remainingDaily: remainingMessages,
       dailyLimit: dailyLimit,
     } : null);
+    
+    // Update credit balance if provided
+    if (creditInfo?.remainingCredits !== undefined) {
+      setCreditBalance((prev) => prev ? {
+        ...prev,
+        remainingCredits: creditInfo.remainingCredits!,
+        monthlyCredits: creditInfo.monthlyCredits ?? prev.monthlyCredits,
+        subscriptionTier: (creditInfo.subscriptionTier as "free" | "basic" | "premium") ?? prev.subscriptionTier,
+      } : null);
+    } else {
+      // Fallback: fetch credit balance
+      fetchCreditBalance();
+    }
     
     setMessages((prev) => [
       ...prev,
@@ -533,7 +632,11 @@ I'll use this information to provide you with personalized workout plans, nutrit
             <div>
               <h3 className="font-bold text-lg">BrightNest Assistant</h3>
               <div className="text-xs text-gray-500">
-                {limits ? `${limits.remainingDaily}/${limits.dailyLimit} messages today` : "AI helper"}
+                {creditBalance 
+                  ? `${creditBalance.remainingCredits}/${creditBalance.monthlyCredits} AI credits (${creditBalance.subscriptionTier})`
+                  : limits 
+                  ? `${limits.remainingDaily}/${limits.dailyLimit} messages today` 
+                  : "AI helper"}
               </div>
             </div>
           </div>
@@ -599,6 +702,19 @@ I'll use this information to provide you with personalized workout plans, nutrit
                 setActiveWidget("none");
                 setDetectedScheduleParams({});
               }}
+              onError={(errorMessage) => {
+                // Close widget and show error as AI message
+                setActiveWidget("none");
+                setDetectedScheduleParams({});
+                setMessages((prev) => [
+                  ...prev,
+                  {
+                    id: crypto.randomUUID?.() ?? String(Date.now()),
+                    role: "ai",
+                    text: errorMessage,
+                  },
+                ]);
+              }}
               suggestedGoal={detectedScheduleParams.goal}
               suggestedDifficulty={detectedScheduleParams.difficulty}
             />
@@ -613,6 +729,19 @@ I'll use this information to provide you with personalized workout plans, nutrit
               onCancel={() => {
                 setActiveWidget("none");
                 setDetectedPreferenceChanges({});
+              }}
+              onError={(errorMessage) => {
+                // Close widget and show error as AI message
+                setActiveWidget("none");
+                setDetectedPreferenceChanges({});
+                setMessages((prev) => [
+                  ...prev,
+                  {
+                    id: crypto.randomUUID?.() ?? String(Date.now()),
+                    role: "ai",
+                    text: errorMessage,
+                  },
+                ]);
               }}
             />
           )}
