@@ -12,12 +12,12 @@ import {
   ConflictingWorkout,
 } from "@/services/personalCoachService";
 import {
-  challengeService,
   type Challenge,
   type ChallengeTask,
   type ChallengeTaskProgressDTO,
   type ChallengeTaskProgress,
-} from "@/services/challengeService";
+} from "@/models/challenge";
+import { challengeService } from "@/services/challengeService";
 import chatService from "@/services/chatService";
 import WorkoutFeedbackModal, { WorkoutFeedbackData } from "@/components/WorkoutFeedbackModal";
 import RegenerateScheduleModal, {
@@ -527,8 +527,8 @@ const Schedule: React.FC = () => {
 
       // Format start date as YYYY-MM-DD without timezone conversion
       const year = formData.startDate.getFullYear();
-      const month = String(formData.startDate.getMonth() + 1).padStart(2, '0');
-      const day = String(formData.startDate.getDate()).padStart(2, '0');
+      const month = String(formData.startDate.getMonth() + 1).padStart(2, "0");
+      const day = String(formData.startDate.getDate()).padStart(2, "0");
       const startDateStr = `${year}-${month}-${day}`;
 
       // Check for conflicts before generating
@@ -571,8 +571,8 @@ const Schedule: React.FC = () => {
 
       // Format start date as YYYY-MM-DD without timezone conversion
       const year = formData.startDate.getFullYear();
-      const month = String(formData.startDate.getMonth() + 1).padStart(2, '0');
-      const day = String(formData.startDate.getDate()).padStart(2, '0');
+      const month = String(formData.startDate.getMonth() + 1).padStart(2, "0");
+      const day = String(formData.startDate.getDate()).padStart(2, "0");
       const startDateStr = `${year}-${month}-${day}`;
 
       // Generate schedule using Personal Coach service
@@ -617,20 +617,20 @@ const Schedule: React.FC = () => {
 
   const handleConfirmTemplateReplace = async () => {
     if (!pendingTemplateReplace) return;
-    
+
     setShowTemplateReplaceDialog(false);
     const { template, date } = pendingTemplateReplace;
-    
+
     try {
       const dateStrForComparison = formatDateString(date);
       const utcDate = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
       const dateStrForBackend = utcDate.toISOString();
-      
+
       const scheduleId = workoutSchedules[0]?.scheduleId;
       if (!scheduleId) return;
-      
+
       const dayNumber = calculateDayNumber(date);
-      
+
       const customExercises = template.exercises.map((ex: any, index: number) => ({
         exerciseLibraryId: ex.exerciseId || null,
         exerciseName: ex.exerciseName || ex.exerciseNameVi || "Unknown Exercise",
@@ -901,7 +901,7 @@ const Schedule: React.FC = () => {
       // Create UTC date at midnight for backend
       const utcDate = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
       const dateStrForBackend = utcDate.toISOString();
-      
+
       // Ensure schedule exists before proceeding
       const scheduleId = await ensureScheduleExists();
       if (!scheduleId) return;
@@ -983,7 +983,7 @@ const Schedule: React.FC = () => {
       const exercise: ExerciseLibraryDTO = JSON.parse(exerciseData);
       const dateStrForComparison = formatDateString(date);
       const dateStrForBackend = formatDateISO(date);
-      
+
       // Ensure schedule exists before proceeding
       const scheduleId = await ensureScheduleExists();
       if (!scheduleId) return;
@@ -1030,7 +1030,8 @@ const Schedule: React.FC = () => {
             if (userId) {
               const updatedSchedules = await personalCoachService.getUserSchedules(userId);
               if (updatedSchedules.length > 0) {
-                const latestSchedule = updatedSchedules.find((s) => s.isLatest) || updatedSchedules[0];
+                const latestSchedule =
+                  updatedSchedules.find((s) => s.isLatest) || updatedSchedules[0];
                 const updatedDay = latestSchedule.days.find(
                   (d) => d.date.split("T")[0] === dateStrForComparison
                 );
@@ -1048,7 +1049,8 @@ const Schedule: React.FC = () => {
           } catch (error: any) {
             console.error("Failed to append exercise:", error);
             showToast({
-              message: error?.response?.data?.message || "Failed to add exercise. Please try again.",
+              message:
+                error?.response?.data?.message || "Failed to add exercise. Please try again.",
               severity: "error",
             });
           }
@@ -1153,7 +1155,7 @@ const Schedule: React.FC = () => {
 
     try {
       const { exercise, date, dateStr, existingWorkout } = pendingDrop;
-      
+
       // Ensure schedule exists before proceeding
       const scheduleId = await ensureScheduleExists();
       if (!scheduleId) return;
@@ -1824,7 +1826,7 @@ const Schedule: React.FC = () => {
                       onClick={() => {
                         setSelectedWorkout(workoutEvent.dayDetail);
                         setSelectedWorkoutDate(workoutEvent.date);
-                        setWorkoutClickTrigger(prev => prev + 1); // Force sidebar to show workout detail
+                        setWorkoutClickTrigger((prev) => prev + 1); // Force sidebar to show workout detail
                       }}
                       className="rounded-xl px-3 py-3 flex flex-col gap-2 mb-2 cursor-pointer hover:shadow-lg transition-all"
                       style={{
@@ -2182,7 +2184,9 @@ const Schedule: React.FC = () => {
           style={{ border: "2px solid #c8ead6" }}
         >
           <AlertDialogHeader>
-            <AlertDialogTitle style={{ color: "#0a6a56" }}>Exercise Already Exists</AlertDialogTitle>
+            <AlertDialogTitle style={{ color: "#0a6a56" }}>
+              Exercise Already Exists
+            </AlertDialogTitle>
             <AlertDialogDescription>
               This workout already contains "{pendingDrop?.exercise?.exerciseName}".
               <br />
@@ -2235,7 +2239,8 @@ const Schedule: React.FC = () => {
               A workout already exists on {pendingTemplateReplace?.date.toLocaleDateString()}.
               <br />
               <br />
-              Do you want to replace it with "<strong>{pendingTemplateReplace?.template?.templateName}</strong>"?
+              Do you want to replace it with "
+              <strong>{pendingTemplateReplace?.template?.templateName}</strong>"?
               <br />
               <br />
               <span style={{ color: "#dc2626" }}>
