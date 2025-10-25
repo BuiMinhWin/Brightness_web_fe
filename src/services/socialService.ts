@@ -172,6 +172,28 @@ export const socialService = {
   },
 
   /**
+   * Vote on a comment (like)
+   * @param commentId - The ID of the comment
+   * @param voteType - Type of vote (e.g., "like")
+   */
+  async voteComment(commentId: string, voteType: string = "like"): Promise<void> {
+    return httpRequest<void>(`/social/api/comments/${commentId}/vote`, {
+      method: "POST",
+      body: JSON.stringify({ VoteType: voteType }),
+    });
+  },
+
+  /**
+   * Cancel vote on a comment
+   * @param commentId - The ID of the comment
+   */
+  async cancelCommentVote(commentId: string): Promise<void> {
+    return httpRequest<void>(`/social/api/comments/${commentId}/vote`, {
+      method: "DELETE",
+    });
+  },
+
+  /**
    * Update a comment
    * @param postId - The ID of the post
    * @param commentId - The ID of the comment
@@ -316,6 +338,53 @@ export const socialService = {
   async deletePostImage(imageId: string): Promise<void> {
     return httpRequest<void>(`/social/api/posts/images/${imageId}`, {
       method: "DELETE",
+    });
+  },
+
+  // ============= Post Reports API =============
+
+  /**
+   * Report a post
+   * @param postId - The ID of the post to report
+   * @param reason - Reason for reporting
+   * @returns Success message
+   */
+  async reportPost(postId: string, reason: string): Promise<string> {
+    return httpRequest<string>(`${postsBaseUrl}/${postId}/report`, {
+      method: "POST",
+      body: JSON.stringify({ reason }),
+    });
+  },
+
+  /**
+   * Get all flagged posts (for admin)
+   * @returns List of posts with high report counts
+   */
+  async getFlaggedPosts(): Promise<Post[]> {
+    return httpRequest<Post[]>(`${postsBaseUrl}/flagged`, {
+      method: "GET",
+    });
+  },
+
+  /**
+   * Soft delete a post (for admin)
+   * @param postId - The ID of the post to soft delete
+   * @returns Success message
+   */
+  async softDeletePost(postId: string): Promise<string> {
+    return httpRequest<string>(`${postsBaseUrl}/${postId}/soft-delete`, {
+      method: "DELETE",
+    });
+  },
+
+  /**
+   * Get report count for a post
+   * @param postId - The ID of the post
+   * @returns Report count
+   */
+  async getPostReportCount(postId: string): Promise<{ reportCount: number }> {
+    return httpRequest<{ reportCount: number }>(`${postsBaseUrl}/${postId}/reports/count`, {
+      method: "GET",
     });
   },
 };

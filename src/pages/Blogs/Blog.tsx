@@ -204,9 +204,9 @@ const Blogs: React.FC = () => {
       interactions: {
         likes: post.reactionCount,
         comments: 0,
-        retweets: 0,
       },
       postId: post.id, // Pass the post ID for fetching comments and likes
+      userVoteStatus: post.userVoteStatus, // Pass the user's vote status
     };
     setSelectedPost(transformedPost);
     setIsDialogOpen(true);
@@ -218,6 +218,7 @@ const Blogs: React.FC = () => {
   };
 
   const handlePostUpdated = (postId: string, updates: { likes?: number; comments?: number; isLiked?: boolean }) => {
+
     // Update the post in allPosts
     setAllPosts(prevPosts => 
       prevPosts.map(post => {
@@ -414,7 +415,6 @@ const Blogs: React.FC = () => {
                     interactions={{
                       likes: post.reactionCount,
                       comments: post.commentCount,
-                      retweets: 0,
                     }}
                     postId={post.id}
                     initialLiked={post.userVoteStatus?.hasVoted && post.userVoteStatus?.voteType === "reaction"}
@@ -439,7 +439,7 @@ const Blogs: React.FC = () => {
               {/* End of posts indicator */}
               {!hasMore && displayedPosts.length > 0 && (
                 <div style={{ textAlign: "center", padding: "40px 20px", color: "#fff", opacity: 0.7 }}>
-                  <p style={{ fontSize: "16px" }}>You've reached the end! 🎉</p>
+                  <p style={{ fontSize: "16px" }}>You've reached the end!</p>
                   <p style={{ fontSize: "14px", marginTop: "8px" }}>
                     Showing all {displayedPosts.length} post{displayedPosts.length !== 1 ? 's' : ''}
                   </p>

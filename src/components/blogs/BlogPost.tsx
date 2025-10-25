@@ -2,14 +2,16 @@ import React, { useState, useRef, useEffect } from "react";
 import { createPortal } from "react-dom";
 import {
   ChatBubbleIcon,
-  Share1Icon,
   HeartFilledIcon,
   HeartIcon,
+  DotsVerticalIcon,
 } from "@radix-ui/react-icons";
 import { useSelector } from "react-redux";
 import { selectUserId } from "../../store/slices/authSlice";
 import { socialService } from "../../services/socialService";
 import ImageViewer from "./ImageViewer";
+import ReportModal from "./ReportModal";
+import { useToast } from "../../hooks/useToast";
 
 interface BlogPostProps {
   user: {
@@ -24,7 +26,6 @@ interface BlogPostProps {
   };
   interactions: {
     comments: number;
-    retweets: number;
     likes: number;
   };
   postId?: string;
@@ -34,63 +35,68 @@ interface BlogPostProps {
 }
 
 const BlogPost: React.FC<BlogPostProps> = ({ user, timestamp, content, interactions, postId, initialLiked = false, onClick, onLikeChange }) => {
+  const { showToast } = useToast();
   const userId = useSelector(selectUserId);
   const [liked, setLiked] = useState(initialLiked);
-  const [retweeted, setRetweeted] = useState(false);
   const [likesCount, setLikesCount] = useState(interactions.likes || 0);
-  const [retweetsCount, setRetweetsCount] = useState(interactions.retweets);
   const [viewingImageIndex, setViewingImageIndex] = useState<number | null>(null);
+  const [showReportModal, setShowReportModal] = useState(false);
+  const [isSubmittingReport, setIsSubmittingReport] = useState(false);
+  const [showMenu, setShowMenu] = useState(false);
   const imageClickedRef = useRef(false);
+  const hasInteractedRef = useRef(false);
 
-  // Update liked state when initialLiked prop changes
+  // Only sync with initialLiked if user hasn't interacted yet
+  // Once user clicks, we own the state completely
   useEffect(() => {
-    setLiked(initialLiked);
-  }, [initialLiked]);
-
-  // Update likes count when interactions.likes prop changes
-  useEffect(() => {
-    setLikesCount(interactions.likes || 0);
-  }, [interactions.likes]);
+    if (!hasInteractedRef.current) {
+      setLiked(initialLiked);
+    }
+  }, [initialLiked, postId]);
 
   const handleLike = async (e: React.MouseEvent) => {
     e.stopPropagation(); // Don't open post dialog when liking
     
     if (!postId || !userId) {
-      console.warn("Cannot like: missing postId or userId");
       return;
     }
 
-    try {
-      const newLikedState = !liked;
-      const newLikesCount = Math.max(0, liked ? likesCount - 1 : likesCount + 1);
+    const wasLiked = liked;
+    const originalCount = likesCount;
 
-      if (liked) {
-        // Unlike the post
+    // Mark that user has interacted - we now own the state
+    hasInteractedRef.current = true;
+
+    try {
+      // Optimistically update heart only (not count) for instant feedback
+      setLiked(!wasLiked);
+
+      // Call backend API
+      if (wasLiked) {
         await socialService.cancelPostVote(postId);
-        setLiked(false);
-        setLikesCount(newLikesCount);
       } else {
-        // Like the post
         await socialService.votePost(postId, "reaction");
-        setLiked(true);
-        setLikesCount(newLikesCount);
       }
 
-      // Notify parent to sync state
+      // Fetch updated post to get accurate count from backend
+      const updatedPost = await socialService.getPostById(postId);
+      const isLiked = !!(updatedPost.userVoteStatus?.hasVoted && updatedPost.userVoteStatus?.voteType === "reaction");
+      
+      // Update with backend data
+      setLiked(isLiked);
+      setLikesCount(updatedPost.reactionCount);
+
+      // Notify parent with backend data (parent will update but we ignore it)
       if (onLikeChange) {
-        onLikeChange(postId, newLikedState, newLikesCount);
+        onLikeChange(postId, isLiked, updatedPost.reactionCount);
       }
     } catch (err) {
       console.error("Failed to toggle post like:", err);
       // Revert on error
-      setLiked(!liked);
+      setLiked(wasLiked);
+      setLikesCount(originalCount);
+      showToast({ message: "Failed to update like. Please try again.", severity: "error" });
     }
-  };
-
-  const handleRetweet = (e: React.MouseEvent) => {
-    e.stopPropagation(); // Don't open post dialog when retweeting
-    setRetweeted(!retweeted);
-    setRetweetsCount(retweeted ? retweetsCount - 1 : retweetsCount + 1);
   };
 
   const getMediaGridStyle = (mediaCount: number) => {
@@ -139,6 +145,47 @@ const BlogPost: React.FC<BlogPostProps> = ({ user, timestamp, content, interacti
       imageClickedRef.current = false;
     }, 100);
   };
+
+  const handleReportSubmit = async (reason: string) => {
+    if (!postId) return;
+
+    try {
+      setIsSubmittingReport(true);
+      await socialService.reportPost(postId, reason);
+      showToast({ 
+        message: "Thank you for your report. We'll review this post shortly.", 
+        severity: "success" 
+      });
+      setShowReportModal(false);
+      setShowMenu(false);
+    } catch (err: any) {
+      console.error("Failed to report post:", err);
+      const errorMessage = err?.message || "Failed to submit report. Please try again.";
+      showToast({ 
+        message: errorMessage, 
+        severity: "error" 
+      });
+    } finally {
+      setIsSubmittingReport(false);
+    }
+  };
+
+  // Close menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (showMenu) {
+        setShowMenu(false);
+      }
+    };
+
+    if (showMenu) {
+      document.addEventListener("click", handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener("click", handleClickOutside);
+    };
+  }, [showMenu]);
 
   return (
     <div
@@ -214,6 +261,82 @@ const BlogPost: React.FC<BlogPostProps> = ({ user, timestamp, content, interacti
           >
             {timestamp}
           </p>
+        </div>
+
+        {/* Three-dot Menu */}
+        <div style={{ position: "relative" }}>
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              setShowMenu(!showMenu);
+            }}
+            style={{
+              background: "rgba(0, 0, 0, 0.05)",
+              border: "none",
+              borderRadius: "50%",
+              width: "32px",
+              height: "32px",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              cursor: "pointer",
+              transition: "background 0.2s",
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.background = "rgba(0, 0, 0, 0.1)";
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = "rgba(0, 0, 0, 0.05)";
+            }}
+          >
+            <DotsVerticalIcon width={16} height={16} color="#666" />
+          </button>
+
+          {/* Dropdown Menu */}
+          {showMenu && (
+            <div
+              onClick={(e) => e.stopPropagation()}
+              style={{
+                position: "absolute",
+                top: "40px",
+                right: "0",
+                backgroundColor: "#fff",
+                borderRadius: "8px",
+                boxShadow: "0 4px 16px rgba(0, 0, 0, 0.2)",
+                minWidth: "180px",
+                overflow: "hidden",
+                zIndex: 1000,
+              }}
+            >
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setShowReportModal(true);
+                  setShowMenu(false);
+                }}
+                style={{
+                  width: "100%",
+                  padding: "12px 16px",
+                  background: "none",
+                  border: "none",
+                  textAlign: "left",
+                  cursor: "pointer",
+                  fontSize: "14px",
+                  color: "#ef4444",
+                  fontWeight: "500",
+                  transition: "background 0.2s",
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background = "rgba(239, 68, 68, 0.1)";
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = "none";
+                }}
+              >
+                Report post
+              </button>
+            </div>
+          )}
         </div>
       </div>
 
@@ -325,7 +448,8 @@ const BlogPost: React.FC<BlogPostProps> = ({ user, timestamp, content, interacti
         >
           <button
             onClick={(e) => {
-              e.stopPropagation(); // Don't open post dialog
+              e.stopPropagation();
+              if (onClick) onClick(); // Open post dialog to view comments
             }}
             style={{
               display: "flex",
@@ -351,38 +475,6 @@ const BlogPost: React.FC<BlogPostProps> = ({ user, timestamp, content, interacti
           >
             <ChatBubbleIcon width={16} height={16} />
             {interactions.comments}
-          </button>
-
-          <button
-            onClick={handleRetweet}
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: "4px",
-              background: "none",
-              border: "none",
-              padding: "6px 8px",
-              borderRadius: "16px",
-              cursor: "pointer",
-              fontSize: "14px",
-              color: retweeted ? "#10b981" : "#666",
-              transition: "all 0.2s ease",
-            }}
-            onMouseEnter={(e) => {
-              if (!retweeted) {
-                e.currentTarget.style.backgroundColor = "rgba(16, 185, 129, 0.1)";
-                e.currentTarget.style.color = "#10b981";
-              }
-            }}
-            onMouseLeave={(e) => {
-              if (!retweeted) {
-                e.currentTarget.style.backgroundColor = "transparent";
-                e.currentTarget.style.color = "#666";
-              }
-            }}
-          >
-            <Share1Icon width={16} height={16} />
-            {retweetsCount}
           </button>
 
           <button
@@ -430,6 +522,17 @@ const BlogPost: React.FC<BlogPostProps> = ({ user, timestamp, content, interacti
           initialIndex={viewingImageIndex}
           isOpen={viewingImageIndex !== null}
           onClose={() => setViewingImageIndex(null)}
+        />,
+        document.body
+      )}
+
+      {/* Report Modal */}
+      {showReportModal && createPortal(
+        <ReportModal
+          isOpen={showReportModal}
+          onClose={() => setShowReportModal(false)}
+          onSubmit={handleReportSubmit}
+          isSubmitting={isSubmittingReport}
         />,
         document.body
       )}
