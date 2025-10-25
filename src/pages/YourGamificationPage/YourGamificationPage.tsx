@@ -5,13 +5,13 @@ import { useNavigate } from "react-router-dom";
 import { useSelector } from "react-redux";
 import { selectUserId, selectIsAuthenticated } from "../../store/slices/authSlice";
 import { ArrowLeft } from "lucide-react";
+import { challengeService } from "../../services/challengeService";
 import {
-  challengeService,
   Challenge,
   ChallengeParticipant,
   ChallengeTask,
   ChallengeTaskProgress,
-} from "../../services/challengeService";
+} from "../../models/challenge";
 
 interface ChallengeCard {
   id: string;
@@ -30,11 +30,11 @@ const YourGamificationPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
-  
+
   // Get authenticated user ID from Redux
   const authenticatedUserId = useSelector(selectUserId);
   const isAuthenticated = useSelector(selectIsAuthenticated);
-  
+
   const ITEMS_PER_PAGE = 4;
 
   console.log("🔐 Your Challenges - Auth State:", { isAuthenticated, authenticatedUserId });
@@ -68,7 +68,7 @@ const YourGamificationPage: React.FC = () => {
 
         // Filter to get only current user's participations
         const userParticipants = allParticipants.filter(
-          p => p.userId.toLowerCase() === authenticatedUserId.toLowerCase()
+          (p) => p.userId.toLowerCase() === authenticatedUserId.toLowerCase()
         );
         console.log("✅ User participants:", userParticipants);
 
@@ -90,16 +90,16 @@ const YourGamificationPage: React.FC = () => {
             let tasks: ChallengeTask[] = [];
             try {
               tasks = await challengeService.getTasksByChallengeId(participant.challengeId);
-              
+
               // Fallback if no tasks found
               if (!tasks || tasks.length === 0) {
                 const allTasks = await challengeService.getAllChallengeTasks();
-                tasks = allTasks.filter(t => t.challengeId === participant.challengeId);
+                tasks = allTasks.filter((t) => t.challengeId === participant.challengeId);
               }
             } catch (err) {
               console.warn("Failed to fetch tasks:", err);
               const allTasks = await challengeService.getAllChallengeTasks();
-              tasks = allTasks.filter(t => t.challengeId === participant.challengeId);
+              tasks = allTasks.filter((t) => t.challengeId === participant.challengeId);
             }
 
             console.log(`✅ Tasks for challenge ${participant.challengeId}:`, tasks);
@@ -113,7 +113,7 @@ const YourGamificationPage: React.FC = () => {
               // If endpoint fails, try to get all progresses and filter
               try {
                 const allProgresses = await challengeService.getAllChallengeTaskProgresses();
-                taskProgresses = allProgresses.filter(p => p.participantId === participant.id);
+                taskProgresses = allProgresses.filter((p) => p.participantId === participant.id);
               } catch (fallbackErr) {
                 console.error("Fallback also failed:", fallbackErr);
               }
@@ -123,15 +123,16 @@ const YourGamificationPage: React.FC = () => {
 
             // Count completed tasks
             const completedTasks = taskProgresses.filter(
-              tp => tp.status?.toLowerCase() === 'completed'
+              (tp) => tp.status?.toLowerCase() === "completed"
             ).length;
 
             const totalTasks = tasks.length;
 
             // Calculate overall progress
-            const overallProgress = totalTasks > 0 
-              ? Math.round((completedTasks / totalTasks) * 100)
-              : participant.percentageCompleted || 0;
+            const overallProgress =
+              totalTasks > 0
+                ? Math.round((completedTasks / totalTasks) * 100)
+                : participant.percentageCompleted || 0;
 
             // Determine status
             let status: "ongoing" | "completed" | "pending" = "ongoing";
@@ -167,7 +168,7 @@ const YourGamificationPage: React.FC = () => {
 
         const challengesResults = await Promise.all(challengesPromises);
         const validChallenges = challengesResults.filter((c): c is ChallengeCard => c !== null);
-        
+
         console.log("✅ Final challenges:", validChallenges);
         setChallenges(validChallenges);
       } catch (err) {
@@ -225,35 +226,39 @@ const YourGamificationPage: React.FC = () => {
   const handlePageChange = (page: number) => {
     if (page >= 1 && page <= totalPages) {
       setCurrentPage(page);
-      window.scrollTo({ top: 0, behavior: 'smooth' });
+      window.scrollTo({ top: 0, behavior: "smooth" });
     }
   };
 
   const getPageNumbers = () => {
     const pages: (number | string)[] = [];
-    
+
     if (totalPages <= 5) {
       for (let i = 1; i <= totalPages; i++) {
         pages.push(i);
       }
     } else {
       pages.push(1);
-      
+
       if (currentPage > 3) {
-        pages.push('...');
+        pages.push("...");
       }
-      
-      for (let i = Math.max(2, currentPage - 1); i <= Math.min(totalPages - 1, currentPage + 1); i++) {
+
+      for (
+        let i = Math.max(2, currentPage - 1);
+        i <= Math.min(totalPages - 1, currentPage + 1);
+        i++
+      ) {
         pages.push(i);
       }
-      
+
       if (currentPage < totalPages - 2) {
-        pages.push('...');
+        pages.push("...");
       }
-      
+
       pages.push(totalPages);
     }
-    
+
     return pages;
   };
 
@@ -312,9 +317,7 @@ const YourGamificationPage: React.FC = () => {
 
         {/* Error State */}
         {error && (
-          <div style={{ textAlign: "center", padding: "40px", color: "#ef4444" }}>
-            {error}
-          </div>
+          <div style={{ textAlign: "center", padding: "40px", color: "#ef4444" }}>{error}</div>
         )}
 
         {/* Empty State */}
@@ -412,13 +415,13 @@ const YourGamificationPage: React.FC = () => {
         {/* Pagination - Only show if there are more than 4 challenges */}
         {challenges.length > ITEMS_PER_PAGE && (
           <div className="your-missions-pagination">
-            <button 
-              className="pagination-btn prev" 
+            <button
+              className="pagination-btn prev"
               disabled={currentPage === 1}
               onClick={() => handlePageChange(currentPage - 1)}
-              style={{ 
+              style={{
                 opacity: currentPage === 1 ? 0.5 : 1,
-                cursor: currentPage === 1 ? 'not-allowed' : 'pointer'
+                cursor: currentPage === 1 ? "not-allowed" : "pointer",
               }}
             >
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
@@ -427,28 +430,30 @@ const YourGamificationPage: React.FC = () => {
             </button>
 
             <div className="pagination-numbers">
-              {getPageNumbers().map((page, index) => (
-                typeof page === 'number' ? (
-                  <button 
+              {getPageNumbers().map((page, index) =>
+                typeof page === "number" ? (
+                  <button
                     key={index}
-                    className={`pagination-number ${currentPage === page ? 'active' : ''}`}
+                    className={`pagination-number ${currentPage === page ? "active" : ""}`}
                     onClick={() => handlePageChange(page)}
                   >
                     {page}
                   </button>
                 ) : (
-                  <span key={index} className="pagination-dots">{page}</span>
+                  <span key={index} className="pagination-dots">
+                    {page}
+                  </span>
                 )
-              ))}
+              )}
             </div>
 
-            <button 
+            <button
               className="pagination-btn next"
               disabled={currentPage === totalPages}
               onClick={() => handlePageChange(currentPage + 1)}
-              style={{ 
+              style={{
                 opacity: currentPage === totalPages ? 0.5 : 1,
-                cursor: currentPage === totalPages ? 'not-allowed' : 'pointer'
+                cursor: currentPage === totalPages ? "not-allowed" : "pointer",
               }}
             >
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none">

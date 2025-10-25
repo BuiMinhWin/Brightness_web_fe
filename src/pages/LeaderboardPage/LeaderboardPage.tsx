@@ -23,8 +23,6 @@ interface LeaderboardEntry {
 const LeaderboardPage: React.FC = () => {
   const navigate = useNavigate();
   const { missionId } = useParams<{ missionId: string }>();
-
-
   const authenticatedUserId = useSelector(selectUserId);
   const isAuthenticated = useSelector(selectIsAuthenticated);
 

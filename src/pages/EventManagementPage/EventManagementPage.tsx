@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import "./EventManagementPage.css";
-import { challengeService, Challenge, ChallengeTask } from "@/services/challengeService";
+import { challengeService } from "@/services/challengeService";
 import { useAppSelector, useAppDispatch } from "../../store/hooks";
 import { selectIsAuthenticated, selectUserId, selectUserInfo } from "@/store/slices/authSlice";
 import { logoutUser } from "@/store/slices/authSlice";

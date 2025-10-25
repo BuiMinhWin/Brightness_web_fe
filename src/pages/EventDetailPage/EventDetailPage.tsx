@@ -15,12 +15,12 @@ import { useNavigate, useParams } from "react-router-dom";
 import { useSelector } from "react-redux";
 import { selectUserId, selectIsAuthenticated } from "../../store/slices/authSlice";
 import {
-  challengeService,
   Challenge,
   ChallengeRule,
   ChallengeTask,
   ChallengeParticipant,
-} from "../../services/challengeService";
+} from "../../models/challenge";
+import { challengeService } from "@/services";
 import { useToast } from "../../hooks/useToast";
 
 // Event interface matching API data
@@ -82,7 +82,7 @@ const EventDetailPage: React.FC = () => {
   const [joining, setJoining] = useState(false);
   const [participantCount, setParticipantCount] = useState(0);
   const [isAlreadyJoined, setIsAlreadyJoined] = useState(false);
-  
+
   const navigate = useNavigate();
   const { eventId } = useParams<{ eventId: string }>();
 
@@ -119,18 +119,18 @@ const EventDetailPage: React.FC = () => {
         try {
           rules = await challengeService.getRulesByChallengeId(eventId);
           console.log("✅ Rules fetched:", rules);
-          
+
           if (!rules || rules.length === 0) {
             console.log("⚠️ No rules from specific endpoint, trying to fetch all rules...");
             const allRules = await challengeService.getAllChallengeRules();
-            rules = allRules.filter(rule => rule.challengeId === eventId);
+            rules = allRules.filter((rule) => rule.challengeId === eventId);
             console.log("✅ Filtered rules:", rules);
           }
         } catch (err) {
           console.warn("⚠️ Failed to fetch rules:", err);
           try {
             const allRules = await challengeService.getAllChallengeRules();
-            rules = allRules.filter(rule => rule.challengeId === eventId);
+            rules = allRules.filter((rule) => rule.challengeId === eventId);
           } catch (fallbackErr) {
             console.error("❌ Fallback also failed:", fallbackErr);
           }
@@ -139,18 +139,18 @@ const EventDetailPage: React.FC = () => {
         try {
           tasks = await challengeService.getTasksByChallengeId(eventId);
           console.log("✅ Tasks fetched:", tasks);
-          
+
           if (!tasks || tasks.length === 0) {
             console.log("⚠️ No tasks from specific endpoint, trying to fetch all tasks...");
             const allTasks = await challengeService.getAllChallengeTasks();
-            tasks = allTasks.filter(task => task.challengeId === eventId);
+            tasks = allTasks.filter((task) => task.challengeId === eventId);
             console.log("✅ Filtered tasks:", tasks);
           }
         } catch (err) {
           console.warn("⚠️ Failed to fetch tasks:", err);
           try {
             const allTasks = await challengeService.getAllChallengeTasks();
-            tasks = allTasks.filter(task => task.challengeId === eventId);
+            tasks = allTasks.filter((task) => task.challengeId === eventId);
           } catch (fallbackErr) {
             console.error("❌ Fallback also failed:", fallbackErr);
           }
@@ -159,18 +159,20 @@ const EventDetailPage: React.FC = () => {
         try {
           participants = await challengeService.getParticipantsByChallengeId(eventId);
           console.log("✅ Participants fetched:", participants);
-          
+
           if (!participants || participants.length === 0) {
-            console.log("⚠️ No participants from specific endpoint, trying to fetch all participants...");
+            console.log(
+              "⚠️ No participants from specific endpoint, trying to fetch all participants..."
+            );
             const allParticipants = await challengeService.getAllChallengeParticipants();
-            participants = allParticipants.filter(p => p.challengeId === eventId);
+            participants = allParticipants.filter((p) => p.challengeId === eventId);
             console.log("✅ Filtered participants:", participants);
           }
 
           // ✅ Check if current AUTHENTICATED user has already joined
           if (isAuthenticated && authenticatedUserId) {
             const alreadyJoined = participants.some(
-              p => p.userId.toLowerCase() === authenticatedUserId.toLowerCase()
+              (p) => p.userId.toLowerCase() === authenticatedUserId.toLowerCase()
             );
             setIsAlreadyJoined(alreadyJoined);
             console.log("✅ Already joined:", alreadyJoined);
@@ -183,11 +185,11 @@ const EventDetailPage: React.FC = () => {
           console.warn("⚠️ Failed to fetch participants:", err);
           try {
             const allParticipants = await challengeService.getAllChallengeParticipants();
-            participants = allParticipants.filter(p => p.challengeId === eventId);
-            
+            participants = allParticipants.filter((p) => p.challengeId === eventId);
+
             if (isAuthenticated && authenticatedUserId) {
               const alreadyJoined = participants.some(
-                p => p.userId.toLowerCase() === authenticatedUserId.toLowerCase()
+                (p) => p.userId.toLowerCase() === authenticatedUserId.toLowerCase()
               );
               setIsAlreadyJoined(alreadyJoined);
             }
@@ -236,7 +238,7 @@ const EventDetailPage: React.FC = () => {
     const minPerDay = Math.ceil(totalPoints / durationDays) || 45;
 
     let steps: Array<{ number: number; title: string; description: string }> = [];
-    
+
     if (rules?.howToParticipate) {
       if (Array.isArray(rules.howToParticipate)) {
         steps = rules.howToParticipate.map((step, index) => ({
@@ -244,7 +246,7 @@ const EventDetailPage: React.FC = () => {
           title: step,
           description: step,
         }));
-      } else if (typeof rules.howToParticipate === 'string') {
+      } else if (typeof rules.howToParticipate === "string") {
         try {
           const parsed = JSON.parse(rules.howToParticipate);
           if (Array.isArray(parsed)) {
@@ -261,11 +263,11 @@ const EventDetailPage: React.FC = () => {
     }
 
     let rulesList: string[] = [];
-    
+
     if (rules?.ruleText) {
       if (Array.isArray(rules.ruleText)) {
         rulesList = rules.ruleText;
-      } else if (typeof rules.ruleText === 'string') {
+      } else if (typeof rules.ruleText === "string") {
         try {
           const parsed = JSON.parse(rules.ruleText);
           if (Array.isArray(parsed)) {
@@ -420,7 +422,10 @@ const EventDetailPage: React.FC = () => {
       const guidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
       if (!guidRegex.test(authenticatedUserId)) {
         console.error("❌ Invalid userId format (not a Guid):", authenticatedUserId);
-        showToast({ message: "Invalid user ID format. Please try logging in again.", severity: "error" });
+        showToast({
+          message: "Invalid user ID format. Please try logging in again.",
+          severity: "error",
+        });
         return;
       }
 
@@ -461,13 +466,17 @@ const EventDetailPage: React.FC = () => {
       navigate("/your-challenges");
     } catch (err: any) {
       console.error("❌ Error joining event:", err);
-      
+
       // More specific error messages
       if (err.message?.includes("already")) {
         showToast({ message: "You have already joined this challenge!", severity: "info" });
         setIsAlreadyJoined(true);
       } else if (err.status === 400) {
-        showToast({ message: "Invalid request. Please check if the challenge exists and you're not already a participant.", severity: "error" });
+        showToast({
+          message:
+            "Invalid request. Please check if the challenge exists and you're not already a participant.",
+          severity: "error",
+        });
       } else {
         showToast({ message: "Failed to join the event. Please try again.", severity: "error" });
       }
@@ -530,8 +539,7 @@ const EventDetailPage: React.FC = () => {
           <p className="description-text">{event.description}</p>
         </div>
 
-        {(event.howToParticipate.steps.length > 0 ||
-          event.howToParticipate.rules.length > 0) ? (
+        {event.howToParticipate.steps.length > 0 || event.howToParticipate.rules.length > 0 ? (
           <div className="content-card">
             <div className="card-header">
               <div className="icon-wrapper green">
@@ -627,15 +635,11 @@ const EventDetailPage: React.FC = () => {
                     <h3 className="task-name">{task.name}</h3>
                     <span className="task-points">{task.points} pts</span>
                   </div>
-                  {task.description && (
-                    <p className="task-description">{task.description}</p>
-                  )}
+                  {task.description && <p className="task-description">{task.description}</p>}
                   <div className="task-meta">
                     <span className="task-type">{task.taskType}</span>
                     <span className="task-frequency">{task.frequencyRule}</span>
-                    {task.isRequired && (
-                      <span className="task-required">Required</span>
-                    )}
+                    {task.isRequired && <span className="task-required">Required</span>}
                   </div>
                 </div>
               ))}
@@ -682,8 +686,8 @@ const EventDetailPage: React.FC = () => {
 
         <div className="content-card action-section">
           <p className="action-text">
-            {isAlreadyJoined 
-              ? "You're part of this challenge! Keep up the great work!" 
+            {isAlreadyJoined
+              ? "You're part of this challenge! Keep up the great work!"
               : "Ready to transform your fitness journey?"}
           </p>
           <div className="action-buttons">
@@ -706,7 +710,10 @@ const EventDetailPage: React.FC = () => {
                 <button
                   onClick={() => {
                     if (!isAuthenticated) {
-                      showToast({ message: "Please log in to join this challenge", severity: "warning" });
+                      showToast({
+                        message: "Please log in to join this challenge",
+                        severity: "warning",
+                      });
                       navigate("/auth?mode=signin");
                     } else {
                       setShowJoinDialog(true);
@@ -725,8 +732,8 @@ const EventDetailPage: React.FC = () => {
             )}
           </div>
           <p className="participation-info">
-            {isAlreadyJoined 
-              ? `You and ${participantCount - 1} others are participating` 
+            {isAlreadyJoined
+              ? `You and ${participantCount - 1} others are participating`
               : `Free to join • ${participantCount} participants`}
           </p>
         </div>
@@ -747,11 +754,7 @@ const EventDetailPage: React.FC = () => {
               >
                 Cancel
               </button>
-              <button
-                onClick={handleJoinEvent}
-                className="confirm-button"
-                disabled={joining}
-              >
+              <button onClick={handleJoinEvent} className="confirm-button" disabled={joining}>
                 {joining ? "Joining..." : "Join Now"}
               </button>
             </div>
