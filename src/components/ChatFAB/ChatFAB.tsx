@@ -31,6 +31,21 @@ const ChatFAB: React.FC<ChatFABProps> = ({ initialMessage, openChat, onChatOpenC
     }
   }, [openChat]);
 
+  // Disable background scroll when chat is open
+  useEffect(() => {
+    if (chatOpen) {
+      // Save current overflow style
+      const originalOverflow = document.body.style.overflow;
+      // Disable scroll
+      document.body.style.overflow = 'hidden';
+      
+      // Restore on cleanup
+      return () => {
+        document.body.style.overflow = originalOverflow;
+      };
+    }
+  }, [chatOpen]);
+
   // Periodic text bubble animation
   useEffect(() => {
     if (chatOpen) {

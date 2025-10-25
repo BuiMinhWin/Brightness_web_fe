@@ -134,9 +134,18 @@ export const subscriptionPlanService = {
 
       // Xử lý các dạng response khác nhau
       if (response && typeof response === "object") {
-        // Trường hợp standard API response
-        if ("flag" in response && response.flag && response.data) {
-          return response.data;
+        // Trường hợp standard API response (camelCase or PascalCase)
+        const flag = response.flag ?? response.Flag;
+        const data = response.data ?? response.Data;
+        const message = response.message ?? response.Message;
+        
+        if (flag && data) {
+          return data;
+        }
+        
+        // If flag is false, throw error with message
+        if (flag === false) {
+          throw new Error(message || "Failed to create subscription plan");
         }
 
         // Trường hợp direct object
@@ -145,13 +154,14 @@ export const subscriptionPlanService = {
         }
 
         // Trường hợp wrapped trong data
-        if ("data" in response && response.data && typeof response.data === "object") {
-          if (response.data.id) {
-            return response.data;
+        if (data && typeof data === "object") {
+          if (data.id) {
+            return data;
           }
         }
       }
 
+      console.error("Response structure:", response);
       throw new Error("Không thể xử lý dữ liệu phản hồi khi tạo gói đăng ký");
     } catch (error) {
       console.error("Lỗi khi tạo gói đăng ký:", error);
@@ -178,9 +188,18 @@ export const subscriptionPlanService = {
 
       // Xử lý nhiều định dạng response có thể có
       if (response && typeof response === "object") {
-        // Trường hợp standard API response
-        if ("flag" in response && response.flag && response.data) {
-          return response.data;
+        // Trường hợp standard API response (camelCase or PascalCase)
+        const flag = response.flag ?? response.Flag;
+        const data = response.data ?? response.Data;
+        const message = response.message ?? response.Message;
+        
+        if (flag && data) {
+          return data;
+        }
+        
+        // If flag is false, throw error with message
+        if (flag === false) {
+          throw new Error(message || "Failed to update subscription plan");
         }
 
         // Trường hợp direct object
@@ -189,9 +208,9 @@ export const subscriptionPlanService = {
         }
 
         // Trường hợp wrapped trong data
-        if ("data" in response && response.data && typeof response.data === "object") {
-          if (response.data.id) {
-            return response.data;
+        if (data && typeof data === "object") {
+          if (data.id) {
+            return data;
           }
         }
       }

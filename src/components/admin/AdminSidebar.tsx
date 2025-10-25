@@ -61,7 +61,7 @@ export default function AdminSidebar() {
       userInfo?.userName ||
       (isAuthenticated && userId ? "Loading..." : "Admin User"),
     email: userInfo?.email || (isAuthenticated && userId ? "Loading..." : "admin@brightnest.com"),
-    avatar: resolveApiAssetUrl(userInfo?.profilePicture) || "https://github.com/shadcn.png",
+    avatar: resolveApiAssetUrl(userInfo?.profilePicture) || "/assets/foxHead_closedEye_tiltLeft.svg",
     onLogout: handleLogout, // Pass logout handler to NavUser
     onProfile: () => navigate("/profile"), // Add profile handler
   };
