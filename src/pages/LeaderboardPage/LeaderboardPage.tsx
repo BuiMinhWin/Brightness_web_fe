@@ -5,13 +5,9 @@ import { selectUserId, selectIsAuthenticated } from "../../store/slices/authSlic
 import GameFooter from "../../components/layout/GameFooter";
 import "./LeaderboardPage.css";
 import { ArrowLeft, Flame } from "lucide-react";
-import {
-  challengeService,
-  Challenge,
-  LeaderboardEntry as APILeaderboardEntry,
-  ChallengeParticipant,
-} from "../../services/challengeService";
+import { challengeService } from "../../services/challengeService";
 import { authService } from "../../services/authService";
+import { Challenge, LeaderboardEntry as APILeaderboardEntry } from "../../models/challenge";
 
 interface LeaderboardEntry {
   id: string;
@@ -19,7 +15,7 @@ interface LeaderboardEntry {
   name: string;
   points: number;
   avatar: string;
-  isCurrentUser?: boolean;
+  isCurrentUser: boolean;
 }
 
 type TabType = "today" | "this-week" | "all-time";
@@ -28,12 +24,12 @@ const LeaderboardPage: React.FC = () => {
   const navigate = useNavigate();
   const { missionId } = useParams<{ missionId: string }>();
   const [activeTab, setActiveTab] = useState<TabType>("all-time");
-  
+
   const authenticatedUserId = useSelector(selectUserId);
   const isAuthenticated = useSelector(selectIsAuthenticated);
 
   console.log("🔐 Leaderboard - Auth State:", { isAuthenticated, authenticatedUserId });
-  
+
   const [challenge, setChallenge] = useState<Challenge | null>(null);
   const [allLeaderboardData, setAllLeaderboardData] = useState<LeaderboardEntry[]>([]);
   const [currentUserData, setCurrentUserData] = useState<LeaderboardEntry | null>(null);
@@ -49,24 +45,28 @@ const LeaderboardPage: React.FC = () => {
   };
 
   // ✅ Resolve avatar URL - prioritize user's real avatar
-  const resolveAvatarUrl = (profilePicture: string | null | undefined, userName: string, userId: string): string => {
+  const resolveAvatarUrl = (
+    profilePicture: string | null | undefined,
+    userName: string,
+    userId: string
+  ): string => {
     // If user has a real avatar, use it
     if (profilePicture) {
       // Handle relative paths - prepend API base URL if needed
-      if (profilePicture.startsWith('/')) {
-        return `${import.meta.env.VITE_API_URL || ''}${profilePicture}`;
+      if (profilePicture.startsWith("/")) {
+        return `${import.meta.env.VITE_API_URL || ""}${profilePicture}`;
       }
       // If it's already a full URL or base64, use as is
       return profilePicture;
     }
-    
+
     // Fallback to UI Avatars with user's initial
     return getAvatarUrl(userName, userId);
   };
 
   const handleBack = () => {
     if (window.history.length > 1) {
-      navigate(-1); 
+      navigate(-1);
     } else {
       navigate("/");
     }
@@ -75,25 +75,27 @@ const LeaderboardPage: React.FC = () => {
   // ✅ Extract first name from full name (for Vietnamese names, take the last word)
   const extractFirstName = (fullName: string): string => {
     if (!fullName) return fullName;
-    
+
     const parts = fullName.trim().split(/\s+/);
-    
+
     // If only one word, return it
     if (parts.length === 1) return parts[0];
-    
+
     // For Vietnamese names, the first name is usually the last word
     return parts[parts.length - 1];
   };
 
   // ✅ Fetch user details and cache them
-  const fetchUserDetails = async (userId: string): Promise<{ name: string; fullName?: string; avatar?: string }> => {
+  const fetchUserDetails = async (
+    userId: string
+  ): Promise<{ name: string; fullName?: string; avatar?: string }> => {
     try {
       const userInfo = await authService.getUser(userId);
       const fullName = userInfo.fullName || userInfo.userName || `User ${userId.substring(0, 8)}`;
-      
+
       // If name is too long (more than 15 characters), use only first name
       const displayName = fullName.length > 15 ? extractFirstName(fullName) : fullName;
-      
+
       return {
         name: displayName,
         fullName: userInfo.fullName,
@@ -164,10 +166,10 @@ const LeaderboardPage: React.FC = () => {
         console.log("✅ API Leaderboard response:", apiLeaderboard);
       } catch (err) {
         console.warn("⚠️ Failed to fetch leaderboard from API, building from participants:", err);
-        
+
         // Fallback: Build leaderboard from participants
         apiLeaderboard = participants
-          .filter(p => p.totalPoints && p.totalPoints > 0)
+          .filter((p) => p.totalPoints && p.totalPoints > 0)
           .sort((a, b) => (b.totalPoints || 0) - (a.totalPoints || 0))
           .map((participant, index) => ({
             userId: participant.userId,
@@ -179,20 +181,15 @@ const LeaderboardPage: React.FC = () => {
       }
 
       // 4. Create a map for quick participant lookup
-      const participantMap = new Map(participants.map(p => [p.userId, p]));
+      const participantMap = new Map(participants.map((p) => [p.userId, p]));
 
       // 5. Fetch user details for all participants in leaderboard
-      const userDetailsPromises = apiLeaderboard.map(entry => 
-        fetchUserDetails(entry.userId)
-      );
+      const userDetailsPromises = apiLeaderboard.map((entry) => fetchUserDetails(entry.userId));
       const userDetailsArray = await Promise.all(userDetailsPromises);
 
       // 6. Create user details map
       const userDetailsMap = new Map(
-        apiLeaderboard.map((entry, index) => [
-          entry.userId,
-          userDetailsArray[index]
-        ])
+        apiLeaderboard.map((entry, index) => [entry.userId, userDetailsArray[index]])
       );
 
       // 7. Transform API leaderboard with user details and points
@@ -200,10 +197,10 @@ const LeaderboardPage: React.FC = () => {
         const userDetails = userDetailsMap.get(entry.userId);
         const participant = participantMap.get(entry.userId);
         const displayName = userDetails?.name || `User ${entry.userId.substring(0, 8)}`;
-        
+
         // Use totalPoints from either the leaderboard entry or participant data
         const points = entry.totalPoints || participant?.totalPoints || 0;
-        
+
         return {
           id: entry.userId,
           rank: entry.rank,
@@ -223,12 +220,12 @@ const LeaderboardPage: React.FC = () => {
         console.log("✅ Found current user in leaderboard:", currentUser);
         setCurrentUserData(currentUser);
         setAllLeaderboardData(transformedLeaderboard);
-        
+
         // Get current user's streak
         const userParticipant = participants.find(
           (p) => p.userId.toLowerCase() === authenticatedUserId.toLowerCase()
         );
-        
+
         if (userParticipant) {
           setCurrentUserStreak(userParticipant.currentStreak || 0);
           console.log("✅ Current user streak:", userParticipant.currentStreak);
@@ -239,7 +236,6 @@ const LeaderboardPage: React.FC = () => {
         setCurrentUserData(null);
         setCurrentUserStreak(0);
       }
-
     } catch (err) {
       console.error("❌ Error fetching leaderboard:", err);
       setError("Failed to load leaderboard. Please try again later.");
@@ -254,7 +250,7 @@ const LeaderboardPage: React.FC = () => {
         <div className="leaderboard-content">
           <div className="leaderboard-header">
             <button onClick={handleBack} className="back-button">
-               <ArrowLeft size={24} />
+              <ArrowLeft size={24} />
             </button>
             <div className="header-info">
               <h1 className="challenge-title">Loading...</h1>
@@ -403,7 +399,9 @@ const LeaderboardPage: React.FC = () => {
             <div className="leaderboard-list">
               {restOfLeaderboard.length === 0 ? (
                 <div style={{ textAlign: "center", padding: "40px", color: "#6b7280" }}>
-                  {allLeaderboardData.length <= 3 ? "Only top 3 participants" : "No other participants"}
+                  {allLeaderboardData.length <= 3
+                    ? "Only top 3 participants"
+                    : "No other participants"}
                 </div>
               ) : (
                 restOfLeaderboard.map((entry) => (
