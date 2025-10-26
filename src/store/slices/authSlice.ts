@@ -1,6 +1,7 @@
 import { createSlice, createAsyncThunk, PayloadAction } from "@reduxjs/toolkit";
 import { jwtDecode } from "jwt-decode";
 import { authService } from "../../services/authService";
+import { authStorage } from "../../utils/authStorage";
 import type {
   AuthData,
   ExternalLoginRequest,
@@ -280,23 +281,20 @@ export const fetchUserInfo = createAsyncThunk(
 );
 
 // Async thunk for logout (refresh token in httpOnly cookie)
-export const logoutUser = createAsyncThunk(
-  "auth/logoutUser",
-  async (_, { rejectWithValue }) => {
+export const logoutUser = createAsyncThunk("auth/logoutUser", async (_, { rejectWithValue }) => {
+  try {
+    // Refresh token is in httpOnly cookie - backend will read it
     try {
-      // Refresh token is in httpOnly cookie - backend will read it
-      try {
-        await authService.revokeToken();
-      } catch (err) {
-        console.warn("Failed to revoke refresh token:", err);
-      }
-
-      return true;
-    } catch (error) {
-      return rejectWithValue(error instanceof Error ? error.message : "Logout failed");
+      await authService.revokeToken();
+    } catch (err) {
+      console.warn("Failed to revoke refresh token:", err);
     }
+
+    return true;
+  } catch (error) {
+    return rejectWithValue(error instanceof Error ? error.message : "Logout failed");
   }
-);
+});
 
 // Note: loadAuthFromStorage has been removed - auto-login now uses silent token refresh via httpOnly cookies
 
@@ -319,6 +317,9 @@ const authSlice = createSlice({
       state.isLoading = false;
       state.lastActivity = null;
       state.sessionStartTime = null;
+
+      // Clear localStorage backup
+      authStorage.clearTokens();
     },
     setUserInfo: (state, action: PayloadAction<UserModel>) => {
       state.userInfo = action.payload;
@@ -352,10 +353,13 @@ const authSlice = createSlice({
         state.userRole = role;
         state.userId = userId;
         state.userInfo = userInfo;
-        
+
         // Set session tracking
         state.sessionStartTime = Date.now();
         state.lastActivity = Date.now();
+
+        // Save to localStorage as backup (for when cookies fail)
+        authStorage.saveTokens(authData);
       })
       .addCase(loginUser.rejected, (state, action) => {
         state.isLoading = false;
@@ -382,6 +386,9 @@ const authSlice = createSlice({
 
         state.sessionStartTime = Date.now();
         state.lastActivity = Date.now();
+
+        // Save to localStorage as backup (for when cookies fail)
+        authStorage.saveTokens(authData);
       })
       .addCase(loginWithExternalProvider.rejected, (state, action) => {
         state.isLoading = false;
@@ -406,10 +413,13 @@ const authSlice = createSlice({
         state.userRole = role;
         state.userId = userId;
         state.userInfo = userInfo;
-        
+
         // Set session tracking
         state.sessionStartTime = Date.now();
         state.lastActivity = Date.now();
+
+        // Save to localStorage as backup (for when cookies fail)
+        authStorage.saveTokens(authData);
       })
       .addCase(registerUser.rejected, (state, action) => {
         state.isLoading = false;
@@ -432,9 +442,12 @@ const authSlice = createSlice({
         state.userRole = role;
         state.userId = userId;
         state.isAuthenticated = true;
-        
+
         // Update activity on successful refresh
         state.lastActivity = Date.now();
+
+        // Save refreshed tokens to localStorage backup
+        authStorage.saveTokens(authData);
       })
       .addCase(refreshAuthToken.rejected, (state, action) => {
         state.isRefreshing = false;
@@ -466,7 +479,14 @@ const authSlice = createSlice({
   },
 });
 
-export const { clearError, clearAuth, setUserInfo, updateLastActivity, setTabActive, setSessionStartTime } = authSlice.actions;
+export const {
+  clearError,
+  clearAuth,
+  setUserInfo,
+  updateLastActivity,
+  setTabActive,
+  setSessionStartTime,
+} = authSlice.actions;
 
 // Selectors
 export const selectAuth = (state: { auth: AuthState }) => state.auth;
