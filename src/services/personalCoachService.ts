@@ -262,7 +262,7 @@ export interface CheckConflictsRequest {
 export const personalCoachService = {
   /** Generate AI-powered workout schedule */
   async generateSchedule(request: GenerateScheduleRequest): Promise<WorkoutScheduleResponse> {
-    return httpRequest<WorkoutScheduleResponse>("/coach/Schedule/generate", {
+    return httpRequest<WorkoutScheduleResponse>("/coach/api/Schedule/generate", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(request),
@@ -271,7 +271,7 @@ export const personalCoachService = {
 
   /** Check for conflicts with existing workouts before generating */
   async checkScheduleConflicts(request: CheckConflictsRequest): Promise<ScheduleConflictInfo> {
-    return httpRequest<ScheduleConflictInfo>("/coach/Schedule/check-conflicts", {
+    return httpRequest<ScheduleConflictInfo>("/coach/api/Schedule/check-conflicts", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(request),
@@ -280,14 +280,14 @@ export const personalCoachService = {
 
   /** Get schedule details by ID */
   async getSchedule(scheduleId: string): Promise<WorkoutScheduleResponse> {
-    return httpRequest<WorkoutScheduleResponse>(`/coach/Schedule/${scheduleId}`, {
+    return httpRequest<WorkoutScheduleResponse>(`/coach/api/Schedule/${scheduleId}`, {
       method: "GET",
     });
   },
 
   /** Get all schedules for a user */
   async getUserSchedules(userId: string): Promise<WorkoutScheduleResponse[]> {
-    return httpRequest<WorkoutScheduleResponse[]>(`/coach/Schedule/user/${userId}`, {
+    return httpRequest<WorkoutScheduleResponse[]>(`/coach/api/Schedule/user/${userId}`, {
       method: "GET",
     });
   },
@@ -298,7 +298,7 @@ export const personalCoachService = {
     dayNumber: number,
     userRequest: string
   ): Promise<ModifiedDayResponse> {
-    return httpRequest<ModifiedDayResponse>(`/coach/Schedule/${scheduleId}/day/${dayNumber}`, {
+    return httpRequest<ModifiedDayResponse>(`/coach/api/Schedule/${scheduleId}/day/${dayNumber}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(userRequest),
@@ -310,7 +310,7 @@ export const personalCoachService = {
     scheduleId: string,
     request: Omit<AdjustDifficultyRequest, "scheduleId">
   ): Promise<ScheduleAdjustmentResponse> {
-    return httpRequest<ScheduleAdjustmentResponse>(`/coach/Schedule/${scheduleId}/adjust`, {
+    return httpRequest<ScheduleAdjustmentResponse>(`/coach/api/Schedule/${scheduleId}/adjust`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(request),
@@ -324,7 +324,7 @@ export const personalCoachService = {
     actualSets?: number,
     actualReps?: number
   ): Promise<{ message: string }> {
-    return httpRequest<{ message: string }>(`/coach/Schedule/exercise/${exerciseId}/complete`, {
+    return httpRequest<{ message: string }>(`/coach/api/Schedule/exercise/${exerciseId}/complete`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ completed, actualSets, actualReps }),
@@ -344,7 +344,7 @@ export const personalCoachService = {
     notes?: string;
     contextTags?: string[];
   }): Promise<{ message: string }> {
-    return httpRequest<{ message: string }>("/coach/Schedule/feedback", {
+    return httpRequest<{ message: string }>("/coach/api/Schedule/feedback", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(feedback),
@@ -361,7 +361,7 @@ export const personalCoachService = {
     newDifficultyLevel?: string;
     newAvailableDays?: string[];
   }): Promise<WorkoutScheduleResponse> {
-    return httpRequest<WorkoutScheduleResponse>("/coach/Schedule/regenerate", {
+    return httpRequest<WorkoutScheduleResponse>("/coach/api/Schedule/regenerate", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(request),
@@ -388,7 +388,7 @@ export const personalCoachService = {
       orderIndex: number;
     }>;
   }): Promise<ScheduleDayDetail> {
-    return httpRequest<ScheduleDayDetail>("/coach/Schedule/day/edit", {
+    return httpRequest<ScheduleDayDetail>("/coach/api/Schedule/day/edit", {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(request),
@@ -397,14 +397,14 @@ export const personalCoachService = {
 
   /** Get schedule history */
   async getScheduleHistory(userId: string) {
-    return httpRequest(`/coach/Schedule/history/user/${userId}`, {
+    return httpRequest(`/coach/api/Schedule/history/user/${userId}`, {
       method: "GET",
     });
   },
 
   /** Get schedule analytics */
   async getScheduleAnalytics(userId: string) {
-    return httpRequest(`/coach/Schedule/analytics/user/${userId}`, {
+    return httpRequest(`/coach/api/Schedule/analytics/user/${userId}`, {
       method: "GET",
     });
   },
@@ -428,7 +428,7 @@ export const personalCoachService = {
     favoriteExercises: string[];
     medicalConditions?: string;
   }) {
-    return httpRequest(`/coach/UserProfile`, {
+    return httpRequest(`/coach/api/UserProfile`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(request),
@@ -437,7 +437,7 @@ export const personalCoachService = {
 
   /** Get user profile */
   async getUserProfile(userId: string): Promise<any> {
-    return httpRequest(`/coach/UserProfile/${userId}`, {
+    return httpRequest(`/coach/api/UserProfile/${userId}`, {
       method: "GET",
     });
   },
@@ -446,7 +446,7 @@ export const personalCoachService = {
   async getLatestHealthMetrics(userId: string) {
     try {
       // This would ideally be a dedicated endpoint, but we can try the OCR health profile endpoint
-      return await httpRequest(`/ai-ocr/OCR/users/${userId}/health-profile`, {
+      return await httpRequest(`/ai-ocr/api/OCR/users/${userId}/health-profile`, {
         method: "GET",
       });
     } catch (error) {
@@ -460,15 +460,19 @@ export const personalCoachService = {
     file: File,
     userId: string,
     prompt?: string,
-    dataType: 'lab_result' | 'fitness_measurement' | 'general' = 'lab_result'
+    dataType: "lab_result" | "fitness_measurement" | "general" = "lab_result"
   ): Promise<any> {
     const formData = new FormData();
     formData.append("file", file);
     formData.append("UserId", userId);
-    formData.append("Prompt", prompt || "Extract all body measurements, weight, muscle mass, body fat percentage, and any other health metrics from this health document.");
+    formData.append(
+      "Prompt",
+      prompt ||
+        "Extract all body measurements, weight, muscle mass, body fat percentage, and any other health metrics from this health document."
+    );
     formData.append("DataType", dataType);
 
-    return httpRequest("/ai-ocr/OCR/ai-vision-upload", {
+    return httpRequest("/ai-ocr/api/OCR/ai-vision-upload", {
       method: "POST",
       body: formData,
       skipContentType: true, // Let browser set multipart/form-data with boundary
@@ -478,19 +482,19 @@ export const personalCoachService = {
   /** Validate image/PDF file before upload */
   validateHealthImage(file: File): { valid: boolean; error?: string } {
     const maxSize = 10 * 1024 * 1024; // 10MB
-    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'application/pdf'];
+    const allowedTypes = ["image/jpeg", "image/jpg", "image/png", "image/webp", "application/pdf"];
 
     if (!allowedTypes.includes(file.type)) {
       return {
         valid: false,
-        error: 'Invalid file type. Please upload an image (JPG, PNG, WebP) or PDF file.',
+        error: "Invalid file type. Please upload an image (JPG, PNG, WebP) or PDF file.",
       };
     }
 
     if (file.size > maxSize) {
       return {
         valid: false,
-        error: 'File size too large. Maximum size is 10MB.',
+        error: "File size too large. Maximum size is 10MB.",
       };
     }
 
@@ -502,8 +506,8 @@ export const personalCoachService = {
   // AI Usage Limits (Legacy)
   getAIUsageLimits: async (userId: string): Promise<AIUsageLimits> => {
     const response = await httpRequest<{ success: boolean; data: AIUsageLimits }>(
-      `/coach/schedule/ai-usage-limits/${userId}`,
-      { method: 'GET' }
+      `/coach/api/schedule/ai-usage-limits/${userId}`,
+      { method: "GET" }
     );
     return response.data;
   },
@@ -511,138 +515,156 @@ export const personalCoachService = {
   // AI Credit Balance (NEW)
   getAICreditBalance: async (userId: string): Promise<AICreditBalance> => {
     const response = await httpRequest<{ success: boolean; data: AICreditBalance }>(
-      `/coach/schedule/ai-credit-balance/${userId}`,
-      { method: 'GET' }
+      `/coach/api/schedule/ai-credit-balance/${userId}`,
+      { method: "GET" }
     );
     return response.data;
   },
 
   // AI Credit History
   getAICreditHistory: async (userId: string, limit: number = 50): Promise<CreditHistoryItem[]> => {
-    const response = await httpRequest<{ success: boolean; data: CreditHistoryItem[]; count: number }>(
-      `/coach/schedule/ai-credit-history/${userId}?limit=${limit}`,
-      { method: 'GET' }
-    );
+    const response = await httpRequest<{
+      success: boolean;
+      data: CreditHistoryItem[];
+      count: number;
+    }>(`/coach/api/schedule/ai-credit-history/${userId}?limit=${limit}`, { method: "GET" });
     return response.data;
   },
 
   // Exercise Library
   getExerciseLibrary: async (filters?: ExerciseFilters): Promise<ExerciseLibraryDTO[]> => {
     const params = new URLSearchParams();
-    if (filters?.category) params.append('category', filters.category);
-    if (filters?.difficulty) params.append('difficulty', filters.difficulty);
-    if (filters?.searchQuery) params.append('searchQuery', filters.searchQuery);
-    
-    const query = params.toString() ? `?${params.toString()}` : '';
-    const response = await httpRequest<{ success: boolean; data: ExerciseLibraryDTO[]; count: number }>(
-      `/coach/exercise-library${query}`,
-      { method: 'GET' }
-    );
+    if (filters?.category) params.append("category", filters.category);
+    if (filters?.difficulty) params.append("difficulty", filters.difficulty);
+    if (filters?.searchQuery) params.append("searchQuery", filters.searchQuery);
+
+    const query = params.toString() ? `?${params.toString()}` : "";
+    const response = await httpRequest<{
+      success: boolean;
+      data: ExerciseLibraryDTO[];
+      count: number;
+    }>(`/coach/api/exercise-library${query}`, { method: "GET" });
     return response.data;
   },
 
   getExerciseById: async (id: string): Promise<ExerciseLibraryDTO> => {
     const response = await httpRequest<{ success: boolean; data: ExerciseLibraryDTO }>(
-      `/coach/exercise-library/${id}`,
-      { method: 'GET' }
+      `/coach/api/exercise-library/${id}`,
+      { method: "GET" }
     );
     return response.data;
   },
 
   searchExercises: async (query: string): Promise<ExerciseLibraryDTO[]> => {
-    const response = await httpRequest<{ success: boolean; data: ExerciseLibraryDTO[]; count: number }>(
-      `/coach/exercise-library/search?q=${encodeURIComponent(query)}`,
-      { method: 'GET' }
-    );
+    const response = await httpRequest<{
+      success: boolean;
+      data: ExerciseLibraryDTO[];
+      count: number;
+    }>(`/coach/api/exercise-library/search?q=${encodeURIComponent(query)}`, { method: "GET" });
     return response.data;
   },
 
   getExerciseCategories: async (): Promise<string[]> => {
     const response = await httpRequest<{ success: boolean; data: string[] }>(
-      `/coach/exercise-library/categories`,
-      { method: 'GET' }
+      `/coach/api/exercise-library/categories`,
+      { method: "GET" }
     );
     return response.data;
   },
 
   getAISuggestions: async (request: ExerciseSuggestionRequest): Promise<ExerciseLibraryDTO[]> => {
     const params = new URLSearchParams();
-    params.append('focusArea', request.focusArea);
-    params.append('difficulty', request.difficulty);
-    if (request.count) params.append('count', request.count.toString());
-    
-    const response = await httpRequest<{ success: boolean; data: ExerciseLibraryDTO[]; count: number; note: string }>(
-      `/coach/exercise-library/suggestions?${params.toString()}`,
-      { method: 'GET' }
-    );
+    params.append("focusArea", request.focusArea);
+    params.append("difficulty", request.difficulty);
+    if (request.count) params.append("count", request.count.toString());
+
+    const response = await httpRequest<{
+      success: boolean;
+      data: ExerciseLibraryDTO[];
+      count: number;
+      note: string;
+    }>(`/coach/api/exercise-library/suggestions?${params.toString()}`, { method: "GET" });
     return response.data;
   },
 
   // Workout Templates
   getWorkoutTemplates: async (filters?: TemplateFilters): Promise<WorkoutTemplateDTO[]> => {
     const params = new URLSearchParams();
-    if (filters?.focusArea) params.append('focusArea', filters.focusArea);
-    if (filters?.difficulty) params.append('difficulty', filters.difficulty);
-    
-    const query = params.toString() ? `?${params.toString()}` : '';
-    const response = await httpRequest<{ success: boolean; data: WorkoutTemplateDTO[]; count: number }>(
-      `/coach/workout-templates${query}`,
-      { method: 'GET' }
-    );
+    if (filters?.focusArea) params.append("focusArea", filters.focusArea);
+    if (filters?.difficulty) params.append("difficulty", filters.difficulty);
+
+    const query = params.toString() ? `?${params.toString()}` : "";
+    const response = await httpRequest<{
+      success: boolean;
+      data: WorkoutTemplateDTO[];
+      count: number;
+    }>(`/coach/api/workout-templates${query}`, { method: "GET" });
     return response.data;
   },
 
   getTemplateById: async (id: string): Promise<WorkoutTemplateDTO> => {
     const response = await httpRequest<{ success: boolean; data: WorkoutTemplateDTO }>(
-      `/coach/workout-templates/${id}`,
-      { method: 'GET' }
+      `/coach/api/workout-templates/${id}`,
+      { method: "GET" }
     );
     return response.data;
   },
 
   // Manual Schedule Management
-  createManualSchedule: async (request: ManualScheduleRequest): Promise<WorkoutScheduleResponse> => {
+  createManualSchedule: async (
+    request: ManualScheduleRequest
+  ): Promise<WorkoutScheduleResponse> => {
     const response = await httpRequest<{ success: boolean; data: WorkoutScheduleResponse }>(
-      `/coach/schedule/manual`,
+      `/coach/api/schedule/manual`,
       {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(request),
       }
     );
     return response.data;
   },
 
-  addDayFromTemplate: async (scheduleId: string, request: AddDayFromTemplateRequest): Promise<WorkoutDayResponse> => {
+  addDayFromTemplate: async (
+    scheduleId: string,
+    request: AddDayFromTemplateRequest
+  ): Promise<WorkoutDayResponse> => {
     const response = await httpRequest<{ success: boolean; data: WorkoutDayResponse }>(
-      `/coach/schedule/${scheduleId}/days/from-template`,
+      `/coach/api/schedule/${scheduleId}/days/from-template`,
       {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(request),
       }
     );
     return response.data;
   },
 
-  addCustomDay: async (scheduleId: string, request: AddCustomDayRequest): Promise<WorkoutDayResponse> => {
+  addCustomDay: async (
+    scheduleId: string,
+    request: AddCustomDayRequest
+  ): Promise<WorkoutDayResponse> => {
     const response = await httpRequest<{ success: boolean; data: WorkoutDayResponse }>(
-      `/coach/schedule/${scheduleId}/days/custom`,
+      `/coach/api/schedule/${scheduleId}/days/custom`,
       {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(request),
       }
     );
     return response.data;
   },
 
-  updateWorkoutDay: async (scheduleId: string, dayId: string, request: UpdateWorkoutDayRequest): Promise<WorkoutDayResponse> => {
+  updateWorkoutDay: async (
+    scheduleId: string,
+    dayId: string,
+    request: UpdateWorkoutDayRequest
+  ): Promise<WorkoutDayResponse> => {
     const response = await httpRequest<{ success: boolean; data: WorkoutDayResponse }>(
-      `/coach/schedule/${scheduleId}/days/${dayId}`,
+      `/coach/api/schedule/${scheduleId}/days/${dayId}`,
       {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(request),
       }
     );
@@ -651,8 +673,8 @@ export const personalCoachService = {
 
   deleteWorkoutDay: async (scheduleId: string, dayId: string): Promise<void> => {
     await httpRequest<{ success: boolean; message: string }>(
-      `/coach/schedule/${scheduleId}/days/${dayId}`,
-      { method: 'DELETE' }
+      `/coach/api/schedule/${scheduleId}/days/${dayId}`,
+      { method: "DELETE" }
     );
   },
 };
