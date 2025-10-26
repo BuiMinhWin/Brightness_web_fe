@@ -35,7 +35,7 @@ interface TaskWithProgress extends ChallengeTask {
   isCompleted: boolean;
   startDate?: string;
   endDate?: string;
-  taskStatus?: 'upcoming' | 'available' | 'overdue';
+  taskStatus?: "upcoming" | "available" | "overdue";
   penaltyPercentage?: number;
 }
 
@@ -58,7 +58,7 @@ const YourDetailPage: React.FC = () => {
   const authenticatedUserId = useSelector(selectUserId);
   const isAuthenticated = useSelector(selectIsAuthenticated);
 
-  console.log("🔐 Your Detail - Auth State:", { isAuthenticated, authenticatedUserId });
+  console.log("[YourDetailPage] Auth state:", { isAuthenticated, authenticatedUserId });
   
   const [challenge, setChallenge] = useState<Challenge | null>(null);
   const [participant, setParticipant] = useState<ChallengeParticipant | null>(null);
@@ -518,7 +518,7 @@ const YourDetailPage: React.FC = () => {
       }, 0);
       const newPercentageCompleted = Math.round((newCompletedCount / tasks.length) * 100);
 
-      setParticipant((prev) =>
+      setParticipant((prev: ChallengeParticipant | null) =>
         prev
           ? {
               ...prev,
@@ -700,7 +700,7 @@ const YourDetailPage: React.FC = () => {
                     <h3>How to Participate</h3>
                   </div>
                   <ul className="info-list">
-                    {rules.howToParticipate.map((step, index) => (
+                    {rules.howToParticipate.map((step: string, index: number) => (
                       <li key={index}>{step}</li>
                     ))}
                   </ul>
@@ -752,7 +752,7 @@ const YourDetailPage: React.FC = () => {
                     <h3>Challenge Rules</h3>
                   </div>
                   <ul className="info-list">
-                    {rules.ruleText.map((rule, index) => (
+                    {rules.ruleText.map((rule: string, index: number) => (
                       <li key={index}>{rule}</li>
                     ))}
                   </ul>

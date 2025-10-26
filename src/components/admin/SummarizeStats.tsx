@@ -86,6 +86,7 @@ const formatCurrency = (value: number): string =>
   }).format(value);
 
 const REVENUE_CHART_SCALE = 1_000_000;
+const MAX_AI_USAGE_FILL_DAYS = 45;
 type AiUsageRow = AiUsageDailyPoint & { dateLabel: string };
 
 const SummarizeStats: React.FC = () => {
@@ -288,15 +289,60 @@ const SummarizeStats: React.FC = () => {
 
         if (aiUsageSummary) {
           console.log("AI usage summary:", aiUsageSummary);
-          const normalizedRows: AiUsageRow[] = aiUsageSummary.daily.map(
-            (point: AiUsageDailyPoint) => ({
-              ...point,
-              dateLabel: new Date(`${point.date}T00:00:00Z`).toLocaleDateString("vi-VN", {
-                day: "2-digit",
-                month: "short",
-              }),
-            })
-          );
+          const usageStart = new Date(`${aiUsageSummary.startDate}T00:00:00Z`);
+          const usageEnd = new Date(`${aiUsageSummary.endDate}T00:00:00Z`);
+          const dailyMap = new Map<string, AiUsageDailyPoint>();
+
+          aiUsageSummary.daily.forEach((point: AiUsageDailyPoint) => {
+            dailyMap.set(point.date, point);
+          });
+
+          const normalizedRows: AiUsageRow[] = [];
+          const hasValidRange =
+            !Number.isNaN(usageStart.getTime()) &&
+            !Number.isNaN(usageEnd.getTime()) &&
+            usageStart <= usageEnd;
+
+          const daysInRange = hasValidRange
+            ? Math.floor((usageEnd.getTime() - usageStart.getTime()) / (1000 * 60 * 60 * 24)) + 1
+            : 0;
+          const shouldFillMissingDays =
+            hasValidRange && daysInRange > 0 && daysInRange <= MAX_AI_USAGE_FILL_DAYS;
+
+          if (shouldFillMissingDays) {
+            const cursor = new Date(usageStart);
+
+            while (cursor <= usageEnd) {
+              const isoKey = cursor.toISOString().split("T")[0];
+              const point = dailyMap.get(isoKey) ?? { date: isoKey, tokens: 0, cost: 0 };
+
+              normalizedRows.push({
+                ...point,
+                tokens: point.tokens ?? 0,
+                cost: point.cost ?? 0,
+                dateLabel: cursor.toLocaleDateString("vi-VN", {
+                  day: "2-digit",
+                  month: "short",
+                }),
+              });
+
+              cursor.setDate(cursor.getDate() + 1);
+            }
+          } else {
+            aiUsageSummary.daily
+              .sort((a, b) => a.date.localeCompare(b.date))
+              .forEach((point: AiUsageDailyPoint) => {
+                normalizedRows.push({
+                  ...point,
+                  tokens: point.tokens ?? 0,
+                  cost: point.cost ?? 0,
+                  dateLabel: new Date(`${point.date}T00:00:00Z`).toLocaleDateString("vi-VN", {
+                    day: "2-digit",
+                    month: "short",
+                  }),
+                });
+              });
+          }
 
           setAiUsageRows(normalizedRows);
           setTotalAiTokens(aiUsageSummary.totalTokens);
@@ -709,39 +755,81 @@ const SummarizeStats: React.FC = () => {
             </div>
           )}
           <div style={{ marginTop: "32px" }}>
-            <div style={{ height: "320px", width: "100%" }}>
-              <LineChart
-                dataset={
-                  (aiUsageRows.length > 0 ? aiUsageLineDataset : []) as readonly Record<
-                    string,
-                    any
-                  >[]
-                }
-                xAxis={[
-                  {
-                    scaleType: "point",
-                    dataKey: "label",
-                  },
-                ]}
-                series={[
-                  {
-                    dataKey: "tokens",
-                    label: "Tokens",
-                    color: "rgba(59, 130, 246, 0.85)",
-                    showMark: true,
-                  },
-                ]}
-                height={320}
-                grid={{ horizontal: true }}
-                sx={{
-                  "& .MuiChartsAxis-root": {
-                    "& .MuiChartsAxis-tick": { fill: "#076553" },
-                    "& .MuiChartsAxis-label": { fill: "#076553" },
-                  },
-                  "& .MuiChartsGrid-root": { stroke: "#E5E7EB" },
-                }}
-              />
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                marginBottom: "16px",
+              }}
+            >
+              <h4 style={{ margin: 0, color: "#076553" }}>AI token usage</h4>
+              {aiUsageRangeLabel ? (
+                <div
+                  style={{
+                    backgroundColor: "#F3F4F6",
+                    padding: "6px 10px",
+                    borderRadius: "999px",
+                    fontSize: "12px",
+                    color: "#374151",
+                  }}
+                >
+                  {aiUsageRangeLabel}
+                </div>
+              ) : null}
             </div>
+            {aiUsageLineDataset.length === 0 ? (
+              <div
+                style={{
+                  height: "200px",
+                  backgroundColor: "#F9FAFB",
+                  borderRadius: "8px",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  color: "#6B7280",
+                }}
+              >
+                No AI token usage recorded for this range.
+              </div>
+            ) : (
+              <div style={{ height: "320px", width: "100%" }}>
+                <LineChart
+                  dataset={aiUsageLineDataset as readonly Record<string, any>[]}
+                  xAxis={[
+                    {
+                      scaleType: "point",
+                      dataKey: "label",
+                    },
+                  ]}
+                  yAxis={[
+                    {
+                      label: "Tokens",
+                    },
+                  ]}
+                  series={[
+                    {
+                      dataKey: "tokens",
+                      label: "Tokens per day",
+                      color: "rgba(59, 130, 246, 0.85)",
+                      valueFormatter: (value?: number | null) =>
+                        value != null ? formatNumber(value) : "",
+                      showMark: false,
+                      curve: "monotoneX",
+                    },
+                  ]}
+                  height={320}
+                  grid={{ horizontal: true }}
+                  sx={{
+                    "& .MuiChartsAxis-root": {
+                      "& .MuiChartsAxis-tick": { fill: "#076553" },
+                      "& .MuiChartsAxis-label": { fill: "#076553" },
+                    },
+                    "& .MuiChartsGrid-root": { stroke: "#E5E7EB" },
+                  }}
+                />
+              </div>
+            )}
           </div>
         </div>
       </div>

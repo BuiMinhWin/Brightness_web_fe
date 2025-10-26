@@ -468,3 +468,20 @@ export const challengeService = {
     }
   },
 };
+
+export type {
+  Achievement,
+  AchievementDTO,
+  Challenge,
+  ChallengeDTO,
+  ChallengeParticipant,
+  ChallengeParticipantDTO,
+  ChallengeRule,
+  ChallengeRuleDTO,
+  ChallengeTask,
+  ChallengeTaskDTO,
+  ChallengeTaskProgress,
+  ChallengeTaskProgressDTO,
+  LeaderboardEntry,
+  UserChallengeStats,
+} from "../models/challenge";
