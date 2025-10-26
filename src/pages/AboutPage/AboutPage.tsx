@@ -1,6 +1,7 @@
 import React from "react";
 import "./AboutPage.css";
 import logo from "/assets/LogoWhite.png";
+import GameFooter from "@/components/layout/GameFooter";
 
 const AboutPage: React.FC = () => {
   return (
@@ -241,7 +242,8 @@ const AboutPage: React.FC = () => {
         </section>
       </main>
       {/* Footer */}
-      <footer className="bg-[#05644c] text-white py-6">
+      <GameFooter />
+      {/* <footer className="bg-[#05644c] text-white py-6">
         <div
           className="max-w-4xl mx-auto px-6 grid md:grid-cols-2 items-center   "
           style={{
@@ -288,7 +290,7 @@ const AboutPage: React.FC = () => {
             </div>
           </div>
         </div>
-      </footer>
+      </footer> */}
     </div>
   );
 };
