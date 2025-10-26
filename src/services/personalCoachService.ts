@@ -262,7 +262,7 @@ export interface CheckConflictsRequest {
 export const personalCoachService = {
   /** Generate AI-powered workout schedule */
   async generateSchedule(request: GenerateScheduleRequest): Promise<WorkoutScheduleResponse> {
-    return httpRequest<WorkoutScheduleResponse>("/coach/api/Schedule/generate", {
+    return httpRequest<WorkoutScheduleResponse>("/coach/Schedule/generate", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(request),
@@ -271,7 +271,7 @@ export const personalCoachService = {
 
   /** Check for conflicts with existing workouts before generating */
   async checkScheduleConflicts(request: CheckConflictsRequest): Promise<ScheduleConflictInfo> {
-    return httpRequest<ScheduleConflictInfo>("/coach/api/Schedule/check-conflicts", {
+    return httpRequest<ScheduleConflictInfo>("/coach/Schedule/check-conflicts", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(request),
@@ -280,14 +280,14 @@ export const personalCoachService = {
 
   /** Get schedule details by ID */
   async getSchedule(scheduleId: string): Promise<WorkoutScheduleResponse> {
-    return httpRequest<WorkoutScheduleResponse>(`/coach/api/Schedule/${scheduleId}`, {
+    return httpRequest<WorkoutScheduleResponse>(`/coach/Schedule/${scheduleId}`, {
       method: "GET",
     });
   },
 
   /** Get all schedules for a user */
   async getUserSchedules(userId: string): Promise<WorkoutScheduleResponse[]> {
-    return httpRequest<WorkoutScheduleResponse[]>(`/coach/api/Schedule/user/${userId}`, {
+    return httpRequest<WorkoutScheduleResponse[]>(`/coach/Schedule/user/${userId}`, {
       method: "GET",
     });
   },
@@ -298,7 +298,7 @@ export const personalCoachService = {
     dayNumber: number,
     userRequest: string
   ): Promise<ModifiedDayResponse> {
-    return httpRequest<ModifiedDayResponse>(`/coach/api/Schedule/${scheduleId}/day/${dayNumber}`, {
+    return httpRequest<ModifiedDayResponse>(`/coach/Schedule/${scheduleId}/day/${dayNumber}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(userRequest),
@@ -310,7 +310,7 @@ export const personalCoachService = {
     scheduleId: string,
     request: Omit<AdjustDifficultyRequest, "scheduleId">
   ): Promise<ScheduleAdjustmentResponse> {
-    return httpRequest<ScheduleAdjustmentResponse>(`/coach/api/Schedule/${scheduleId}/adjust`, {
+    return httpRequest<ScheduleAdjustmentResponse>(`/coach/Schedule/${scheduleId}/adjust`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(request),
@@ -324,7 +324,7 @@ export const personalCoachService = {
     actualSets?: number,
     actualReps?: number
   ): Promise<{ message: string }> {
-    return httpRequest<{ message: string }>(`/coach/api/Schedule/exercise/${exerciseId}/complete`, {
+    return httpRequest<{ message: string }>(`/coach/Schedule/exercise/${exerciseId}/complete`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ completed, actualSets, actualReps }),
@@ -344,7 +344,7 @@ export const personalCoachService = {
     notes?: string;
     contextTags?: string[];
   }): Promise<{ message: string }> {
-    return httpRequest<{ message: string }>("/coach/api/Schedule/feedback", {
+    return httpRequest<{ message: string }>("/coach/Schedule/feedback", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(feedback),
@@ -361,7 +361,7 @@ export const personalCoachService = {
     newDifficultyLevel?: string;
     newAvailableDays?: string[];
   }): Promise<WorkoutScheduleResponse> {
-    return httpRequest<WorkoutScheduleResponse>("/coach/api/Schedule/regenerate", {
+    return httpRequest<WorkoutScheduleResponse>("/coach/Schedule/regenerate", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(request),
@@ -388,7 +388,7 @@ export const personalCoachService = {
       orderIndex: number;
     }>;
   }): Promise<ScheduleDayDetail> {
-    return httpRequest<ScheduleDayDetail>("/coach/api/Schedule/day/edit", {
+    return httpRequest<ScheduleDayDetail>("/coach/Schedule/day/edit", {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(request),
@@ -397,14 +397,14 @@ export const personalCoachService = {
 
   /** Get schedule history */
   async getScheduleHistory(userId: string) {
-    return httpRequest(`/coach/api/Schedule/history/user/${userId}`, {
+    return httpRequest(`/coach/Schedule/history/user/${userId}`, {
       method: "GET",
     });
   },
 
   /** Get schedule analytics */
   async getScheduleAnalytics(userId: string) {
-    return httpRequest(`/coach/api/Schedule/analytics/user/${userId}`, {
+    return httpRequest(`/coach/Schedule/analytics/user/${userId}`, {
       method: "GET",
     });
   },
@@ -428,7 +428,7 @@ export const personalCoachService = {
     favoriteExercises: string[];
     medicalConditions?: string;
   }) {
-    return httpRequest(`/coach/api/UserProfile`, {
+    return httpRequest(`/coach/UserProfile`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(request),
@@ -437,7 +437,7 @@ export const personalCoachService = {
 
   /** Get user profile */
   async getUserProfile(userId: string): Promise<any> {
-    return httpRequest(`/coach/api/UserProfile/${userId}`, {
+    return httpRequest(`/coach/UserProfile/${userId}`, {
       method: "GET",
     });
   },
@@ -446,7 +446,7 @@ export const personalCoachService = {
   async getLatestHealthMetrics(userId: string) {
     try {
       // This would ideally be a dedicated endpoint, but we can try the OCR health profile endpoint
-      return await httpRequest(`/ai-ocr/api/OCR/users/${userId}/health-profile`, {
+      return await httpRequest(`/ai-ocr/OCR/users/${userId}/health-profile`, {
         method: "GET",
       });
     } catch (error) {
@@ -468,7 +468,7 @@ export const personalCoachService = {
     formData.append("Prompt", prompt || "Extract all body measurements, weight, muscle mass, body fat percentage, and any other health metrics from this health document.");
     formData.append("DataType", dataType);
 
-    return httpRequest("/ai-ocr/api/OCR/ai-vision-upload", {
+    return httpRequest("/ai-ocr/OCR/ai-vision-upload", {
       method: "POST",
       body: formData,
       skipContentType: true, // Let browser set multipart/form-data with boundary
@@ -502,7 +502,7 @@ export const personalCoachService = {
   // AI Usage Limits (Legacy)
   getAIUsageLimits: async (userId: string): Promise<AIUsageLimits> => {
     const response = await httpRequest<{ success: boolean; data: AIUsageLimits }>(
-      `/coach/api/schedule/ai-usage-limits/${userId}`,
+      `/coach/schedule/ai-usage-limits/${userId}`,
       { method: 'GET' }
     );
     return response.data;
@@ -511,7 +511,7 @@ export const personalCoachService = {
   // AI Credit Balance (NEW)
   getAICreditBalance: async (userId: string): Promise<AICreditBalance> => {
     const response = await httpRequest<{ success: boolean; data: AICreditBalance }>(
-      `/coach/api/schedule/ai-credit-balance/${userId}`,
+      `/coach/schedule/ai-credit-balance/${userId}`,
       { method: 'GET' }
     );
     return response.data;
@@ -520,7 +520,7 @@ export const personalCoachService = {
   // AI Credit History
   getAICreditHistory: async (userId: string, limit: number = 50): Promise<CreditHistoryItem[]> => {
     const response = await httpRequest<{ success: boolean; data: CreditHistoryItem[]; count: number }>(
-      `/coach/api/schedule/ai-credit-history/${userId}?limit=${limit}`,
+      `/coach/schedule/ai-credit-history/${userId}?limit=${limit}`,
       { method: 'GET' }
     );
     return response.data;
@@ -535,7 +535,7 @@ export const personalCoachService = {
     
     const query = params.toString() ? `?${params.toString()}` : '';
     const response = await httpRequest<{ success: boolean; data: ExerciseLibraryDTO[]; count: number }>(
-      `/coach/api/exercise-library${query}`,
+      `/coach/exercise-library${query}`,
       { method: 'GET' }
     );
     return response.data;
@@ -543,7 +543,7 @@ export const personalCoachService = {
 
   getExerciseById: async (id: string): Promise<ExerciseLibraryDTO> => {
     const response = await httpRequest<{ success: boolean; data: ExerciseLibraryDTO }>(
-      `/coach/api/exercise-library/${id}`,
+      `/coach/exercise-library/${id}`,
       { method: 'GET' }
     );
     return response.data;
@@ -551,7 +551,7 @@ export const personalCoachService = {
 
   searchExercises: async (query: string): Promise<ExerciseLibraryDTO[]> => {
     const response = await httpRequest<{ success: boolean; data: ExerciseLibraryDTO[]; count: number }>(
-      `/coach/api/exercise-library/search?q=${encodeURIComponent(query)}`,
+      `/coach/exercise-library/search?q=${encodeURIComponent(query)}`,
       { method: 'GET' }
     );
     return response.data;
@@ -559,7 +559,7 @@ export const personalCoachService = {
 
   getExerciseCategories: async (): Promise<string[]> => {
     const response = await httpRequest<{ success: boolean; data: string[] }>(
-      `/coach/api/exercise-library/categories`,
+      `/coach/exercise-library/categories`,
       { method: 'GET' }
     );
     return response.data;
@@ -572,7 +572,7 @@ export const personalCoachService = {
     if (request.count) params.append('count', request.count.toString());
     
     const response = await httpRequest<{ success: boolean; data: ExerciseLibraryDTO[]; count: number; note: string }>(
-      `/coach/api/exercise-library/suggestions?${params.toString()}`,
+      `/coach/exercise-library/suggestions?${params.toString()}`,
       { method: 'GET' }
     );
     return response.data;
@@ -586,7 +586,7 @@ export const personalCoachService = {
     
     const query = params.toString() ? `?${params.toString()}` : '';
     const response = await httpRequest<{ success: boolean; data: WorkoutTemplateDTO[]; count: number }>(
-      `/coach/api/workout-templates${query}`,
+      `/coach/workout-templates${query}`,
       { method: 'GET' }
     );
     return response.data;
@@ -594,7 +594,7 @@ export const personalCoachService = {
 
   getTemplateById: async (id: string): Promise<WorkoutTemplateDTO> => {
     const response = await httpRequest<{ success: boolean; data: WorkoutTemplateDTO }>(
-      `/coach/api/workout-templates/${id}`,
+      `/coach/workout-templates/${id}`,
       { method: 'GET' }
     );
     return response.data;
@@ -603,7 +603,7 @@ export const personalCoachService = {
   // Manual Schedule Management
   createManualSchedule: async (request: ManualScheduleRequest): Promise<WorkoutScheduleResponse> => {
     const response = await httpRequest<{ success: boolean; data: WorkoutScheduleResponse }>(
-      `/coach/api/schedule/manual`,
+      `/coach/schedule/manual`,
       {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -615,7 +615,7 @@ export const personalCoachService = {
 
   addDayFromTemplate: async (scheduleId: string, request: AddDayFromTemplateRequest): Promise<WorkoutDayResponse> => {
     const response = await httpRequest<{ success: boolean; data: WorkoutDayResponse }>(
-      `/coach/api/schedule/${scheduleId}/days/from-template`,
+      `/coach/schedule/${scheduleId}/days/from-template`,
       {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -627,7 +627,7 @@ export const personalCoachService = {
 
   addCustomDay: async (scheduleId: string, request: AddCustomDayRequest): Promise<WorkoutDayResponse> => {
     const response = await httpRequest<{ success: boolean; data: WorkoutDayResponse }>(
-      `/coach/api/schedule/${scheduleId}/days/custom`,
+      `/coach/schedule/${scheduleId}/days/custom`,
       {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -639,7 +639,7 @@ export const personalCoachService = {
 
   updateWorkoutDay: async (scheduleId: string, dayId: string, request: UpdateWorkoutDayRequest): Promise<WorkoutDayResponse> => {
     const response = await httpRequest<{ success: boolean; data: WorkoutDayResponse }>(
-      `/coach/api/schedule/${scheduleId}/days/${dayId}`,
+      `/coach/schedule/${scheduleId}/days/${dayId}`,
       {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
@@ -651,7 +651,7 @@ export const personalCoachService = {
 
   deleteWorkoutDay: async (scheduleId: string, dayId: string): Promise<void> => {
     await httpRequest<{ success: boolean; message: string }>(
-      `/coach/api/schedule/${scheduleId}/days/${dayId}`,
+      `/coach/schedule/${scheduleId}/days/${dayId}`,
       { method: 'DELETE' }
     );
   },
