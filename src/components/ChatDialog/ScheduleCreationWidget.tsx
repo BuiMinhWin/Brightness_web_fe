@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { gsap } from 'gsap';
 import { DotLottieReact } from '@lottiefiles/dotlottie-react';
 import chatService from '../../services/chatService';
+import { personalCoachService, AICreditBalance } from '../../services/personalCoachService';
 import { 
   LocalFireDepartment, 
   FitnessCenter, 
@@ -22,6 +23,8 @@ interface ScheduleCreationWidgetProps {
   onError?: (errorMessage: string) => void;
   suggestedGoal?: string;
   suggestedDifficulty?: string;
+  userId?: string; // Add userId prop for credit checking
+  onRefreshCredits?: () => Promise<void>; // Add callback to refresh parent's credit display
 }
 
 const GOAL_INFO = {
@@ -64,6 +67,8 @@ const ScheduleCreationWidget: React.FC<ScheduleCreationWidgetProps> = ({
   onError,
   suggestedGoal,
   suggestedDifficulty,
+  userId,
+  onRefreshCredits,
 }) => {
   const [goal, setGoal] = useState(suggestedGoal || 'weight_loss');
   const [durationDays, setDurationDays] = useState(30);
@@ -74,7 +79,12 @@ const ScheduleCreationWidget: React.FC<ScheduleCreationWidgetProps> = ({
   const [showCustomize, setShowCustomize] = useState(false);
   const [isAnalyzing, setIsAnalyzing] = useState(true);
   const [showLottie, setShowLottie] = useState(false);
+  const [creditBalance, setCreditBalance] = useState<AICreditBalance | null>(null);
+  const [isCheckingCredits, setIsCheckingCredits] = useState(false);
   const iconRef = useRef<HTMLDivElement>(null);
+  
+  // Credit cost for schedule generation (should match backend)
+  const SCHEDULE_CREDIT_COST = 10;
 
   // Animate icon transition when isCreating changes
   useEffect(() => {
@@ -119,6 +129,30 @@ const ScheduleCreationWidget: React.FC<ScheduleCreationWidgetProps> = ({
 
   const currentGoalInfo = GOAL_INFO[goal as keyof typeof GOAL_INFO];
 
+  // Fetch fresh credit balance when widget mounts
+  useEffect(() => {
+    const fetchCredits = async () => {
+      if (!userId) return;
+      
+      setIsCheckingCredits(true);
+      try {
+        const balance = await personalCoachService.getAICreditBalance(userId);
+        setCreditBalance(balance);
+        
+        // Also refresh parent's credit display
+        if (onRefreshCredits) {
+          await onRefreshCredits();
+        }
+      } catch (err) {
+        console.error('Failed to fetch credit balance:', err);
+      } finally {
+        setIsCheckingCredits(false);
+      }
+    };
+
+    fetchCredits();
+  }, [userId, onRefreshCredits]);
+
   // Auto-analyze user profile and set intelligent defaults
   React.useEffect(() => {
     const fetchProfileAnalysis = async () => {
@@ -153,12 +187,28 @@ const ScheduleCreationWidget: React.FC<ScheduleCreationWidgetProps> = ({
       setIsCreating(true);
       setError(null);
 
+      // Frontend validation: Check if user has enough credits
+      if (creditBalance && creditBalance.remainingCredits < SCHEDULE_CREDIT_COST) {
+        const daysUntilReset = creditBalance.daysUntilReset || 30;
+        const errorMessage = `💳 **Insufficient AI Credits**\n\nI need **${SCHEDULE_CREDIT_COST} credits** to generate your workout schedule, but you only have **${creditBalance.remainingCredits} credits** remaining.\n\n🔄 Your credits will reset in **${daysUntilReset} days**.\n\n **Upgrade your plan to get more credits:**\n- **Basic Plan** (79,000 VND): 500 credits/month (~50 schedules)\n- **Premium Plan** (149,000 VND): 1,200 credits/month (~120 schedules)\n\n[Upgrade Now →](/pricing)`;
+        
+        if (onError) {
+          onError(errorMessage);
+        } else {
+          setError(errorMessage);
+        }
+        setIsCreating(false);
+        return;
+      }
+
       console.log('🚀 Creating schedule with params:', {
         sessionId,
         goal,
         durationDays,
         difficultyLevel,
-        additionalNotes
+        additionalNotes,
+        userCredits: creditBalance?.remainingCredits,
+        costRequired: SCHEDULE_CREDIT_COST
       });
 
       const response = await chatService.createScheduleFromChat({
@@ -366,6 +416,27 @@ const ScheduleCreationWidget: React.FC<ScheduleCreationWidgetProps> = ({
             </div>
           </div>
 
+          {/* Credit Info Display */}
+          {creditBalance && (
+            <div className="bg-blue-50 border-2 border-blue-200 rounded-xl p-3">
+              <div className="flex items-center justify-between text-sm">
+                <div>
+                  <span className="font-semibold" style={{ color: '#0a6a56' }}>
+                    💳 Credit Cost: {SCHEDULE_CREDIT_COST} credits
+                  </span>
+                  <p className="text-xs mt-0.5" style={{ color: '#0b3d33', opacity: 0.7 }}>
+                    You have {creditBalance.remainingCredits}/{creditBalance.monthlyCredits} credits remaining
+                  </p>
+                </div>
+                {creditBalance.remainingCredits < SCHEDULE_CREDIT_COST && (
+                  <div className="text-xs font-bold text-red-600">
+                    ⚠️ Insufficient
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
           {/* Action Buttons */}
           <div className="flex gap-3 pt-2">
             <button
@@ -378,7 +449,7 @@ const ScheduleCreationWidget: React.FC<ScheduleCreationWidgetProps> = ({
             </button>
             <button
               onClick={handleCreateSchedule}
-              disabled={isCreating}
+              disabled={isCreating || (creditBalance ? creditBalance.remainingCredits < SCHEDULE_CREDIT_COST : false)}
               className="flex-[2] px-6 py-3 rounded-xl font-semibold text-white hover:opacity-90 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
               style={{ background: '#0a6a56' }}
             >
@@ -390,7 +461,7 @@ const ScheduleCreationWidget: React.FC<ScheduleCreationWidgetProps> = ({
               ) : (
                 <>
                   <AutoAwesome fontSize="small" />
-                  Generate My Plan
+                  Generate My Plan ({SCHEDULE_CREDIT_COST}🔋)
                 </>
               )}
             </button>
@@ -547,6 +618,27 @@ const ScheduleCreationWidget: React.FC<ScheduleCreationWidgetProps> = ({
           </div>
         </div>
 
+        {/* Credit Info Display */}
+        {creditBalance && (
+          <div className="bg-blue-50 border-2 border-blue-200 rounded-xl p-3">
+            <div className="flex items-center justify-between text-sm">
+              <div>
+                <span className="font-semibold" style={{ color: '#0a6a56' }}>
+                  💳 Credit Cost: {SCHEDULE_CREDIT_COST} credits
+                </span>
+                <p className="text-xs mt-0.5" style={{ color: '#0b3d33', opacity: 0.7 }}>
+                  You have {creditBalance.remainingCredits}/{creditBalance.monthlyCredits} credits remaining
+                </p>
+              </div>
+              {creditBalance.remainingCredits < SCHEDULE_CREDIT_COST && (
+                <div className="text-xs font-bold text-red-600">
+                  ⚠️ Insufficient
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
         {/* Customization Action Buttons */}
         <div className="flex gap-3 pt-2">
           <button
@@ -559,7 +651,7 @@ const ScheduleCreationWidget: React.FC<ScheduleCreationWidgetProps> = ({
           </button>
           <button
             onClick={handleCreateSchedule}
-            disabled={isCreating}
+            disabled={isCreating || (creditBalance ? creditBalance.remainingCredits < SCHEDULE_CREDIT_COST : false)}
             className="flex-[2] px-6 py-3 rounded-xl font-semibold text-white hover:opacity-90 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
             style={{ background: '#0a6a56' }}
           >
@@ -575,7 +667,7 @@ const ScheduleCreationWidget: React.FC<ScheduleCreationWidgetProps> = ({
               <AutoAwesome fontSize="small" />
             )}
           </div>
-          <span>{isCreating ? 'Creating...' : 'Generate Custom Plan'}</span>
+          <span>{isCreating ? `Creating... (${SCHEDULE_CREDIT_COST}🔋)` : `Generate Custom Plan (${SCHEDULE_CREDIT_COST}🔋)`}</span>
           </button>
         </div>
       </div>

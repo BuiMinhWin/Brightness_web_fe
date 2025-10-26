@@ -697,6 +697,7 @@ I'll use this information to provide you with personalized workout plans, nutrit
           {activeWidget === "schedule" && sessionId && (
             <ScheduleCreationWidget
               sessionId={sessionId}
+              userId={userId}
               onScheduleCreated={handleScheduleCreated}
               onCancel={() => {
                 setActiveWidget("none");
@@ -714,6 +715,10 @@ I'll use this information to provide you with personalized workout plans, nutrit
                     text: errorMessage,
                   },
                 ]);
+              }}
+              onRefreshCredits={async () => {
+                // Refresh the parent's credit display
+                await fetchCreditBalance();
               }}
               suggestedGoal={detectedScheduleParams.goal}
               suggestedDifficulty={detectedScheduleParams.difficulty}

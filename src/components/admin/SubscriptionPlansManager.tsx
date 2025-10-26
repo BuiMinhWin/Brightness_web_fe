@@ -164,25 +164,43 @@ export const SubscriptionPlansManager: React.FC = () => {
 
   // Handle plan deletion
   const handleDeletePlan = async (planId: string) => {
-    if (!window.confirm("Are you sure you want to delete this subscription plan?")) {
+    if (!window.confirm("Are you sure you want to delete this subscription plan?\n\nNote: You cannot delete a plan that is currently assigned to users.")) {
       return;
     }
 
     try {
       setLoading(true);
-      await subscriptionPlanService.deletePlan(planId);
-      await loadPlans();
+      const result = await subscriptionPlanService.deletePlan(planId);
+      
+      // Check if deletion was successful
+      if (result === true) {
+        await loadPlans();
 
-      if (selectedPlan?.id === planId) {
-        setSelectedPlan(null);
-        setFormMode("view");
+        if (selectedPlan?.id === planId) {
+          setSelectedPlan(null);
+          setFormMode("view");
+        }
+
+        setError(null);
+        // Optionally show success message
+        alert("Subscription plan deleted successfully!");
       }
-
-      setError(null);
-    } catch (err) {
-      const errorMessage =
-        err instanceof Error ? err.message : "Failed to delete subscription plan";
+    } catch (err: any) {
+      console.error("Delete plan error:", err);
+      
+      // Extract error message from various possible error formats
+      let errorMessage = "Failed to delete subscription plan";
+      
+      if (err?.response?.data?.message) {
+        errorMessage = err.response.data.message;
+      } else if (err?.message) {
+        errorMessage = err.message;
+      } else if (typeof err === 'string') {
+        errorMessage = err;
+      }
+      
       setError(errorMessage);
+      alert(`Error: ${errorMessage}`);
     } finally {
       setLoading(false);
     }
