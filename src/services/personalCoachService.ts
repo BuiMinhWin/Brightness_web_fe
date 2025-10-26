@@ -270,13 +270,13 @@ export const personalCoachService = {
   },
 
   /** Check for conflicts with existing workouts before generating */
-  async checkScheduleConflicts(request: CheckConflictsRequest): Promise<ScheduleConflictInfo> {
-    return httpRequest<ScheduleConflictInfo>("/coach/api/Schedule/check-conflicts", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(request),
-    });
-  },
+  // async checkScheduleConflicts(request: CheckConflictsRequest): Promise<ScheduleConflictInfo> {
+  //   return httpRequest<ScheduleConflictInfo>("/coach/api/Schedule/check-conflicts", {
+  //     method: "POST",
+  //     headers: { "Content-Type": "application/json" },
+  //     body: JSON.stringify(request),
+  //   });
+  // },
 
   /** Get schedule details by ID */
   async getSchedule(scheduleId: string): Promise<WorkoutScheduleResponse> {

@@ -532,21 +532,21 @@ const Schedule: React.FC = () => {
       const startDateStr = `${year}-${month}-${day}`;
 
       // Check for conflicts before generating
-      const conflictInfo = await personalCoachService.checkScheduleConflicts({
-        userId,
-        startDate: startDateStr,
-        durationDays: formData.durationDays,
-        availableDays: formData.availableDays,
-      });
+      // const conflictInfo = await personalCoachService.checkScheduleConflicts({
+      //   userId,
+      //   startDate: startDateStr,
+      //   durationDays: formData.durationDays,
+      //   availableDays: formData.availableDays,
+      // });
 
-      if (conflictInfo.hasConflicts) {
-        console.log(`⚠️ Found ${conflictInfo.totalConflicts} conflicts`);
-        // Show conflict dialog
-        setConflictingWorkouts(conflictInfo.conflictingWorkouts);
-        setPendingGeneration(formData);
-        setShowConflictDialog(true);
-        return;
-      }
+      // if (conflictInfo.hasConflicts) {
+      //   console.log(`⚠️ Found ${conflictInfo.totalConflicts} conflicts`);
+      //   // Show conflict dialog
+      //   setConflictingWorkouts(conflictInfo.conflictingWorkouts);
+      //   setPendingGeneration(formData);
+      //   setShowConflictDialog(true);
+      //   return;
+      // }
 
       // No conflicts, proceed with generation
       await executeGeneration(formData);
