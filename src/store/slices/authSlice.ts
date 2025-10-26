@@ -1,6 +1,7 @@
 import { createSlice, createAsyncThunk, PayloadAction } from "@reduxjs/toolkit";
 import { jwtDecode } from "jwt-decode";
 import { authService } from "../../services/authService";
+import { authStorage } from "../../utils/authStorage";
 import type {
   AuthData,
   ExternalLoginRequest,
@@ -319,6 +320,9 @@ const authSlice = createSlice({
       state.isLoading = false;
       state.lastActivity = null;
       state.sessionStartTime = null;
+      
+      // Clear localStorage backup
+      authStorage.clearTokens();
     },
     setUserInfo: (state, action: PayloadAction<UserModel>) => {
       state.userInfo = action.payload;
@@ -356,6 +360,9 @@ const authSlice = createSlice({
         // Set session tracking
         state.sessionStartTime = Date.now();
         state.lastActivity = Date.now();
+        
+        // Save to localStorage as backup (for when cookies fail)
+        authStorage.saveTokens(authData);
       })
       .addCase(loginUser.rejected, (state, action) => {
         state.isLoading = false;
@@ -382,6 +389,9 @@ const authSlice = createSlice({
 
         state.sessionStartTime = Date.now();
         state.lastActivity = Date.now();
+        
+        // Save to localStorage as backup (for when cookies fail)
+        authStorage.saveTokens(authData);
       })
       .addCase(loginWithExternalProvider.rejected, (state, action) => {
         state.isLoading = false;
@@ -410,6 +420,9 @@ const authSlice = createSlice({
         // Set session tracking
         state.sessionStartTime = Date.now();
         state.lastActivity = Date.now();
+        
+        // Save to localStorage as backup (for when cookies fail)
+        authStorage.saveTokens(authData);
       })
       .addCase(registerUser.rejected, (state, action) => {
         state.isLoading = false;
@@ -435,6 +448,9 @@ const authSlice = createSlice({
         
         // Update activity on successful refresh
         state.lastActivity = Date.now();
+        
+        // Save refreshed tokens to localStorage backup
+        authStorage.saveTokens(authData);
       })
       .addCase(refreshAuthToken.rejected, (state, action) => {
         state.isRefreshing = false;
