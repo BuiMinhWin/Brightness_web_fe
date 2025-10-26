@@ -172,8 +172,8 @@ const PricingPage: React.FC = () => {
         const paymentSession = await billingService.initiatePayment({
           invoiceId: invoice.id,
           gateway: 2, // 2 = PayOS
-          returnUrl: `http://localhost:3000/payment-success?invoiceId=${invoice.id}`,
-          cancelUrl: `http://localhost:3000/pricing`,
+          returnUrl: `https://brightnessweb.vercel.app/payment-success?invoiceId=${invoice.id}`,
+          cancelUrl: `https://brightnessweb.vercel.app/pricing`,
         });
 
         // Bước 3: Kiểm tra và chuyển hướng người dùng.
