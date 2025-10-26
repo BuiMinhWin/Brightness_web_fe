@@ -1,117 +1,97 @@
+import { useState, useEffect } from 'react';
+import { useAppDispatch } from '../store/hooks';
+import { authStorage } from '../utils/authStorage';
+import { loginUser } from '../store/slices/authSlice';
+import { jwtDecode } from 'jwt-decode';
+
 /**
- * useAuthInitialization Hook
- * 
- * Handles authentication initialization on app start:
- * - Attempts silent token refresh (auto-login via httpOnly cookie)
- * - Initializes AuthManager on successful authentication
- * - Manages loading states during initialization
+ * Hook to initialize authentication from localStorage on app start
+ * This provides a fallback when cookies aren't available or fail
  */
-
-import { useEffect, useState } from 'react';
-import { useAppDispatch, useAppSelector } from '../store/hooks';
-import { refreshAuthToken, selectIsAuthenticated, selectIsLoading } from '../store/slices/authSlice';
-import { getAuthManager } from '../services/authManager';
-
-interface UseAuthInitializationResult {
-  isInitializing: boolean;
-  isAuthenticated: boolean;
-  initializationComplete: boolean;
-}
-
-export const useAuthInitialization = (): UseAuthInitializationResult => {
+export const useAuthInitialization = () => {
   const dispatch = useAppDispatch();
-  const isAuthenticated = useAppSelector(selectIsAuthenticated);
-  const isLoading = useAppSelector(selectIsLoading);
   const [isInitializing, setIsInitializing] = useState(true);
-  const [initializationComplete, setInitializationComplete] = useState(false);
 
   useEffect(() => {
-    let isMounted = true;
-
-    const attemptAutoLogin = async () => {
+    const initializeAuth = async () => {
+      console.log('🔍 Checking for saved authentication...');
+      
       try {
-        console.log('🔐 Attempting auto-login via token refresh...');
+        // Try to load tokens from localStorage on app init
+        const savedTokens = authStorage.loadTokens();
         
-        // Try to refresh token (will use httpOnly cookie if available)
-        const result = await dispatch(refreshAuthToken()).unwrap();
-        
-        if (isMounted) {
-          if (result) {
-            console.log('✅ Auto-login successful');
+        if (savedTokens?.accessToken) {
+          // Decode token to check if it's expired
+          const decoded = jwtDecode<any>(savedTokens.accessToken);
+          const isExpired = decoded.exp ? decoded.exp * 1000 < Date.now() : true;
+          
+          if (!isExpired) {
+            // Token is still valid, restore session
+            console.log('✅ Restoring session from localStorage');
             
-            // Initialize AuthManager for authenticated session
-            const authManager = getAuthManager();
-            if (!authManager.isActive()) {
-              authManager.initialize({
-                onIdleWarning: () => {
-                  // Show warning toast (you can implement this with MUI Snackbar)
-                  console.warn('⚠️ Your session will expire in 2 minutes due to inactivity');
-                },
-                onIdleLogout: () => {
-                  console.log('⏱️ Logging out due to inactivity');
+            // Helper to extract claim value
+            const takeClaimValue = (value: any) => {
+              if (Array.isArray(value)) {
+                const first = value.find(v => v !== undefined && v !== null);
+                return first !== undefined && first !== null ? String(first) : null;
+              }
+              return String(value);
+            };
+
+            const pickClaim = (keys: string[]) => {
+              for (const key of keys) {
+                const value = takeClaimValue(decoded[key]);
+                if (value) {
+                  return value;
                 }
-              });
-            }
+              }
+              return null;
+            };
+
+            // Extract role
+            const role = pickClaim([
+              "http://schemas.microsoft.com/ws/2008/06/identity/claims/role",
+              "role",
+              "roles",
+            ]);
+
+            // Extract userId
+            const userId = pickClaim([
+              "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier",
+              "sub",
+              "userId",
+              "UserId",
+              "uid",
+              "nameid",
+            ]);
+            
+            // Restore session with saved tokens
+            dispatch(loginUser.fulfilled({
+              authData: savedTokens,
+              role,
+              userId,
+              userInfo: null,
+            }, '', {} as any));
+            
+            console.log('✅ Session restored successfully');
           } else {
-            console.log('ℹ️ No active session found');
+            console.log('⚠️ Saved token is expired, clearing localStorage');
+            authStorage.clearTokens();
           }
+        } else {
+          console.log('ℹ️ No saved authentication found');
         }
       } catch (error) {
-        // Silent failure - user will need to log in manually
-        if (isMounted) {
-          console.log('ℹ️ Auto-login failed (no active session)');
-        }
+        console.error('❌ Failed to restore session from localStorage:', error);
+        authStorage.clearTokens();
       } finally {
-        if (isMounted) {
-          setIsInitializing(false);
-          setInitializationComplete(true);
-        }
+        // Always complete initialization, even if there's an error
+        setIsInitializing(false);
       }
     };
 
-    attemptAutoLogin();
-
-    return () => {
-      isMounted = false;
-    };
+    initializeAuth();
   }, [dispatch]);
 
-  // Initialize AuthManager when user logs in after initialization
-  useEffect(() => {
-    if (initializationComplete && isAuthenticated) {
-      const authManager = getAuthManager();
-      if (!authManager.isActive()) {
-        console.log('🔐 Initializing AuthManager for new session');
-        authManager.initialize({
-          onIdleWarning: () => {
-            console.warn('⚠️ Your session will expire in 2 minutes due to inactivity');
-          },
-          onIdleLogout: () => {
-            console.log('⏱️ Logging out due to inactivity');
-          }
-        });
-      }
-    }
-  }, [isAuthenticated, initializationComplete]);
-
-  // Cleanup AuthManager on unmount
-  useEffect(() => {
-    return () => {
-      if (!isAuthenticated) {
-        const authManager = getAuthManager();
-        if (authManager.isActive()) {
-          authManager.cleanup();
-        }
-      }
-    };
-  }, [isAuthenticated]);
-
-  return {
-    isInitializing: isInitializing || isLoading,
-    isAuthenticated,
-    initializationComplete
-  };
+  return { isInitializing };
 };
-
-export default useAuthInitialization;
-
