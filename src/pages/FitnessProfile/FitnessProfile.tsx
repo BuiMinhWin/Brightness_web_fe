@@ -1,10 +1,11 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Sparkles } from "lucide-react";
 import { Snackbar, Alert, CircularProgress } from "@mui/material";
 import { useNavigate } from "react-router-dom";
 import { useAppSelector } from "@/store/hooks";
 import { selectUserId } from "@/store/slices/authSlice";
 import { personalCoachService } from "@/services";
+import { eventBus } from "@/services/eventBus";
 import DocumentUploadSection from "@/components/FitnessProfile/DocumentUploadSection";
 import BasicMeasurementsSection from "@/components/FitnessProfile/BasicMeasurementsSection";
 import FitnessGoalsSection from "@/components/FitnessProfile/FitnessGoalsSection";
@@ -47,6 +48,24 @@ const FitnessProfile: React.FC = () => {
   const handleCloseToast = () => {
     setToast({ ...toast, open: false });
   };
+
+  // Listen for profile updates from ChatDialog
+  useEffect(() => {
+    const handleProfileUpdate = () => {
+      console.log("[FitnessProfile] Profile updated via event");
+      setToast({ 
+        open: true, 
+        message: "Profile preferences updated via AI Assistant!", 
+        severity: "info" 
+      });
+    };
+
+    eventBus.subscribe('profile-updated', handleProfileUpdate);
+
+    return () => {
+      eventBus.unsubscribe('profile-updated', handleProfileUpdate);
+    };
+  }, []);
 
   const handleUploadSuccess = (data: any) => {
     autoFillFromOCRData(data);

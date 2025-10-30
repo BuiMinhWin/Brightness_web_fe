@@ -1,9 +1,12 @@
-import React, { useState, useRef } from 'react';
-import { Upload, Close, CheckCircle, Edit, Save, Cancel, PictureAsPdf } from '@mui/icons-material';
+import React, { useState, useRef, useEffect } from 'react';
+import { Upload, Close, CheckCircle, Edit, Save, Cancel, PictureAsPdf, Warning } from '@mui/icons-material';
 import { DotLottieReact } from '@lottiefiles/dotlottie-react';
 import ReactMarkdown from 'react-markdown';
 import { personalCoachService } from '@/services/personalCoachService';
 import chatService from '@/services/chatService';
+import { useToast } from '@/hooks/useToast';
+import { useAppSelector } from '@/store/hooks';
+import { eventBus } from '@/services/eventBus';
 
 interface HealthDataUploadWidgetProps {
   userId: string | null;
@@ -61,7 +64,29 @@ const HealthDataUploadWidget: React.FC<HealthDataUploadWidgetProps> = ({
   const [error, setError] = useState<string | null>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [creditBalance, setCreditBalance] = useState<{
+    remainingCredits: number;
+    monthlyCredits: number;
+    canAffordOperation: boolean;
+  } | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const { showToast } = useToast();
+  const currentUserId = useAppSelector((state) => state.auth.userId);
+
+  // Fetch credit balance on mount
+  useEffect(() => {
+    const fetchCreditBalance = async () => {
+      if (!currentUserId) return;
+      
+      try {
+        const balance = await personalCoachService.getAICreditBalance(currentUserId);
+        setCreditBalance(balance);
+      } catch (error) {
+        console.error('Failed to fetch credit balance:', error);
+      }
+    };
+    fetchCreditBalance();
+  }, [currentUserId]);
 
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -94,7 +119,7 @@ const HealthDataUploadWidget: React.FC<HealthDataUploadWidgetProps> = ({
     // Validate image using service
     const validation = personalCoachService.validateHealthImage(file);
     if (!validation.valid) {
-      setError(` ${validation.error || 'Invalid file'}\n\nPlease upload a clear photo of your health document (PDF, JPG, or PNG).`);
+      showToast(validation.error || 'Invalid file. Please upload a clear photo of your health document (PDF, JPG, or PNG).', 'error');
       return;
     }
 
@@ -115,7 +140,7 @@ const HealthDataUploadWidget: React.FC<HealthDataUploadWidgetProps> = ({
 
   const handleProcessImage = async () => {
     if (!selectedFile || !userId) {
-      setError(' Please log in to process health documents');
+      showToast('Please log in to process health documents', 'warning');
       return;
     }
 
@@ -137,38 +162,31 @@ const HealthDataUploadWidget: React.FC<HealthDataUploadWidgetProps> = ({
       // Parse and extract only relevant health metrics
       const parsedMetrics = parseHealthMetrics(result);
       setHealthMetrics(parsedMetrics);
-      
-    } catch (err: any) {
-      console.log('Error processing image:', err);
-      
-      let errorMessage = '';
-      
-      if (err.status === 402) {
-        const backendMsg = err.details?.message || '';
-        const creditsNeeded = backendMsg.match(/requires (\d+) credits/)?.[1] || '5';
-        const creditsRemaining = backendMsg.match(/only (\d+) remaining/)?.[1];
-        const daysUntilReset = backendMsg.match(/Resets in (\d+) days/)?.[1] || backendMsg.match(/in (\d+) days/)?.[1] || backendMsg.match(/reset in (\d+) days/)?.[1];
+
+      // Update credit balance after successful processing
+      if (currentUserId) {
+        const newBalance = await personalCoachService.getAICreditBalance(currentUserId);
+        setCreditBalance(newBalance);
         
-        errorMessage = `💳 **Insufficient AI Credits**\n\nI need **${creditsNeeded} credits** to process your health document`;
-        
-        if (creditsRemaining) {
-          errorMessage += `, but you only have **${creditsRemaining} credits** remaining`;
-        }
-        
-        errorMessage += '.';
-        
-        if (daysUntilReset) {
-          errorMessage += `\n\n🔄 Your credits will reset in **${daysUntilReset} days**.`;
-        }
-        
-        errorMessage += '\n\n✨ **Upgrade your plan to get more credits:**\n- **Basic Plan** (79,000 VND): 500 credits/month (~100 health scans)\n- **Premium Plan** (149,000 VND): 1,200 credits/month (~240 health scans)\n\n[Upgrade Now →](/pricing)';
-      } else if (err.message?.includes('format') || err.message?.includes('invalid')) {
-        errorMessage = '📄 **Invalid Document Format**\n\nPlease ensure your document is a clear photo or scan in JPG, PNG, or PDF format.';
-      } else {
-        errorMessage = '❌ I had trouble reading your health document. Please make sure the image is clear and well-lit, then try again.';
+        // Emit event to notify other components (like ChatDialog header)
+        eventBus.emit('credits-updated', {
+          userId: currentUserId,
+          service: 'profile',
+          creditsRemaining: newBalance.remainingCredits
+        });
       }
       
-      setError(errorMessage);
+    } catch (err: any) {
+      console.error('Error processing image:', err);
+      
+      // Show appropriate toast notification based on error type
+      if (err.status === 402) {
+        showToast('Insufficient AI credits to process health document. Please upgrade your plan.', 'warning');
+      } else if (err.message?.includes('format') || err.message?.includes('invalid')) {
+        showToast('Invalid document format. Please ensure your document is a clear photo or scan in JPG, PNG, or PDF format.', 'error');
+      } else {
+        showToast('Failed to read your health document. Please make sure the image is clear and well-lit, then try again.', 'error');
+      }
     } finally {
       setIsProcessing(false);
     }
@@ -225,7 +243,7 @@ const HealthDataUploadWidget: React.FC<HealthDataUploadWidgetProps> = ({
 
   const handleSave = async () => {
     if (!userId) {
-      setError(' Please log in to save your health data');
+      showToast('Please log in to save your health data', 'warning');
       return;
     }
 
@@ -299,19 +317,14 @@ const HealthDataUploadWidget: React.FC<HealthDataUploadWidgetProps> = ({
       });
       
     } catch (err: any) {
-      console.log('Error saving health data:', err);
+      console.error('Error saving health data:', err);
       
-      let errorMessage = ' I had trouble saving your health data. ';
-      
+      // Show appropriate toast notification based on error type
       if (err.message?.includes('connection') || err.message?.includes('network')) {
-        errorMessage += 'Please check your internet connection and try again.';
-      } else if (err.message) {
-        errorMessage += err.message;
+        showToast('Connection error. Please check your internet connection and try again.', 'error');
       } else {
-        errorMessage += 'Please try again or contact support if the issue persists.';
+        showToast(err.message || 'Failed to save health data. Please try again.', 'error');
       }
-      
-      setError(errorMessage);
     } finally {
       setIsSaving(false);
     }
@@ -417,6 +430,33 @@ const HealthDataUploadWidget: React.FC<HealthDataUploadWidgetProps> = ({
                 )}
               </div>
 
+              {/* Credit Balance Warning */}
+              {creditBalance && !creditBalance.canAffordOperation && (
+                <div 
+                  className="p-3 rounded-xl border-2"
+                  style={{ 
+                    background: "#fee2e2",
+                    borderColor: "#fecaca"
+                  }}
+                >
+                  <div className="flex items-start gap-2">
+                    <Warning style={{ color: "#991b1b", fontSize: 20 }} />
+                    <div>
+                      <p className="font-semibold text-xs" style={{ color: "#991b1b" }}>
+                        Insufficient AI Credits
+                      </p>
+                      <p className="text-xs mt-0.5" style={{ color: "#dc2626" }}>
+                        You have {creditBalance.remainingCredits?.toLocaleString() ?? 0} of {creditBalance.monthlyCredits?.toLocaleString() ?? 0} credits remaining.
+                        Processing health documents requires AI credits.
+                      </p>
+                      <p className="text-xs mt-1 font-medium" style={{ color: "#991b1b" }}>
+                       Please upgrade your plan or manually input your data below.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
               {/* Action Buttons */}
               <div className="flex gap-3">
                 <button
@@ -428,9 +468,10 @@ const HealthDataUploadWidget: React.FC<HealthDataUploadWidgetProps> = ({
                 </button>
                 <button
                   onClick={handleProcessImage}
-                  disabled={isProcessing}
+                  disabled={isProcessing || !creditBalance?.canAffordOperation}
                   className="flex-1 px-4 py-2 rounded-xl font-medium text-white hover:opacity-90 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
                   style={{ background: '#0a6a56' }}
+                  title={!creditBalance?.canAffordOperation ? "Insufficient AI credits" : ""}
                 >
                   {isProcessing ? (
                     <>

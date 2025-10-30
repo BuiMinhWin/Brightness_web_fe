@@ -25,6 +25,31 @@ const DocumentUploadSection: React.FC<DocumentUploadSectionProps> = ({
   const [isProcessing, setIsProcessing] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
   const [currentProgress, setCurrentProgress] = useState("");
+  const [freeAttemptsRemaining, setFreeAttemptsRemaining] = useState(3);
+
+  // Load free attempts from localStorage on mount
+  React.useEffect(() => {
+    if (!userId) return;
+    
+    const storageKey = `fitness_profile_free_uploads_${userId}`;
+    const stored = localStorage.getItem(storageKey);
+    
+    if (stored) {
+      try {
+        const data = JSON.parse(stored);
+        setFreeAttemptsRemaining(data.remaining);
+      } catch (error) {
+        console.error('Failed to parse stored upload attempts:', error);
+        // Reset to 3 if corrupt
+        localStorage.setItem(storageKey, JSON.stringify({ remaining: 3, used: 0 }));
+        setFreeAttemptsRemaining(3);
+      }
+    } else {
+      // First time user - give 3 free attempts
+      localStorage.setItem(storageKey, JSON.stringify({ remaining: 3, used: 0 }));
+      setFreeAttemptsRemaining(3);
+    }
+  }, [userId]);
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
@@ -127,6 +152,15 @@ const DocumentUploadSection: React.FC<DocumentUploadSectionProps> = ({
       return;
     }
 
+    // Check if user has free attempts remaining
+    if (freeAttemptsRemaining <= 0) {
+      onError("You've used all 3 free upload attempts. Please manually input your data below. Don't worry - this feature is just to help you get started quickly!", "warning");
+      // Remove file from queue
+      setUploadedFiles(prev => prev.filter(f => f.file !== fileInfo.file));
+      setIsProcessing(false);
+      return;
+    }
+
     const { file } = fileInfo;
 
     // Update file progress
@@ -166,6 +200,17 @@ const DocumentUploadSection: React.FC<DocumentUploadSectionProps> = ({
           ? { ...f, status: "success", progress: "Complete!" }
           : f
       ));
+
+      // Deduct a free attempt
+      const storageKey = `fitness_profile_free_uploads_${userId}`;
+      const stored = localStorage.getItem(storageKey);
+      if (stored) {
+        const attemptData = JSON.parse(stored);
+        const newRemaining = Math.max(0, attemptData.remaining - 1);
+        const newUsed = attemptData.used + 1;
+        localStorage.setItem(storageKey, JSON.stringify({ remaining: newRemaining, used: newUsed }));
+        setFreeAttemptsRemaining(newRemaining);
+      }
       
       onUploadSuccess(data);
       
@@ -295,6 +340,37 @@ const DocumentUploadSection: React.FC<DocumentUploadSectionProps> = ({
         </div>
       )}
       
+      {/* Free Attempts Badge */}
+      {freeAttemptsRemaining > 0 && (
+        <div className="bg-gradient-to-r from-amber-50 to-orange-50 border-2 border-amber-300 rounded-xl p-3 mb-4 shadow-sm">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 bg-gradient-to-br from-amber-500 to-orange-500 rounded-full flex items-center justify-center">
+                <Sparkles size={16} className="text-white" />
+              </div>
+              <div>
+                <p className="font-bold text-amber-900 text-sm">
+                  {freeAttemptsRemaining === 3 ? "Welcome Bonus!" : "Free Uploads Remaining"}
+                </p>
+                <p className="text-xs text-amber-700">
+                  {freeAttemptsRemaining} of 3 free AI uploads • No credits used!
+                </p>
+              </div>
+            </div>
+            <div className="flex gap-1">
+              {[...Array(3)].map((_, i) => (
+                <div
+                  key={i}
+                  className={`w-2 h-2 rounded-full ${
+                    i < freeAttemptsRemaining ? 'bg-amber-500' : 'bg-gray-300'
+                  }`}
+                />
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Info Banner */}
       <div className="bg-gradient-to-br from-emerald-50 via-teal-50 to-cyan-50 border-2 border-emerald-300 rounded-xl p-4 mb-4 shadow-sm">
         <div className="flex gap-3">
@@ -377,9 +453,15 @@ const DocumentUploadSection: React.FC<DocumentUploadSectionProps> = ({
               <p className="text-sm text-gray-600">
                 Drag & drop or click • JPG, PNG, PDF • Max 2 files
               </p>
-              <p className="text-xs text-gray-500">
-                AI will automatically extract and fill your measurements
-              </p>
+              {freeAttemptsRemaining > 0 ? (
+                <p className="text-xs font-semibold text-amber-600">
+                  ✨ FREE upload ({freeAttemptsRemaining}/3 remaining) • No AI credits used!
+                </p>
+              ) : (
+                <p className="text-xs text-gray-500">
+                  AI will automatically extract and fill your measurements
+                </p>
+              )}
             </div>
           )}
         </div>

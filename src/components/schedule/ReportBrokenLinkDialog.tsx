@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import brokenLinkReportService from "@/services/brokenLinkReportService";
 import { useAppSelector } from "@/store/hooks";
+import { useToast } from "@/hooks/useToast";
 
 interface ReportBrokenLinkDialogProps {
   isOpen: boolean;
@@ -32,10 +33,11 @@ const ReportBrokenLinkDialog: React.FC<ReportBrokenLinkDialogProps> = ({
   const [comment, setComment] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const userId = useAppSelector((state) => state.auth.userId);
+  const { showToast } = useToast();
 
   const handleReport = async () => {
     if (!userId) {
-      alert("Please log in to report broken links");
+      showToast("Please log in to report broken links", "warning");
       return;
     }
 
@@ -57,7 +59,7 @@ const ReportBrokenLinkDialog: React.FC<ReportBrokenLinkDialogProps> = ({
       onClose();
     } catch (error) {
       console.error("Failed to report broken link:", error);
-      alert("Failed to report broken link. Please try again.");
+      showToast("Failed to report broken link. Please try again.", "error");
     } finally {
       setIsSubmitting(false);
     }
@@ -74,42 +76,38 @@ const ReportBrokenLinkDialog: React.FC<ReportBrokenLinkDialogProps> = ({
             Report Broken Video Link
           </AlertDialogTitle>
           <AlertDialogDescription>
-            <div className="space-y-3">
-              <p>
-                You're reporting a broken video link for:
-                <br />
-                <strong style={{ color: "#0b3d33" }}>{exerciseName}</strong>
-              </p>
-              
-              <div>
-                <label
-                  htmlFor="comment"
-                  className="block text-sm font-medium mb-1"
-                  style={{ color: "#0b3d33" }}
-                >
-                  Additional details (optional)
-                </label>
-                <textarea
-                  id="comment"
-                  value={comment}
-                  onChange={(e) => setComment(e.target.value)}
-                  placeholder="What's wrong with the video? (e.g., 404 error, wrong exercise, etc.)"
-                  className="w-full px-3 py-2 border-2 rounded-xl text-sm resize-none focus:outline-none focus:ring-2 focus:ring-green-500/20"
-                  style={{ borderColor: "#c8ead6", color: "#0b3d33" }}
-                  rows={3}
-                  maxLength={500}
-                />
-                <p className="text-xs mt-1" style={{ color: "#6b7280" }}>
-                  {comment.length}/500 characters
-                </p>
-              </div>
-
-              <p className="text-xs" style={{ color: "#6b7280" }}>
-                Thank you for helping us improve! Our team will review and fix this issue.
-              </p>
-            </div>
+            Report a broken or incorrect video link for {exerciseName}. Your feedback helps us improve the exercise library.
           </AlertDialogDescription>
         </AlertDialogHeader>
+        
+        <div className="space-y-3 px-6 pb-2">
+          <div>
+            <label
+              htmlFor="comment"
+              className="block text-sm font-medium mb-1"
+              style={{ color: "#0b3d33" }}
+            >
+              Additional details (optional)
+            </label>
+            <textarea
+              id="comment"
+              value={comment}
+              onChange={(e) => setComment(e.target.value)}
+              placeholder="What's wrong with the video? (e.g., 404 error, wrong exercise, etc.)"
+              className="w-full px-3 py-2 border-2 rounded-xl text-sm resize-none focus:outline-none focus:ring-2 focus:ring-green-500/20"
+              style={{ borderColor: "#c8ead6", color: "#0b3d33" }}
+              rows={3}
+              maxLength={500}
+            />
+            <p className="text-xs mt-1" style={{ color: "#6b7280" }}>
+              {comment.length}/500 characters
+            </p>
+          </div>
+
+          <p className="text-xs" style={{ color: "#6b7280" }}>
+            Thank you for helping us improve! Our team will review and fix this issue.
+          </p>
+        </div>
         <AlertDialogFooter>
           <AlertDialogCancel
             onClick={onClose}

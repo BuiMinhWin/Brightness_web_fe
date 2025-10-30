@@ -24,10 +24,11 @@ interface RegenerateScheduleModalProps {
   completedDays: number;
   totalDays: number;
   currentDifficulty: string;
-  aiUsageLimits?: {
-    remainingGenerations: number;
-    monthlyLimit: number;
-    canGenerate: boolean;
+  creditBalance?: {
+    remainingCredits: number;
+    monthlyCredits: number;
+    usedCreditsThisMonth: number;
+    canAffordOperation: boolean;
     subscriptionTier: string;
     daysUntilReset: number;
   } | null;
@@ -50,7 +51,7 @@ const RegenerateScheduleModal: React.FC<RegenerateScheduleModalProps> = ({
   completedDays,
   totalDays,
   currentDifficulty,
-  aiUsageLimits,
+  creditBalance,
 }) => {
   const [isGenerating, setIsGenerating] = useState(false);
   const [formData, setFormData] = useState<RegenerateRequestData>({
@@ -136,24 +137,22 @@ const RegenerateScheduleModal: React.FC<RegenerateScheduleModalProps> = ({
           </button>
         </div>
 
-        {/* AI Usage Warning */}
-        {aiUsageLimits && !aiUsageLimits.canGenerate && (
+        {/* AI Credit Warning */}
+        {creditBalance && !creditBalance.canAffordOperation && (
           <div className="px-6">
             <div className="bg-red-50 border-2 border-red-300 rounded-xl p-4">
               <div className="flex items-start gap-3">
                 <Warning style={{ color: "#dc2626", fontSize: 24 }} />
                 <div>
                   <h3 className="font-bold text-sm" style={{ color: "#991b1b" }}>
-                    AI Generation Limit Reached
+                    Insufficient AI Credits
                   </h3>
                   <p className="text-xs mt-1" style={{ color: "#991b1b", opacity: 0.9 }}>
-                    You've used {aiUsageLimits.monthlyLimit} of {aiUsageLimits.monthlyLimit} AI
-                    generations this month.
+                    You have {(creditBalance.remainingCredits ?? 0).toLocaleString()} of {(creditBalance.monthlyCredits ?? 0).toLocaleString()} tokens remaining.
                   </p>
                   <p className="text-xs mt-1" style={{ color: "#991b1b", opacity: 0.7 }}>
-                    Resets in {aiUsageLimits.daysUntilReset}{" "}
-                    {aiUsageLimits.daysUntilReset === 1 ? "day" : "days"} or upgrade for unlimited
-                    generations.
+                    Resets in {creditBalance.daysUntilReset ?? 30}{" "}
+                    {(creditBalance.daysUntilReset ?? 30) === 1 ? "day" : "days"} or upgrade for more tokens.
                   </p>
                 </div>
               </div>
@@ -177,25 +176,120 @@ const RegenerateScheduleModal: React.FC<RegenerateScheduleModalProps> = ({
             </p>
           </div>
 
-          {/* Regenerate From Day */}
+          {/* Regenerate From Day - Visual Selector */}
           <div>
-            <label className="block text-sm font-semibold mb-2" style={{ color: "#0a6a56" }}>
-              Regenerate from Day
+            <label className="block text-sm font-semibold mb-3" style={{ color: "#0a6a56" }}>
+              Choose where to start regenerating
             </label>
-            <input
-              type="number"
-              value={formData.fromDayNumber}
-              onChange={(e) =>
-                setFormData({ ...formData, fromDayNumber: parseInt(e.target.value) })
-              }
-              min={completedDays + 1}
-              max={totalDays}
-              className="w-full px-4 py-3 border-2 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500/20"
-              style={{ borderColor: "#c8ead6" }}
-            />
-            <p className="text-xs mt-1" style={{ color: "#0b3d33", opacity: 0.6 }}>
-              All days from this number onwards will be regenerated
-            </p>
+            
+            {/* Visual Day Timeline */}
+            <div className="space-y-3">
+              {/* Completed Days Preview */}
+              <div className="flex items-center gap-2 mb-2">
+                <CheckCircle style={{ color: "#10b981", fontSize: 16 }} />
+                <span className="text-xs font-medium" style={{ color: "#0b3d33", opacity: 0.8 }}>
+                  Days 1-{completedDays} completed (will be kept)
+                </span>
+              </div>
+
+              {/* Day Selector Cards */}
+              <div className="grid grid-cols-5 gap-2 max-h-40 overflow-y-auto p-1">
+                {Array.from({ length: totalDays }, (_, i) => i + 1).map((day) => {
+                  const isCompleted = day <= completedDays;
+                  const isSelected = day === formData.fromDayNumber;
+                  const willBeRegenerated = day >= formData.fromDayNumber;
+
+                  return (
+                    <button
+                      key={day}
+                      onClick={() => {
+                        if (!isCompleted) {
+                          setFormData({ ...formData, fromDayNumber: day });
+                        }
+                      }}
+                      disabled={isCompleted}
+                      className={`
+                        relative p-3 rounded-lg border-2 transition-all text-center
+                        ${isCompleted ? "cursor-not-allowed opacity-50" : "cursor-pointer hover:scale-105"}
+                        ${isSelected ? "shadow-lg ring-2 ring-offset-1" : ""}
+                      `}
+                      style={{
+                        borderColor: isCompleted
+                          ? "#10b981"
+                          : isSelected
+                          ? "#0a6a56"
+                          : willBeRegenerated
+                          ? "#f59e0b"
+                          : "#c8ead6",
+                        background: isCompleted
+                          ? "#d1fae5"
+                          : isSelected
+                          ? "#d1f4e0"
+                          : willBeRegenerated
+                          ? "#fef3c7"
+                          : "white",
+                        ringColor: isSelected ? "#0a6a56" : undefined,
+                      }}
+                    >
+                      <div
+                        className="text-xs font-bold"
+                        style={{
+                          color: isCompleted ? "#059669" : willBeRegenerated ? "#d97706" : "#0a6a56",
+                        }}
+                      >
+                        Day {day}
+                      </div>
+                      {isCompleted && (
+                        <CheckCircle
+                          style={{
+                            fontSize: 12,
+                            color: "#059669",
+                            position: "absolute",
+                            top: 2,
+                            right: 2,
+                          }}
+                        />
+                      )}
+                      {isSelected && !isCompleted && (
+                        <div
+                          className="absolute -top-1 -right-1 w-3 h-3 rounded-full border-2 border-white"
+                          style={{ background: "#0a6a56" }}
+                        />
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* Legend */}
+              <div className="flex flex-wrap gap-4 pt-2 border-t" style={{ borderColor: "#e5e7eb" }}>
+                <div className="flex items-center gap-2">
+                  <div className="w-4 h-4 rounded border-2" style={{ borderColor: "#10b981", background: "#d1fae5" }} />
+                  <span className="text-xs" style={{ color: "#0b3d33", opacity: 0.7 }}>
+                    Completed & Saved
+                  </span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="w-4 h-4 rounded border-2" style={{ borderColor: "#f59e0b", background: "#fef3c7" }} />
+                  <span className="text-xs" style={{ color: "#0b3d33", opacity: 0.7 }}>
+                    Will Regenerate
+                  </span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="w-4 h-4 rounded border-2" style={{ borderColor: "#0a6a56", background: "#d1f4e0" }} />
+                  <span className="text-xs" style={{ color: "#0b3d33", opacity: 0.7 }}>
+                    Selected Start
+                  </span>
+                </div>
+              </div>
+
+              {/* Summary Text */}
+              <div className="bg-orange-50 border-2 border-orange-200 rounded-lg p-3">
+                <p className="text-sm font-medium" style={{ color: "#d97706" }}>
+                  Days {formData.fromDayNumber}-{totalDays} will be regenerated ({totalDays - formData.fromDayNumber + 1} days)
+                </p>
+              </div>
+            </div>
           </div>
 
           {/* Reason */}
@@ -291,7 +385,7 @@ const RegenerateScheduleModal: React.FC<RegenerateScheduleModalProps> = ({
           </button>
           <button
             onClick={handleSubmit}
-            disabled={isGenerating || !!(aiUsageLimits && !aiUsageLimits.canGenerate)}
+            disabled={isGenerating || !!(creditBalance && !creditBalance.canAffordOperation)}
             className="flex-1 px-6 py-3 rounded-xl font-semibold text-white hover:opacity-90 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
             style={{ background: "#0a6a56" }}
           >

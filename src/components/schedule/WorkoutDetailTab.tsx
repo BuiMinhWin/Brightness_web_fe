@@ -14,13 +14,13 @@ import {
   Refresh,
   Flag,
 } from "@mui/icons-material";
-import { Snackbar, Alert } from "@mui/material";
 import {
   ExerciseDetail,
   ScheduleDayDetail,
   personalCoachService,
 } from "@/services/personalCoachService";
 import ReportBrokenLinkDialog from "./ReportBrokenLinkDialog";
+import { useToast } from "@/hooks/useToast";
 
 interface WorkoutDetailTabProps {
   workout: ScheduleDayDetail | null;
@@ -45,21 +45,12 @@ const WorkoutDetailTab: React.FC<WorkoutDetailTabProps> = ({
   const [updatingExercise, setUpdatingExercise] = useState<string | null>(null);
   const [showReportDialog, setShowReportDialog] = useState(false);
   const [reportingExercise, setReportingExercise] = useState<ExerciseDetail | null>(null);
-  const [toast, setToast] = useState<{
-    open: boolean;
-    message: string;
-    severity: "success" | "error" | "warning" | "info";
-  }>({
-    open: false,
-    message: "",
-    severity: "info",
-  });
+  const { showToast } = useToast();
 
   useEffect(() => {
     if (workout) {
       setExercises(workout.exercises);
     }
-    setToast({ open: false, message: "", severity: "info" });
   }, [workout]);
 
   const isToday = () => {
@@ -78,11 +69,7 @@ const WorkoutDetailTab: React.FC<WorkoutDetailTabProps> = ({
 
   const handleToggleComplete = async (exercise: ExerciseDetail) => {
     if (!canComplete) {
-      setToast({
-        open: true,
-        message: "You can only mark exercises as complete on the scheduled workout day!",
-        severity: "warning",
-      });
+      showToast("You can only mark exercises as complete on the scheduled workout day!", "warning");
       return;
     }
     setUpdatingExercise(exercise.exerciseId);
@@ -106,18 +93,13 @@ const WorkoutDetailTab: React.FC<WorkoutDetailTabProps> = ({
         onExerciseComplete(exercise.exerciseId, newCompleted);
       }
 
-      setToast({
-        open: true,
-        message: newCompleted ? "Exercise marked as complete!" : "Exercise marked as incomplete",
-        severity: "success",
-      });
+      showToast(
+        newCompleted ? "Exercise marked as complete!" : "Exercise marked as incomplete",
+        "success"
+      );
     } catch (error) {
       console.error("Error toggling exercise completion:", error);
-      setToast({
-        open: true,
-        message: "Failed to update exercise status",
-        severity: "error",
-      });
+      showToast("Failed to update exercise status", "error");
     } finally {
       setUpdatingExercise(null);
     }
@@ -356,18 +338,6 @@ const WorkoutDetailTab: React.FC<WorkoutDetailTabProps> = ({
         ))}
       </div>
 
-      {/* Toast Notification */}
-      <Snackbar
-        open={toast.open}
-        autoHideDuration={4000}
-        onClose={() => setToast({ ...toast, open: false })}
-        anchorOrigin={{ vertical: "top", horizontal: "right" }}
-      >
-        <Alert severity={toast.severity} onClose={() => setToast({ ...toast, open: false })}>
-          {toast.message}
-        </Alert>
-      </Snackbar>
-
       {/* Report Broken Link Dialog */}
       {reportingExercise && (
         <ReportBrokenLinkDialog
@@ -380,11 +350,7 @@ const WorkoutDetailTab: React.FC<WorkoutDetailTabProps> = ({
           exerciseName={reportingExercise.exerciseName}
           videoUrl={reportingExercise.videoUrl || ""}
           onReportSuccess={() => {
-            setToast({
-              open: true,
-              message: "Thank you for reporting! We'll review this issue soon.",
-              severity: "success",
-            });
+            showToast("Thank you for reporting! We'll review this issue soon.", "success");
           }}
         />
       )}

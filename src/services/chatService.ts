@@ -93,6 +93,25 @@ export const getLimits = async (): Promise<MessageLimits> => {
   });
 };
 
+// New credit system - get balance from BillingAPI
+export const getCreditBalance = async (userId: string) => {
+  const response = await httpRequest<{ success: boolean; data: any }>(
+    `/billing/api/AICredits/${userId}/balance/chat`,
+    { method: "GET" }
+  );
+  
+  // Map BillingAPI response to chat service format
+  const billingData = response.data;
+  return {
+    remainingCredits: billingData.remainingTokens || 0,
+    monthlyCredits: billingData.monthlyTokenLimit || 10000,
+    usedCredits: billingData.usedTokens || 0,
+    resetDate: billingData.cycleEndDate,
+    subscriptionTier: billingData.subscriptionTier || "free",
+    canAfford: billingData.canAfford !== false
+  };
+};
+
 export interface CreateScheduleResponse {
   schedule: any;
   remainingMessages: number;  // Legacy
