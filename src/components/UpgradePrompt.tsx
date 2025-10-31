@@ -7,15 +7,10 @@ import { AICreditBalance } from "../services/personalCoachService";
 interface UpgradePromptProps {
   isOpen: boolean;
   onClose: () => void;
-  aiUsageLimits?: {
-    remainingGenerations: number;
-    monthlyLimit: number;
-    daysUntilReset: number;
-  } | null;
   creditBalance?: AICreditBalance | null;
 }
 
-const UpgradePrompt: React.FC<UpgradePromptProps> = ({ isOpen, onClose, aiUsageLimits, creditBalance }) => {
+const UpgradePrompt: React.FC<UpgradePromptProps> = ({ isOpen, onClose, creditBalance }) => {
   const navigate = useNavigate();
 
   const handleUpgrade = () => {
@@ -23,10 +18,10 @@ const UpgradePrompt: React.FC<UpgradePromptProps> = ({ isOpen, onClose, aiUsageL
     onClose();
   };
 
-  // Use credit balance if available, otherwise fall back to legacy usage limits
+  // Use credit balance for display
   const currentCredits = creditBalance?.remainingCredits ?? 0;
-  const monthlyCredits = creditBalance?.monthlyCredits ?? (aiUsageLimits?.monthlyLimit ?? 0) * 10; // Convert generations to credits estimate
-  const daysUntilReset = creditBalance?.daysUntilReset ?? aiUsageLimits?.daysUntilReset ?? 30;
+  const monthlyCredits = creditBalance?.monthlyCredits ?? 0;
+  const daysUntilReset = creditBalance?.daysUntilReset ?? 30;
   const tier = creditBalance?.subscriptionTier ?? "free";
 
   return (

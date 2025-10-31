@@ -153,3 +153,12 @@ body {
     @apply bg-background text-foreground;
   }
 }
+
+/* Force Radix UI Popover to appear above all modals */
+[data-radix-popper-content-wrapper] {
+  z-index: 999999 !important;
+}
+
+[data-radix-popover-content] {
+  z-index: 999999 !important;
+}

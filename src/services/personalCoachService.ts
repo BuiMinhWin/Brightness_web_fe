@@ -1,6 +1,15 @@
 // personalCoachService.ts
 import { httpRequest } from "./httpClientRedux";
 
+// Helper function to calculate days until reset
+const calculateDaysUntilReset = (resetDate: string): number => {
+  if (!resetDate) return 30;
+  const reset = new Date(resetDate);
+  const now = new Date();
+  const days = Math.ceil((reset.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+  return Math.max(0, days);
+};
+
 // DTOs matching the backend
 export interface GenerateScheduleRequest {
   userId: string;
@@ -10,7 +19,7 @@ export interface GenerateScheduleRequest {
   availableDays: string[];
   equipmentAvailable: string[];
   additionalNotes?: string;
-  startDate?: string;
+  startDate?: string; // ISO date string (YYYY-MM-DD) - supports up to 30 days ahead
 }
 
 export interface ExerciseDetail {
@@ -52,6 +61,10 @@ export interface WorkoutScheduleResponse {
 
 // ==================== MANUAL SCHEDULE BUILDER TYPES ====================
 
+/**
+ * @deprecated Use AICreditBalance from creditService instead
+ * This interface is kept for backwards compatibility only
+ */
 export interface AIUsageLimits {
   remainingGenerations: number;
   monthlyLimit: number;
@@ -61,7 +74,7 @@ export interface AIUsageLimits {
   subscriptionTier: "free" | "paid";
 }
 
-// New credit-based interface
+// Credit-based interface (NEW - use this)
 export interface AICreditBalance {
   remainingCredits: number;
   monthlyCredits: number;
@@ -69,7 +82,7 @@ export interface AICreditBalance {
   usedCreditsThisMonth: number;
   daysUntilReset: number;
   subscriptionTier: "free" | "basic" | "premium";
-  creditCostBreakdown: {
+  creditCostBreakdown?: {
     [key: string]: number;
   };
 }
@@ -395,16 +408,16 @@ export const personalCoachService = {
     });
   },
 
-  /** Get schedule history */
-  async getScheduleHistory(userId: string) {
-    return httpRequest(`/coach/api/Schedule/history/user/${userId}`, {
+  /** Get schedule history (NEW - with token tracking) */
+  async getScheduleHistory(userId: string, limit: number = 50) {
+    return httpRequest(`/coach/api/ScheduleHistory/user/${userId}?limit=${limit}`, {
       method: "GET",
     });
   },
 
-  /** Get schedule analytics */
+  /** Get schedule analytics (NEW - with token tracking) */
   async getScheduleAnalytics(userId: string) {
-    return httpRequest(`/coach/api/Schedule/analytics/user/${userId}`, {
+    return httpRequest(`/coach/api/ScheduleHistory/analytics/${userId}`, {
       method: "GET",
     });
   },
@@ -503,22 +516,27 @@ export const personalCoachService = {
 
   // ==================== MANUAL SCHEDULE BUILDER METHODS ====================
 
-  // AI Usage Limits (Legacy)
-  getAIUsageLimits: async (userId: string): Promise<AIUsageLimits> => {
-    const response = await httpRequest<{ success: boolean; data: AIUsageLimits }>(
-      `/coach/api/schedule/ai-usage-limits/${userId}`,
-      { method: "GET" }
-    );
-    return response.data;
-  },
+  // AI Usage Limits - DEPRECATED: Use creditService.getCreditBalance() instead
 
   // AI Credit Balance (NEW)
   getAICreditBalance: async (userId: string): Promise<AICreditBalance> => {
-    const response = await httpRequest<{ success: boolean; data: AICreditBalance }>(
-      `/coach/api/schedule/ai-credit-balance/${userId}`,
+    // Use unified credit service from BillingAPI
+    const response = await httpRequest<{ success: boolean; data: any }>(
+      `/billing/api/AICredits/${userId}/balance/schedule`,
       { method: "GET" }
     );
-    return response.data;
+    
+    // Map BillingAPI response to existing interface for backwards compatibility
+    const billingData = response.data;
+    return {
+      remainingCredits: billingData.remainingTokens || 0,
+      monthlyCredits: billingData.monthlyTokenLimit || 5000,
+      canAffordOperation: billingData.canAfford !== false,
+      usedCreditsThisMonth: billingData.usedTokens || 0,
+      daysUntilReset: billingData.daysUntilReset || calculateDaysUntilReset(billingData.cycleEndDate),
+      subscriptionTier: billingData.subscriptionTier || "free",
+      creditCostBreakdown: undefined // Not provided by new system (uses token-based pricing)
+    };
   },
 
   // AI Credit History

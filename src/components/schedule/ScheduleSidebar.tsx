@@ -31,12 +31,6 @@ interface ScheduleSidebarProps {
   isGenerating: boolean;
   hasSchedules: boolean;
   userId: string;
-  aiUsageLimits?: {
-    remainingGenerations: number;
-    monthlyLimit: number;
-    canGenerate: boolean;
-    subscriptionTier: string;
-  } | null;
   creditBalance?: AICreditBalance | null;
   // Workout detail props
   selectedWorkout?: ScheduleDayDetail | null;
@@ -60,7 +54,6 @@ const ScheduleSidebar: React.FC<ScheduleSidebarProps> = ({
   isGenerating,
   hasSchedules,
   userId,
-  aiUsageLimits,
   creditBalance,
   selectedWorkout,
   selectedWorkoutDate,
@@ -262,7 +255,6 @@ const ScheduleSidebar: React.FC<ScheduleSidebarProps> = ({
                 <AIGenerateTab
                   onSubmit={onGenerateSubmit}
                   isGenerating={isGenerating}
-                  aiUsageLimits={aiUsageLimits}
                   creditBalance={creditBalance}
                 />
               </>

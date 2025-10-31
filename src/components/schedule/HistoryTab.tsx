@@ -14,34 +14,44 @@ interface HistoryTabProps {
   isVisible: boolean;
 }
 
-interface ScheduleVersion {
+interface ScheduleHistoryEntry {
+  id: string;
   scheduleId: string;
   version: number;
-  createdAt: string;
-  isLatest: boolean;
-  status: string;
+  actionType: string;
+  changeReason?: string;
+  userNotes?: string;
+  fromDayNumber?: number;
+  previousDifficulty?: string;
+  newDifficulty?: string;
   totalDays: number;
   completedDays: number;
-  completionPercentage: number;
-  regenerationReason?: string;
+  completionRate: number;
+  tokensUsed: number;
+  createdAt: string;
+  configurationSnapshot?: string;
 }
 
 interface Analytics {
-  totalWorkoutsCompleted: number;
-  totalWorkoutsPlanned: number;
-  overallCompletionRate: number;
-  completionByFocusArea: { [key: string]: number };
-  mostCompletedExercises: string[];
-  recentFeedback: Array<{
-    date: string;
-    difficultyRating: string;
-    notes?: string;
+  userId: string;
+  totalScheduleHistoryEntries: number;
+  totalRegenerations: number;
+  totalTokensUsed: number;
+  averageCompletionRate: number;
+  mostCommonChangeReason: string;
+  lastActivityDate?: string;
+  scheduleVersions: Array<{
+    scheduleId: string;
+    version: number;
+    createdAt: string;
+    actionType: string;
+    tokensUsed: number;
   }>;
 }
 
 const HistoryTab: React.FC<HistoryTabProps> = ({ userId, isVisible }) => {
   const [isLoading, setIsLoading] = useState(false);
-  const [versions, setVersions] = useState<ScheduleVersion[]>([]);
+  const [historyEntries, setHistoryEntries] = useState<ScheduleHistoryEntry[]>([]);
   const [analytics, setAnalytics] = useState<Analytics | null>(null);
 
   useEffect(() => {
@@ -53,9 +63,12 @@ const HistoryTab: React.FC<HistoryTabProps> = ({ userId, isVisible }) => {
   const loadHistory = async () => {
     setIsLoading(true);
     try {
-      const response = await personalCoachService.getScheduleHistory(userId);
-      setVersions((response as any).versions || []);
-      setAnalytics((response as any).analytics || null);
+      const [history, analyticsData] = await Promise.all([
+        personalCoachService.getScheduleHistory(userId, 50),
+        personalCoachService.getScheduleAnalytics(userId)
+      ]);
+      setHistoryEntries((history as any) || []);
+      setAnalytics((analyticsData as any) || null);
     } catch (error) {
       console.error("Failed to load schedule history:", error);
     } finally {
@@ -71,19 +84,38 @@ const HistoryTab: React.FC<HistoryTabProps> = ({ userId, isVisible }) => {
     });
   };
 
-  const getDifficultyColor = (rating: string) => {
-    switch (rating) {
-      case "too_easy":
+  const getActionTypeIcon = (actionType: string) => {
+    switch (actionType) {
+      case "created":
+        return <Star style={{ color: "#10b981", fontSize: 18 }} />;
+      case "regenerated":
+        return <Refresh style={{ color: "#f59e0b", fontSize: 18 }} />;
+      case "reverted":
+        return <History style={{ color: "#8b5cf6", fontSize: 18 }} />;
+      case "modified":
+        return <Schedule style={{ color: "#0ea5e9", fontSize: 18 }} />;
+      default:
+        return <Schedule style={{ color: "#6b7280", fontSize: 18 }} />;
+    }
+  };
+
+  const getActionTypeColor = (actionType: string) => {
+    switch (actionType) {
+      case "created":
         return "#10b981";
-      case "just_right":
-        return "#0a6a56";
-      case "too_hard":
+      case "regenerated":
         return "#f59e0b";
-      case "could_not_complete":
-        return "#ef4444";
+      case "reverted":
+        return "#8b5cf6";
+      case "modified":
+        return "#0ea5e9";
       default:
         return "#6b7280";
     }
+  };
+
+  const formatTokens = (tokens: number) => {
+    return tokens >= 1000 ? `${(tokens / 1000).toFixed(1)}K` : tokens.toString();
   };
 
   if (isLoading) {
@@ -110,14 +142,14 @@ const HistoryTab: React.FC<HistoryTabProps> = ({ userId, isVisible }) => {
                 className="text-xs font-medium"
                 style={{ color: "#0b3d33", opacity: 0.7 }}
               >
-                Completion Rate
+                Average Completion Rate
               </span>
             </div>
             <div className="text-2xl font-bold" style={{ color: "#0a6a56" }}>
-              {analytics.overallCompletionRate}%
+              {analytics.averageCompletionRate}%
             </div>
             <div className="text-xs mt-1" style={{ color: "#0b3d33", opacity: 0.6 }}>
-              {analytics.totalWorkoutsCompleted} of {analytics.totalWorkoutsPlanned} workouts
+              Across {analytics.totalScheduleHistoryEntries} schedule {analytics.totalScheduleHistoryEntries === 1 ? 'version' : 'versions'}
             </div>
           </div>
 
@@ -127,19 +159,19 @@ const HistoryTab: React.FC<HistoryTabProps> = ({ userId, isVisible }) => {
               style={{ borderColor: "#c8ead6", background: "#fef3c7" }}
             >
               <div className="flex items-center gap-2 mb-1">
-                <Star style={{ color: "#f59e0b", fontSize: 20 }} />
+                <Refresh style={{ color: "#f59e0b", fontSize: 20 }} />
                 <span
                   className="text-xs font-medium"
                   style={{ color: "#0b3d33", opacity: 0.7 }}
                 >
-                  Top Exercise
+                  Regenerations
                 </span>
               </div>
-              <div className="text-sm font-bold truncate" style={{ color: "#0a6a56" }}>
-                {analytics.mostCompletedExercises[0] || "None yet"}
+              <div className="text-2xl font-bold" style={{ color: "#0a6a56" }}>
+                {analytics.totalRegenerations}
               </div>
               <div className="text-xs mt-1" style={{ color: "#0b3d33", opacity: 0.6 }}>
-                Most completed
+                AI adjustments
               </div>
             </div>
 
@@ -153,58 +185,56 @@ const HistoryTab: React.FC<HistoryTabProps> = ({ userId, isVisible }) => {
                   className="text-xs font-medium"
                   style={{ color: "#0b3d33", opacity: 0.7 }}
                 >
-                  Versions
+                  Tokens Used
                 </span>
               </div>
               <div className="text-2xl font-bold" style={{ color: "#0a6a56" }}>
-                {versions.length}
+                {formatTokens(analytics.totalTokensUsed)}
               </div>
               <div className="text-xs mt-1" style={{ color: "#0b3d33", opacity: 0.6 }}>
-                Iterations
+                Total AI credits
               </div>
             </div>
           </div>
         </div>
       )}
 
-      {/* Schedule Versions */}
+      {/* Schedule History */}
       <div>
         <h3 className="text-base font-bold mb-3" style={{ color: "#0a6a56" }}>
-          Schedule Versions
+          Schedule History
         </h3>
         <div className="space-y-3">
-          {versions.length === 0 ? (
+          {historyEntries.length === 0 ? (
             <div className="text-center py-8" style={{ color: "#6b7280" }}>
               <History style={{ fontSize: 48, opacity: 0.3 }} />
               <p className="mt-2 text-sm">No schedule history yet</p>
             </div>
           ) : (
-            versions.map((version) => (
+            historyEntries.map((entry) => (
               <div
-                key={version.scheduleId}
-                className={`p-3 rounded-xl border-2 ${version.isLatest ? "shadow-md" : ""}`}
+                key={entry.id}
+                className="p-3 rounded-xl border-2"
                 style={{
-                  borderColor: version.isLatest ? "#0a6a56" : "#c8ead6",
-                  background: version.isLatest ? "#f0fdf4" : "white",
+                  borderColor: getActionTypeColor(entry.actionType) + "40",
+                  background: "white",
                 }}
               >
                 <div className="flex items-center justify-between mb-2">
                   <div className="flex items-center gap-2">
-                    <Schedule style={{ color: "#0a6a56", fontSize: 18 }} />
+                    {getActionTypeIcon(entry.actionType)}
                     <span className="font-bold text-sm" style={{ color: "#0a6a56" }}>
-                      Version {version.version}
+                      Version {entry.version}
                     </span>
-                    {version.isLatest && (
-                      <span
-                        className="px-2 py-0.5 rounded-full text-xs font-semibold text-white"
-                        style={{ background: "#10b981" }}
-                      >
-                        Current
-                      </span>
-                    )}
+                    <span
+                      className="px-2 py-0.5 rounded-full text-xs font-semibold text-white capitalize"
+                      style={{ background: getActionTypeColor(entry.actionType) }}
+                    >
+                      {entry.actionType}
+                    </span>
                   </div>
                   <span className="text-xs" style={{ color: "#0b3d33", opacity: 0.6 }}>
-                    {formatDate(version.createdAt)}
+                    {formatDate(entry.createdAt)}
                   </span>
                 </div>
 
@@ -214,7 +244,7 @@ const HistoryTab: React.FC<HistoryTabProps> = ({ userId, isVisible }) => {
                       Progress
                     </div>
                     <div className="text-xs font-semibold" style={{ color: "#0a6a56" }}>
-                      {version.completedDays}/{version.totalDays}
+                      {entry.completedDays}/{entry.totalDays}
                     </div>
                   </div>
                   <div>
@@ -222,31 +252,47 @@ const HistoryTab: React.FC<HistoryTabProps> = ({ userId, isVisible }) => {
                       Rate
                     </div>
                     <div className="text-xs font-semibold" style={{ color: "#0a6a56" }}>
-                      {version.completionPercentage}%
+                      {entry.completionRate}%
                     </div>
                   </div>
                   <div>
                     <div className="text-xs" style={{ color: "#0b3d33", opacity: 0.6 }}>
-                      Status
+                      Tokens
                     </div>
-                    <div
-                      className="text-xs font-semibold capitalize"
-                      style={{ color: "#0a6a56" }}
-                    >
-                      {version.status}
+                    <div className="text-xs font-semibold" style={{ color: "#0a6a56" }}>
+                      {formatTokens(entry.tokensUsed)}
                     </div>
                   </div>
                 </div>
 
-                {version.regenerationReason && (
+                {/* Difficulty Change */}
+                {entry.previousDifficulty && entry.newDifficulty && (
+                  <div className="mb-2 p-2 rounded-lg" style={{ background: "#f0fdf4" }}>
+                    <div className="text-xs font-medium" style={{ color: "#0b3d33", opacity: 0.7 }}>
+                      Difficulty: <span className="capitalize">{entry.previousDifficulty}</span> → <span className="capitalize font-bold" style={{ color: "#0a6a56" }}>{entry.newDifficulty}</span>
+                    </div>
+                  </div>
+                )}
+
+                {/* Change Reason */}
+                {entry.changeReason && (
                   <div
                     className="flex items-center gap-2 mt-2 pt-2 border-t"
                     style={{ borderColor: "#e5e7eb" }}
                   >
-                    <Refresh style={{ fontSize: 14, color: "#f59e0b" }} />
+                    <Refresh style={{ fontSize: 14, color: getActionTypeColor(entry.actionType) }} />
                     <span className="text-xs" style={{ color: "#0b3d33", opacity: 0.7 }}>
-                      Regenerated: {version.regenerationReason.replace(/_/g, " ")}
+                      {entry.fromDayNumber ? `From day ${entry.fromDayNumber}: ` : ""}{entry.changeReason.replace(/_/g, " ")}
                     </span>
+                  </div>
+                )}
+
+                {/* User Notes */}
+                {entry.userNotes && (
+                  <div className="mt-2 p-2 rounded-lg" style={{ background: "#fef3c7" }}>
+                    <div className="text-xs" style={{ color: "#0b3d33", opacity: 0.8 }}>
+                      💭 {entry.userNotes}
+                    </div>
                   </div>
                 )}
 
@@ -256,9 +302,8 @@ const HistoryTab: React.FC<HistoryTabProps> = ({ userId, isVisible }) => {
                     <div
                       className="h-1.5 rounded-full transition-all"
                       style={{
-                        width: `${version.completionPercentage}%`,
-                        background:
-                          "linear-gradient(90deg, #fbbf24 0%, #f59e0b 25%, #84cc16 75%, #22c55e 100%)",
+                        width: `${entry.completionRate}%`,
+                        background: getActionTypeColor(entry.actionType),
                       }}
                     />
                   </div>
@@ -269,46 +314,10 @@ const HistoryTab: React.FC<HistoryTabProps> = ({ userId, isVisible }) => {
         </div>
       </div>
 
-      {/* Recent Feedback */}
-      {analytics && analytics.recentFeedback.length > 0 && (
-        <div>
-          <h3 className="text-base font-bold mb-3" style={{ color: "#0a6a56" }}>
-            Recent Feedback
-          </h3>
-          <div className="space-y-2">
-            {analytics.recentFeedback.map((feedback, index) => (
-              <div
-                key={index}
-                className="p-3 rounded-xl border-2"
-                style={{ borderColor: "#c8ead6" }}
-              >
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <div
-                      className="w-2 h-2 rounded-full"
-                      style={{ background: getDifficultyColor(feedback.difficultyRating) }}
-                    />
-                    <span className="text-xs font-medium" style={{ color: "#0b3d33" }}>
-                      {feedback.difficultyRating.replace(/_/g, " ")}
-                    </span>
-                  </div>
-                  <span className="text-xs" style={{ color: "#0b3d33", opacity: 0.6 }}>
-                    {formatDate(feedback.date)}
-                  </span>
-                </div>
-                {feedback.notes && (
-                  <p className="text-xs mt-1" style={{ color: "#0b3d33", opacity: 0.7 }}>
-                    {feedback.notes}
-                  </p>
-                )}
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
     </div>
   );
 };
 
 export default HistoryTab;
+
 

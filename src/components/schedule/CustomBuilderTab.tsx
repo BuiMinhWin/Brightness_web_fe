@@ -314,12 +314,36 @@ const CustomBuilderTab: React.FC<CustomBuilderTabProps> = ({ mode, onTemplateLoa
       if (onTemplateApplied) {
         onTemplateApplied();
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error("Failed to apply template:", error);
-      showToast({
-        message: "Failed to apply template. Please try again.",
-        severity: "error",
-      });
+      
+      // Check if it's a validation error from the backend
+      const errorMessage = error?.message || "Failed to apply template";
+      
+      // Show detailed error message for validation issues
+      if (errorMessage.includes("completed workout") || errorMessage.includes("progress history")) {
+        showToast({
+          message: "Cannot Modify Completed Workout",
+          severity: "error",
+          duration: 6000,
+        });
+        showToast({
+          message: "This day is part of your progress history. Mark it incomplete first, or choose a different date.",
+          severity: "warning",
+          duration: 6000,
+        });
+      } else if (errorMessage.includes("already exists")) {
+        showToast({
+          message: "A workout already exists on this date. Enable 'Replace Existing' to overwrite it.",
+          severity: "warning",
+          duration: 5000,
+        });
+      } else {
+        showToast({
+          message: errorMessage,
+          severity: "error",
+        });
+      }
     }
   };
 
@@ -743,6 +767,7 @@ const CustomBuilderTab: React.FC<CustomBuilderTabProps> = ({ mode, onTemplateLoa
           style={{
             background: "rgba(10, 106, 86, 0.15)",
             backdropFilter: "blur(8px)",
+            pointerEvents: "auto", // Ensure backdrop allows pointer events to pass through to higher z-index elements
           }}
           onClick={() => {
             setShowApplyModal(false);
@@ -751,7 +776,7 @@ const CustomBuilderTab: React.FC<CustomBuilderTabProps> = ({ mode, onTemplateLoa
           }}
         >
           <div
-            className="bg-white rounded-3xl shadow-2xl w-full max-w-md mx-4"
+            className="bg-white rounded-3xl shadow-2xl w-full max-w-md mx-4 relative z-[10000]"
             style={{ border: "2px solid #c8ead6" }}
             onClick={(e) => e.stopPropagation()}
           >
@@ -802,7 +827,11 @@ const CustomBuilderTab: React.FC<CustomBuilderTabProps> = ({ mode, onTemplateLoa
                         </span>
                       </button>
                     </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0" align="start">
+                    <PopoverContent 
+                      className="w-auto p-0" 
+                      align="start"
+                      sideOffset={8}
+                    >
                       <Calendar
                         mode="single"
                         selected={selectedDate}

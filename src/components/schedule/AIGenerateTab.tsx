@@ -10,6 +10,8 @@ import {
   Schedule as ScheduleIcon,
   SportsGymnastics,
   Description,
+  Warning,
+  CheckCircle,
 } from "@mui/icons-material";
 import {
   Select,
@@ -23,8 +25,9 @@ import { Label } from "@/components/ui/label";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 import { Button } from "@/components/ui/button";
-import { AICreditBalance } from "../../services/personalCoachService";
+import { AICreditBalance, personalCoachService } from "../../services/personalCoachService";
 import CreditCostBadge from "../CreditCostBadge";
+import { useAppSelector } from "../../store/hooks";
 
 export interface GenerateWorkoutFormData {
   goal: string;
@@ -39,24 +42,18 @@ export interface GenerateWorkoutFormData {
 interface AIGenerateTabProps {
   onSubmit: (formData: GenerateWorkoutFormData) => Promise<void>;
   isGenerating: boolean;
-  aiUsageLimits?: {
-    remainingGenerations: number;
-    monthlyLimit: number;
-    canGenerate: boolean;
-    subscriptionTier: string;
-  } | null;
   creditBalance?: AICreditBalance | null;
 }
 
-const AIGenerateTab: React.FC<AIGenerateTabProps> = ({ onSubmit, isGenerating, aiUsageLimits, creditBalance }) => {
-  const tomorrow = new Date();
-  tomorrow.setDate(tomorrow.getDate() + 1);
+const AIGenerateTab: React.FC<AIGenerateTabProps> = ({ onSubmit, isGenerating, creditBalance }) => {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0); // Set to start of day
 
-  // Use credit balance if available, otherwise fall back to legacy usage limits
-  const scheduleGenerationCost = creditBalance?.creditCostBreakdown?.ScheduleGeneration ?? 10;
-  const currentCredits = creditBalance?.remainingCredits ?? (aiUsageLimits?.remainingGenerations ?? 0) * 10;
-  const canGenerate = creditBalance ? creditBalance.remainingCredits >= scheduleGenerationCost : (aiUsageLimits?.canGenerate ?? true);
-  const tier = creditBalance?.subscriptionTier ?? aiUsageLimits?.subscriptionTier ?? "free";
+  // Use credit balance for generation limits
+  const scheduleGenerationCost = 7500; // Estimated token cost for schedule generation
+  const currentCredits = creditBalance?.remainingCredits ?? 0;
+  const canGenerate = creditBalance ? creditBalance.remainingCredits >= scheduleGenerationCost : true;
+  const tier = creditBalance?.subscriptionTier ?? "free";
   
   const [formData, setFormData] = useState<GenerateWorkoutFormData>({
     goal: "Weight Loss",
@@ -65,11 +62,19 @@ const AIGenerateTab: React.FC<AIGenerateTabProps> = ({ onSubmit, isGenerating, a
     availableDays: ["Monday", "Wednesday", "Friday"],
     equipmentAvailable: ["Dumbbells", "Bodyweight"],
     additionalNotes: "",
-    startDate: tomorrow,
+    startDate: today,
   });
 
   const [showLottie, setShowLottie] = useState(false);
+  const [showWarningDialog, setShowWarningDialog] = useState(false);
+  const [existingScheduleInfo, setExistingScheduleInfo] = useState<{
+    hasSchedule: boolean;
+    hasCompletedDays: boolean;
+    completedCount: number;
+    totalDays: number;
+  } | null>(null);
   const iconRef = useRef<HTMLDivElement>(null);
+  const userId = useAppSelector((state) => state.auth.userId);
 
   useEffect(() => {
     if (isGenerating && iconRef.current) {
@@ -107,7 +112,53 @@ const AIGenerateTab: React.FC<AIGenerateTabProps> = ({ onSubmit, isGenerating, a
     }
   }, [isGenerating, showLottie]);
 
-  const handleSubmit = async () => {
+  // Check if user has existing schedule with completed days
+  const checkExistingSchedule = async (): Promise<boolean> => {
+    if (!userId) return true; // Allow if no userId
+    
+    try {
+      const schedules = await personalCoachService.getUserSchedules(userId);
+      const activeSchedule = schedules.find(s => s.isLatest);
+      
+      if (!activeSchedule) {
+        return true; // No active schedule, safe to proceed
+      }
+      
+      // Check for completed days
+      const completedDays = activeSchedule.days.filter(day => 
+        day.exercises?.some(ex => ex.completed === true)
+      );
+      
+      if (completedDays.length > 0) {
+        // Has completed days, show warning
+        setExistingScheduleInfo({
+          hasSchedule: true,
+          hasCompletedDays: true,
+          completedCount: completedDays.length,
+          totalDays: activeSchedule.days.length,
+        });
+        setShowWarningDialog(true);
+        return false; // Block creation until user confirms
+      }
+      
+      // Has schedule but no completed days, can proceed
+      return true;
+      
+    } catch (error) {
+      console.error('Failed to check existing schedule:', error);
+      return true; // On error, allow proceeding
+    }
+  };
+
+  const handleSubmit = async (skipWarning: boolean = false) => {
+    // Check for existing schedule with completed days (unless user already confirmed)
+    if (!skipWarning) {
+      const canProceed = await checkExistingSchedule();
+      if (!canProceed) {
+        return; // Warning dialog will be shown
+      }
+    }
+
     await onSubmit(formData);
   };
 
@@ -243,16 +294,16 @@ const AIGenerateTab: React.FC<AIGenerateTabProps> = ({ onSubmit, isGenerating, a
             color: currentCredits < scheduleGenerationCost ? "#991b1b" : "#9a3412"
           }}>
             {currentCredits < scheduleGenerationCost
-              ? `Insufficient credits (need ${scheduleGenerationCost}, have ${currentCredits})` 
-              : `Low credits (${currentCredits} remaining, need ${scheduleGenerationCost} to generate)`
+              ? `Insufficient tokens (need ${scheduleGenerationCost.toLocaleString()}, have ${currentCredits.toLocaleString()})` 
+              : `Low tokens (${currentCredits.toLocaleString()} remaining, need ${scheduleGenerationCost.toLocaleString()} to generate)`
             }
           </p>
           <p className="text-xs mt-1" style={{ 
             color: currentCredits < scheduleGenerationCost ? "#dc2626" : "#ea580c"
           }}>
             {currentCredits < scheduleGenerationCost
-              ? "Use manual builder or upgrade to Basic/Premium for more credits."
-              : "After this, upgrade for more credits or use manual builder."
+              ? "Use manual builder or upgrade to Basic/Premium for more tokens."
+              : "After this, upgrade for more tokens or use manual builder."
             }
           </p>
         </div>
@@ -586,6 +637,110 @@ const AIGenerateTab: React.FC<AIGenerateTabProps> = ({ onSubmit, isGenerating, a
           <span>{isGenerating ? "Generating..." : "Generate Workout"}</span>
         </button>
       </div>
+
+      {/* Warning Dialog for Existing Schedule with Completed Days */}
+      {showWarningDialog && existingScheduleInfo && (
+        <div
+          className="fixed inset-0 flex items-center justify-center z-[99999]"
+          style={{
+            background: "rgba(0, 0, 0, 0.5)",
+            backdropFilter: "blur(4px)",
+          }}
+          onClick={() => {
+            setShowWarningDialog(false);
+            setExistingScheduleInfo(null);
+          }}
+        >
+          <div
+            className="bg-white rounded-3xl shadow-2xl w-full max-w-md mx-4"
+            style={{ border: "2px solid #f59e0b" }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="p-6">
+              {/* Warning Header */}
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-12 h-12 rounded-full flex items-center justify-center" style={{ background: "#fef3c7" }}>
+                  <Warning style={{ color: "#f59e0b", fontSize: 28 }} />
+                </div>
+                <div>
+                  <h3 className="text-xl font-bold" style={{ color: "#f59e0b" }}>
+                    Replace Existing Schedule?
+                  </h3>
+                  <p className="text-xs" style={{ color: "#92400e" }}>
+                    You have progress that will be archived
+                  </p>
+                </div>
+              </div>
+
+              {/* Warning Content */}
+              <div
+                className="p-4 rounded-xl mb-4"
+                style={{ background: "#fef3c7", border: "2px solid #fde68a" }}
+              >
+                <p className="text-sm font-semibold mb-2" style={{ color: "#92400e" }}>
+                  Your current schedule will be archived:
+                </p>
+                <ul className="space-y-2 text-sm" style={{ color: "#78350f" }}>
+                  <li className="flex items-start gap-2">
+                    <CheckCircle style={{ fontSize: 18, color: "#10b981", marginTop: 2 }} />
+                    <span>
+                      <strong>{existingScheduleInfo.completedCount}</strong> completed workout
+                      {existingScheduleInfo.completedCount !== 1 ? 's' : ''} will be preserved in your history
+                    </span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <Warning style={{ fontSize: 18, color: "#f59e0b", marginTop: 2 }} />
+                    <span>
+                      Progress tracking and analytics will remain accessible
+                    </span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <CalendarMonth style={{ fontSize: 18, color: "#3b82f6", marginTop: 2 }} />
+                    <span>
+                      A fresh schedule will replace your current plan
+                    </span>
+                  </li>
+                </ul>
+              </div>
+
+              {/* Info Message */}
+              <div
+                className="p-3 rounded-xl mb-4"
+                style={{ background: "#f0fdf4", border: "1px solid #bbf7d0" }}
+              >
+                <p className="text-xs" style={{ color: "#166534" }}>
+                  💡 <strong>Tip:</strong> Your completed workouts and progress are safely stored and won't be lost. 
+                  This only replaces your upcoming workout plan.
+                </p>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex gap-3">
+                <button
+                  onClick={() => {
+                    setShowWarningDialog(false);
+                    setExistingScheduleInfo(null);
+                  }}
+                  className="flex-1 px-4 py-3 rounded-xl font-semibold transition-colors hover:bg-gray-50"
+                  style={{ color: "#6b7280", border: "2px solid #e5e7eb" }}
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={() => {
+                    setShowWarningDialog(false);
+                    handleSubmit(true); // Skip warning check
+                  }}
+                  className="flex-[2] px-4 py-3 rounded-xl font-semibold text-white transition-all hover:opacity-90"
+                  style={{ background: "#f59e0b" }}
+                >
+                  Replace & Create New Schedule
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
     </>
   );

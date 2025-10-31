@@ -26,11 +26,13 @@ interface GenerateWorkoutModalProps {
   onClose: () => void;
   onGenerate: (formData: GenerateWorkoutFormData) => Promise<void>;
   isGenerating: boolean;
-  aiUsageLimits?: {
-    remainingGenerations: number;
-    monthlyLimit: number;
-    canGenerate: boolean;
+  creditBalance?: {
+    remainingCredits: number;
+    monthlyCredits: number;
+    usedCreditsThisMonth: number;
+    canAffordOperation: boolean;
     subscriptionTier: string;
+    daysUntilReset: number;
   } | null;
 }
 
@@ -49,7 +51,7 @@ const GenerateWorkoutModal: React.FC<GenerateWorkoutModalProps> = ({
   onClose,
   onGenerate,
   isGenerating,
-  aiUsageLimits,
+  creditBalance,
 }) => {
   const [formData, setFormData] = useState<GenerateWorkoutFormData>({
     goal: "Weight Loss",
@@ -152,30 +154,30 @@ const GenerateWorkoutModal: React.FC<GenerateWorkoutModalProps> = ({
           </button>
         </div>
 
-        {/* AI Usage Warning */}
-        {aiUsageLimits && aiUsageLimits.subscriptionTier === "free" && aiUsageLimits.remainingGenerations <= 1 && (
+        {/* AI Credit Warning */}
+        {creditBalance && creditBalance.subscriptionTier === "free" && creditBalance.remainingCredits <= 5000 && (
           <div 
             className="mb-4 p-4 rounded-xl"
             style={{ 
-              background: aiUsageLimits.remainingGenerations === 0 ? "#fee2e2" : "#fff7ed",
-              border: `2px solid ${aiUsageLimits.remainingGenerations === 0 ? "#fecaca" : "#fed7aa"}`
+              background: !creditBalance.canAffordOperation ? "#fee2e2" : "#fff7ed",
+              border: `2px solid ${!creditBalance.canAffordOperation ? "#fecaca" : "#fed7aa"}`
             }}
           >
             <div className="flex items-start gap-3">
               <div className="flex-1">
                 <p className="font-semibold text-sm" style={{ 
-                  color: aiUsageLimits.remainingGenerations === 0 ? "#991b1b" : "#9a3412"
+                  color: !creditBalance.canAffordOperation ? "#991b1b" : "#9a3412"
                 }}>
-                  {aiUsageLimits.remainingGenerations === 0 
-                    ? "No AI generations remaining" 
-                    : `Last AI generation for this month (${aiUsageLimits.remainingGenerations}/${aiUsageLimits.monthlyLimit})`
+                  {!creditBalance.canAffordOperation 
+                    ? "Insufficient AI credits" 
+                    : `Low AI credits: ${(creditBalance.remainingCredits ?? 0).toLocaleString()} / ${(creditBalance.monthlyCredits ?? 0).toLocaleString()} tokens`
                   }
                 </p>
                 <p className="text-xs mt-1" style={{ 
-                  color: aiUsageLimits.remainingGenerations === 0 ? "#dc2626" : "#ea580c"
+                  color: !creditBalance.canAffordOperation ? "#dc2626" : "#ea580c"
                 }}>
-                  {aiUsageLimits.remainingGenerations === 0
-                    ? "Consider using the manual schedule builder or upgrade to Premium for 50 AI generations per month."
+                  {!creditBalance.canAffordOperation
+                    ? "Consider using the manual schedule builder or upgrade to Premium for 100,000 tokens per month."
                     : "After this, consider using the manual builder or upgrade to Premium."
                   }
                 </p>

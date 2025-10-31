@@ -41,11 +41,11 @@ const CreditBalance: React.FC<CreditBalanceProps> = ({ balance, compact = false 
 
   if (compact) {
     return (
-      <Tooltip title={`${balance.remainingCredits} / ${balance.monthlyCredits} credits remaining`}>
+      <Tooltip title={`${balance.remainingCredits.toLocaleString()} / ${balance.monthlyCredits.toLocaleString()} tokens remaining`}>
         <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg" style={{ background: '#f3f4f6' }}>
           <AutoAwesome style={{ fontSize: 16, color: getTierColor(balance.subscriptionTier) }} />
           <span className="text-sm font-semibold" style={{ color: '#1f2937' }}>
-            {balance.remainingCredits}
+            {balance.remainingCredits.toLocaleString()}
           </span>
         </div>
       </Tooltip>
@@ -59,7 +59,7 @@ const CreditBalance: React.FC<CreditBalanceProps> = ({ balance, compact = false 
         <div className="flex items-center gap-2">
           <AutoAwesome style={{ fontSize: 20, color: getTierColor(balance.subscriptionTier) }} />
           <span className="text-sm font-semibold" style={{ color: '#6b7280' }}>
-            AI Credits
+            AI Tokens
           </span>
         </div>
         <div 
@@ -77,10 +77,10 @@ const CreditBalance: React.FC<CreditBalanceProps> = ({ balance, compact = false 
       <div className="mb-2">
         <div className="flex items-baseline gap-1">
           <span className="text-3xl font-bold" style={{ color: '#1f2937' }}>
-            {balance.remainingCredits}
+            {balance.remainingCredits.toLocaleString()}
           </span>
           <span className="text-sm" style={{ color: '#9ca3af' }}>
-            / {balance.monthlyCredits}
+            / {balance.monthlyCredits.toLocaleString()}
           </span>
         </div>
       </div>
@@ -98,36 +98,38 @@ const CreditBalance: React.FC<CreditBalanceProps> = ({ balance, compact = false 
 
       {/* Footer */}
       <div className="flex items-center justify-between text-xs" style={{ color: '#6b7280' }}>
-        <span>{balance.usedCreditsThisMonth} credits used</span>
+        <span>{balance.usedCreditsThisMonth.toLocaleString()} tokens used</span>
         <span>Resets in {balance.daysUntilReset} {balance.daysUntilReset === 1 ? 'day' : 'days'}</span>
       </div>
 
       {/* Cost Breakdown Tooltip */}
-      <Tooltip 
-        title={
-          <div className="p-2">
-            <div className="font-semibold mb-2">Credit Costs:</div>
-            {Object.entries(balance.creditCostBreakdown).map(([operation, cost]) => (
-              <div key={operation} className="flex justify-between gap-4 py-1">
-                <span>{operation.replace(/([A-Z])/g, ' $1').trim()}:</span>
-                <span className="font-semibold">{cost} credits</span>
-              </div>
-            ))}
-          </div>
-        }
-        placement="bottom"
-      >
-        <button 
-          className="w-full mt-3 py-2 rounded-lg text-xs font-medium transition-colors"
-          style={{ 
-            background: '#f9fafb', 
-            color: '#6b7280',
-            border: '1px solid #e5e7eb'
-          }}
+      {balance.creditCostBreakdown && Object.keys(balance.creditCostBreakdown).length > 0 && (
+        <Tooltip 
+          title={
+            <div className="p-2">
+              <div className="font-semibold mb-2">Token Costs:</div>
+              {Object.entries(balance.creditCostBreakdown).map(([operation, cost]) => (
+                <div key={operation} className="flex justify-between gap-4 py-1">
+                  <span>{operation.replace(/([A-Z])/g, ' $1').trim()}:</span>
+                  <span className="font-semibold">{cost} tokens</span>
+                </div>
+              ))}
+            </div>
+          }
+          placement="bottom"
         >
-          View Credit Costs
-        </button>
-      </Tooltip>
+          <button 
+            className="w-full mt-3 py-2 rounded-lg text-xs font-medium transition-colors"
+            style={{ 
+              background: '#f9fafb', 
+              color: '#6b7280',
+              border: '1px solid #e5e7eb'
+            }}
+          >
+            View Token Costs
+          </button>
+        </Tooltip>
+      )}
     </div>
   );
 };

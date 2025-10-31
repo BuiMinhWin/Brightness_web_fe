@@ -2,6 +2,10 @@ import React, { useState, useEffect, useRef } from 'react';
 import { gsap } from 'gsap';
 import { DotLottieReact } from '@lottiefiles/dotlottie-react';
 import chatService from '../../services/chatService';
+import { eventBus } from '../../services/eventBus';
+import { personalCoachService } from '../../services/personalCoachService';
+import { useToast } from '../../hooks/useToast';
+import { useAppSelector } from '../../store/hooks';
 import { 
   LocalFireDepartment, 
   FitnessCenter, 
@@ -12,7 +16,8 @@ import {
   TrendingUp,
   AutoAwesome,
   Close,
-  CheckCircle
+  CheckCircle,
+  Warning
 } from '@mui/icons-material';
 
 interface ScheduleCreationWidgetProps {
@@ -74,7 +79,21 @@ const ScheduleCreationWidget: React.FC<ScheduleCreationWidgetProps> = ({
   const [showCustomize, setShowCustomize] = useState(false);
   const [isAnalyzing, setIsAnalyzing] = useState(true);
   const [showLottie, setShowLottie] = useState(false);
+  const [creditBalance, setCreditBalance] = useState<{
+    remainingCredits: number;
+    monthlyCredits: number;
+    canAffordOperation: boolean;
+  } | null>(null);
+  const [showWarningDialog, setShowWarningDialog] = useState(false);
+  const [existingScheduleInfo, setExistingScheduleInfo] = useState<{
+    hasSchedule: boolean;
+    hasCompletedDays: boolean;
+    completedCount: number;
+    totalDays: number;
+  } | null>(null);
   const iconRef = useRef<HTMLDivElement>(null);
+  const { showToast } = useToast();
+  const userId = useAppSelector((state) => state.auth.userId);
 
   // Animate icon transition when isCreating changes
   useEffect(() => {
@@ -148,7 +167,77 @@ const ScheduleCreationWidget: React.FC<ScheduleCreationWidgetProps> = ({
     fetchProfileAnalysis();
   }, [suggestedGoal, suggestedDifficulty]);
 
-  const handleCreateSchedule = async () => {
+  // Fetch credit balance on mount
+  useEffect(() => {
+    const fetchCreditBalance = async () => {
+      if (!userId) return;
+      
+      try {
+        const balance = await personalCoachService.getAICreditBalance(userId);
+        setCreditBalance(balance);
+      } catch (error) {
+        console.error('Failed to fetch credit balance:', error);
+      }
+    };
+    fetchCreditBalance();
+  }, [userId]);
+
+  // Check if user has existing schedule with completed days
+  const checkExistingSchedule = async (): Promise<boolean> => {
+    if (!userId) return true; // Allow if no userId (shouldn't happen)
+    
+    try {
+      const schedules = await personalCoachService.getUserSchedules(userId);
+      const activeSchedule = schedules.find(s => s.isLatest);
+      
+      if (!activeSchedule) {
+        return true; // No active schedule, safe to proceed
+      }
+      
+      // Check for completed days
+      const completedDays = activeSchedule.days.filter(day => 
+        day.exercises?.some(ex => ex.completed === true)
+      );
+      
+      if (completedDays.length > 0) {
+        // Has completed days, show warning
+        setExistingScheduleInfo({
+          hasSchedule: true,
+          hasCompletedDays: true,
+          completedCount: completedDays.length,
+          totalDays: activeSchedule.days.length,
+        });
+        setShowWarningDialog(true);
+        return false; // Block creation until user confirms
+      }
+      
+      // Has schedule but no completed days, can proceed
+      return true;
+      
+    } catch (error) {
+      console.error('Failed to check existing schedule:', error);
+      return true; // On error, allow proceeding
+    }
+  };
+
+  const handleCreateSchedule = async (skipWarning: boolean = false) => {
+    // Check credit balance before proceeding
+    if (!creditBalance?.canAffordOperation) {
+      showToast(
+        `Insufficient AI credits. You have ${creditBalance?.remainingCredits ?? 0} of ${creditBalance?.monthlyCredits ?? 0} credits remaining.`,
+        "warning"
+      );
+      return;
+    }
+
+    // Check for existing schedule with completed days (unless user already confirmed)
+    if (!skipWarning) {
+      const canProceed = await checkExistingSchedule();
+      if (!canProceed) {
+        return; // Warning dialog will be shown
+      }
+    }
+
     try {
       setIsCreating(true);
       setError(null);
@@ -169,6 +258,12 @@ const ScheduleCreationWidget: React.FC<ScheduleCreationWidgetProps> = ({
         additionalNotes,
       });
 
+      // Update credit balance after successful creation
+      if (userId) {
+        const newBalance = await personalCoachService.getAICreditBalance(userId);
+        setCreditBalance(newBalance);
+      }
+
       console.log('✅ Schedule created successfully:', response);
       console.log('📦 Response structure:', {
         hasSchedule: !!response.schedule,
@@ -177,6 +272,17 @@ const ScheduleCreationWidget: React.FC<ScheduleCreationWidgetProps> = ({
         remainingCredits: response.remainingCredits,
         monthlyCredits: response.monthlyCredits
       });
+      
+      // Emit events to sync other components (Schedule page, etc.)
+      eventBus.emit('schedule-updated', { 
+        scheduleId: response.schedule?.id, 
+        service: 'schedule' 
+      });
+      eventBus.emit('credits-updated', { 
+        service: 'schedule',
+        creditsRemaining: response.remainingCredits 
+      });
+      
       onScheduleCreated(
         response.schedule, 
         response.remainingMessages, 
@@ -188,44 +294,23 @@ const ScheduleCreationWidget: React.FC<ScheduleCreationWidgetProps> = ({
         }
       );
     } catch (err: any) {
-      console.log('Failed to create schedule:', err);
+      console.error('Failed to create schedule:', err);
       
-      // Extract user-friendly error message
-      let userFriendlyMessage = '';
-      
+      // Show appropriate toast notification based on error type
       if (err.status === 429) {
-        userFriendlyMessage = ' **You\'ve reached your daily AI usage limit.**\n\nPlease upgrade your subscription to continue generating schedules, or wait until tomorrow when your limit resets.\n\n[View Subscription Plans](/pricing)';
-      } else if (err.status === 402) {
-        // Parse the backend's insufficient credits message
-        const backendMsg = err.details?.message || '';
-        const creditsNeeded = backendMsg.match(/requires (\d+) credits/)?.[1] || '10';
-        const creditsRemaining = backendMsg.match(/only (\d+) remaining/)?.[1] || '0';
-        const daysUntilReset = backendMsg.match(/Resets in (\d+) days/)?.[1] || backendMsg.match(/in (\d+) days/)?.[1];
-        
-        userFriendlyMessage = `💳 **Insufficient AI Credits**\n\nI need **${creditsNeeded} credits** to generate your workout schedule, but you only have **${creditsRemaining} credits** remaining.`;
-        
-        if (daysUntilReset) {
-          userFriendlyMessage += `\n\n🔄 Your credits will reset in **${daysUntilReset} days**.`;
-        }
-        
-        userFriendlyMessage += '\n\n **Upgrade your plan to get more credits:**\n- **Basic Plan** (79,000 VND): 500 credits/month (~50 schedules)\n- **Premium Plan** (149,000 VND): 1,200 credits/month (~120 schedules)\n\n[Upgrade Now →](/pricing)';
-      } else if (err.message?.includes('Insufficient credits') || err.message?.includes('insufficient')) {
-        userFriendlyMessage = ' **Insufficient AI Credits**\n\nYou don\'t have enough AI credits to generate a schedule. Please upgrade your subscription to get more credits.\n\n[View Pricing →](/pricing)';
+        showToast("You've reached your daily AI usage limit. Please upgrade your subscription or wait until tomorrow.", "error");
+      } else if (err.status === 402 || err.message?.includes('Insufficient')) {
+        showToast("Insufficient AI credits. Please upgrade your plan to generate more schedules.", "warning");
       } else if (err.status === 500) {
-        // Use backend's user-friendly message if available
         const backendMessage = err.details?.message || err.details?.error;
-        userFriendlyMessage = backendMessage || ' I apologize, but I encountered an unexpected error while creating your schedule.\n\nPlease try again in a moment, or contact support if the issue persists.';
-      } else if (err.message) {
-        userFriendlyMessage = ` ${err.message}`;
+        showToast(backendMessage || "An unexpected error occurred while creating your schedule. Please try again.", "error");
       } else {
-        userFriendlyMessage = ' An unexpected error occurred. Please try again.';
+        showToast(err.message || "Failed to create schedule. Please try again.", "error");
       }
       
-      // Pass error to parent to show as AI message
+      // Pass error to parent if handler exists
       if (onError) {
-        onError(userFriendlyMessage);
-      } else {
-        setError(userFriendlyMessage);
+        onError(err.message || "Failed to create schedule");
       }
     } finally {
       setIsCreating(false);
@@ -306,6 +391,33 @@ const ScheduleCreationWidget: React.FC<ScheduleCreationWidgetProps> = ({
       {!showCustomize ? (
         // AI Recommendation View
         <div className="space-y-4">
+          {/* Credit Balance Warning */}
+          {creditBalance && !creditBalance.canAffordOperation && (
+            <div 
+              className="p-4 rounded-xl border-2"
+              style={{ 
+                background: "#fee2e2",
+                borderColor: "#fecaca"
+              }}
+            >
+              <div className="flex items-start gap-3">
+                <Warning style={{ color: "#991b1b", fontSize: 24 }} />
+                <div>
+                  <p className="font-semibold text-sm" style={{ color: "#991b1b" }}>
+                    Insufficient AI Credits
+                  </p>
+                  <p className="text-xs mt-1" style={{ color: "#dc2626" }}>
+                    You have {creditBalance.remainingCredits?.toLocaleString() ?? 0} of {creditBalance.monthlyCredits?.toLocaleString() ?? 0} credits remaining.
+                    This operation requires approximately 7,500 credits.
+                  </p>
+                  <p className="text-xs mt-2 font-medium" style={{ color: "#991b1b" }}>
+                    Please upgrade your plan or wait for your monthly reset to generate a new schedule.
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+
           <div className="bg-green-50 border-2 border-green-200 rounded-xl p-4">
             <div className="flex items-center gap-2 mb-3">
               <AutoAwesome style={{ color: '#10b981', fontSize: 24 }} />
@@ -377,10 +489,11 @@ const ScheduleCreationWidget: React.FC<ScheduleCreationWidgetProps> = ({
               Customize
             </button>
             <button
-              onClick={handleCreateSchedule}
-              disabled={isCreating}
+              onClick={() => handleCreateSchedule()}
+              disabled={isCreating || !creditBalance?.canAffordOperation}
               className="flex-[2] px-6 py-3 rounded-xl font-semibold text-white hover:opacity-90 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
               style={{ background: '#0a6a56' }}
+              title={!creditBalance?.canAffordOperation ? "Insufficient AI credits" : ""}
             >
               {isCreating ? (
                 <>
@@ -399,6 +512,33 @@ const ScheduleCreationWidget: React.FC<ScheduleCreationWidgetProps> = ({
       ) : (
         // Customization View
         <div className="space-y-4">
+        {/* Credit Balance Warning */}
+        {creditBalance && !creditBalance.canAffordOperation && (
+          <div 
+            className="p-4 rounded-xl border-2"
+            style={{ 
+              background: "#fee2e2",
+              borderColor: "#fecaca"
+            }}
+          >
+            <div className="flex items-start gap-3">
+              <Warning style={{ color: "#991b1b", fontSize: 24 }} />
+              <div>
+                <p className="font-semibold text-sm" style={{ color: "#991b1b" }}>
+                  Insufficient AI Credits
+                </p>
+                <p className="text-xs mt-1" style={{ color: "#dc2626" }}>
+                  You have {creditBalance.remainingCredits?.toLocaleString() ?? 0} of {creditBalance.monthlyCredits?.toLocaleString() ?? 0} credits remaining.
+                  This operation requires approximately 7,500 credits.
+                </p>
+                <p className="text-xs mt-2 font-medium" style={{ color: "#991b1b" }}>
+                  💡 Please upgrade your plan or wait for your monthly reset to generate a new schedule.
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Goal Selection with Visual Cards */}
         <div>
           <label className="block text-sm font-semibold mb-3" style={{ color: '#0a6a56' }}>
@@ -558,10 +698,11 @@ const ScheduleCreationWidget: React.FC<ScheduleCreationWidgetProps> = ({
             Back to AI Plan
           </button>
           <button
-            onClick={handleCreateSchedule}
-            disabled={isCreating}
+            onClick={() => handleCreateSchedule()}
+            disabled={isCreating || !creditBalance?.canAffordOperation}
             className="flex-[2] px-6 py-3 rounded-xl font-semibold text-white hover:opacity-90 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
             style={{ background: '#0a6a56' }}
+            title={!creditBalance?.canAffordOperation ? "Insufficient AI credits" : ""}
           >
             <div ref={iconRef} className="flex items-center">
             {showLottie ? (
@@ -579,6 +720,110 @@ const ScheduleCreationWidget: React.FC<ScheduleCreationWidgetProps> = ({
           </button>
         </div>
       </div>
+      )}
+
+      {/* Warning Dialog for Existing Schedule with Completed Days */}
+      {showWarningDialog && existingScheduleInfo && (
+        <div
+          className="fixed inset-0 flex items-center justify-center z-[99999]"
+          style={{
+            background: "rgba(0, 0, 0, 0.5)",
+            backdropFilter: "blur(4px)",
+          }}
+          onClick={() => {
+            setShowWarningDialog(false);
+            setExistingScheduleInfo(null);
+          }}
+        >
+          <div
+            className="bg-white rounded-3xl shadow-2xl w-full max-w-md mx-4"
+            style={{ border: "2px solid #f59e0b" }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="p-6">
+              {/* Warning Header */}
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-12 h-12 rounded-full flex items-center justify-center" style={{ background: "#fef3c7" }}>
+                  <Warning style={{ color: "#f59e0b", fontSize: 28 }} />
+                </div>
+                <div>
+                  <h3 className="text-xl font-bold" style={{ color: "#f59e0b" }}>
+                    Replace Existing Schedule?
+                  </h3>
+                  <p className="text-xs" style={{ color: "#92400e" }}>
+                    You have progress that will be archived
+                  </p>
+                </div>
+              </div>
+
+              {/* Warning Content */}
+              <div
+                className="p-4 rounded-xl mb-4"
+                style={{ background: "#fef3c7", border: "2px solid #fde68a" }}
+              >
+                <p className="text-sm font-semibold mb-2" style={{ color: "#92400e" }}>
+                  Your current schedule will be archived:
+                </p>
+                <ul className="space-y-2 text-sm" style={{ color: "#78350f" }}>
+                  <li className="flex items-start gap-2">
+                    <CheckCircle style={{ fontSize: 18, color: "#10b981", marginTop: 2 }} />
+                    <span>
+                      <strong>{existingScheduleInfo.completedCount}</strong> completed workout
+                      {existingScheduleInfo.completedCount !== 1 ? 's' : ''} will be preserved in your history
+                    </span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <Warning style={{ fontSize: 18, color: "#f59e0b", marginTop: 2 }} />
+                    <span>
+                      Progress tracking and analytics will remain accessible
+                    </span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <CalendarMonth style={{ fontSize: 18, color: "#3b82f6", marginTop: 2 }} />
+                    <span>
+                      A fresh schedule will replace your current plan
+                    </span>
+                  </li>
+                </ul>
+              </div>
+
+              {/* Info Message */}
+              <div
+                className="p-3 rounded-xl mb-4"
+                style={{ background: "#f0fdf4", border: "1px solid #bbf7d0" }}
+              >
+                <p className="text-xs" style={{ color: "#166534" }}>
+                  <strong>Tip:</strong> Your completed workouts and progress are safely stored and won't be lost. 
+                  This only replaces your upcoming workout plan.
+                </p>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex gap-3">
+                <button
+                  onClick={() => {
+                    setShowWarningDialog(false);
+                    setExistingScheduleInfo(null);
+                  }}
+                  className="flex-1 px-4 py-3 rounded-xl font-semibold transition-colors hover:bg-gray-50"
+                  style={{ color: "#6b7280", border: "2px solid #e5e7eb" }}
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={() => {
+                    setShowWarningDialog(false);
+                    handleCreateSchedule(true); // Skip warning check
+                  }}
+                  className="flex-[2] px-4 py-3 rounded-xl font-semibold text-white transition-all hover:opacity-90"
+                  style={{ background: "#f59e0b" }}
+                >
+                  Replace & Create New Schedule
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

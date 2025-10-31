@@ -8,7 +8,7 @@ interface ToastOptions {
 }
 
 interface ToastContextType {
-  showToast: (options: ToastOptions) => void;
+  showToast: (messageOrOptions: string | ToastOptions, severity?: AlertColor, duration?: number) => void;
 }
 
 const ToastContext = createContext<ToastContextType | undefined>(undefined);
@@ -26,13 +26,24 @@ export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     duration: 6000,
   });
 
-  const showToast = useCallback((options: ToastOptions) => {
-    setToast({
-      open: true,
-      message: options.message,
-      severity: options.severity || "info",
-      duration: options.duration || 6000,
-    });
+  const showToast = useCallback((messageOrOptions: string | ToastOptions, severity?: AlertColor, duration?: number) => {
+    if (typeof messageOrOptions === "string") {
+      // Called with separate parameters: showToast("message", "severity")
+      setToast({
+        open: true,
+        message: messageOrOptions,
+        severity: severity || "info",
+        duration: duration || 6000,
+      });
+    } else {
+      // Called with options object: showToast({ message: "...", severity: "..." })
+      setToast({
+        open: true,
+        message: messageOrOptions.message,
+        severity: messageOrOptions.severity || "info",
+        duration: messageOrOptions.duration || 6000,
+      });
+    }
   }, []);
 
   const handleClose = (_event?: React.SyntheticEvent | Event, reason?: string) => {
@@ -50,7 +61,10 @@ export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         autoHideDuration={toast.duration}
         onClose={handleClose}
         anchorOrigin={{ vertical: "top", horizontal: "right" }}
-        sx={{ mt: 7 }}
+        sx={{ 
+          mt: 7,
+          zIndex: 99999, // Ensure toast appears above all modals
+        }}
       >
         <Alert
           onClose={handleClose}

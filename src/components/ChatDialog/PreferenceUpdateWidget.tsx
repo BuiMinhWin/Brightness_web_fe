@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { personalCoachService } from '../../services/personalCoachService';
 import chatService from '../../services/chatService';
+import { eventBus } from '../../services/eventBus';
+import { useToast } from '../../hooks/useToast';
 import { Settings, WbSunny, LightMode, Nightlight, CalendarToday, CheckCircle, Close, Edit } from '@mui/icons-material';
 
 interface PreferenceUpdateWidgetProps {
@@ -28,6 +30,7 @@ const PreferenceUpdateWidget: React.FC<PreferenceUpdateWidgetProps> = ({
   const [isUpdating, setIsUpdating] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [editMode, setEditMode] = useState(false);
+  const { showToast } = useToast();
 
   const handleConfirm = async () => {
     if (!userId || !sessionId) {
@@ -74,6 +77,19 @@ const PreferenceUpdateWidget: React.FC<PreferenceUpdateWidgetProps> = ({
         workoutDaysPerWeek,
       });
 
+      // Emit events to sync other components (FitnessProfile page, etc.)
+      eventBus.emit('profile-updated', { 
+        userId, 
+        service: 'profile' 
+      });
+      
+      // Emit credits-updated event to refresh credit balance in ChatDialog header
+      eventBus.emit('credits-updated', {
+        userId,
+        service: 'profile',
+        creditsRemaining: response.remainingCredits
+      });
+
       onPreferenceUpdated(
         response.remainingMessages, 
         response.dailyLimit,
@@ -84,30 +100,20 @@ const PreferenceUpdateWidget: React.FC<PreferenceUpdateWidgetProps> = ({
         }
       );
     } catch (err: any) {
-      console.log('Error updating preferences:', err);
+      console.error('Error updating preferences:', err);
       
-      let errorMessage = '';
-      
+      // Show appropriate toast notification based on error type
       if (err.status === 402) {
-        const backendMsg = err.details?.message || '';
-        const daysUntilReset = backendMsg.match(/Resets in (\d+) days/)?.[1] || backendMsg.match(/in (\d+) days/)?.[1];
-        
-        errorMessage = '💳 **Insufficient AI Credits**\n\nYou don\'t have enough credits to update your preferences with AI assistance.';
-        
-        if (daysUntilReset) {
-          errorMessage += ` Credits will reset in **${daysUntilReset} days**.`;
-        }
-        
-        errorMessage += '\n\n[Upgrade for More Credits →](/pricing)';
+        showToast("Insufficient AI credits. Please upgrade to update preferences with AI assistance.", "warning");
+      } else if (err.status === 500) {
+        showToast("Server error while updating preferences. Please try again or update manually in profile settings.", "error");
       } else {
-        errorMessage = ' I had trouble updating your preferences. Please try again or update them manually in your profile settings.';
+        showToast(err.message || "Failed to update preferences. Please try again.", "error");
       }
       
-      // Pass error to parent to show as AI message
+      // Pass error to parent if handler exists
       if (onError) {
-        onError(errorMessage);
-      } else {
-        setError(errorMessage);
+        onError(err.message || "Failed to update preferences");
       }
     } finally {
       setIsUpdating(false);

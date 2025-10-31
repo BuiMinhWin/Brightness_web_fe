@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAppSelector } from "@/store/hooks";
 import { useToast } from "@/hooks/useToast";
+import { eventBus } from "@/services/eventBus";
 import {
   personalCoachService,
   WorkoutScheduleResponse,
@@ -120,7 +121,6 @@ const Schedule: React.FC = () => {
   const [showRegenerateModal, setShowRegenerateModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [editingWorkout, setEditingWorkout] = useState<ScheduleDayDetail | null>(null);
-  const [aiUsageLimits, setAiUsageLimits] = useState<AIUsageLimits | null>(null);
   const [creditBalance, setCreditBalance] = useState<AICreditBalance | null>(null);
   const [showUpgradePrompt, setShowUpgradePrompt] = useState(false);
   const [dragOverDate, setDragOverDate] = useState<string | null>(null);
@@ -203,29 +203,17 @@ const Schedule: React.FC = () => {
     return normalized === "completed" || normalized === "done" || normalized === "finished";
   };
 
-  // Fetch AI usage limits (Legacy)
-  const fetchAIUsageLimits = async () => {
-    if (!userId) return;
-
-    try {
-      const limits = await personalCoachService.getAIUsageLimits(userId);
-      setAiUsageLimits(limits);
-    } catch (error) {
-      console.error("Failed to fetch AI usage limits:", error);
-    }
-  };
-
-  // Fetch AI credit balance (NEW)
+  // Fetch AI credit balance
   const fetchAICreditBalance = async () => {
-    if (!userId) return;
+    if (!userId) return null;
 
     try {
       const balance = await personalCoachService.getAICreditBalance(userId);
       setCreditBalance(balance);
+      return balance;
     } catch (error) {
       console.error("Failed to fetch AI credit balance:", error);
-      // Fall back to legacy limits if credit balance fails
-      await fetchAIUsageLimits();
+      return null;
     }
   };
 
@@ -475,8 +463,31 @@ const Schedule: React.FC = () => {
 
   useEffect(() => {
     fetchSchedules();
-    fetchAICreditBalance(); // Will fall back to fetchAIUsageLimits if needed
+    fetchAICreditBalance();
     fetchChallenges();
+  }, [userId]);
+
+  // Listen for schedule updates from ChatDialog
+  useEffect(() => {
+    const handleScheduleUpdate = () => {
+      console.log("[Schedule] Schedule updated via event, refreshing...");
+      fetchSchedules();
+    };
+
+    const handleCreditsUpdate = () => {
+      console.log("[Schedule] Credits updated via event, refreshing...");
+      fetchAICreditBalance();
+    };
+
+    eventBus.subscribe('schedule-updated', handleScheduleUpdate);
+    eventBus.subscribe('credits-updated', handleCreditsUpdate);
+    eventBus.subscribe('workout-completed', handleScheduleUpdate);
+
+    return () => {
+      eventBus.unsubscribe('schedule-updated', handleScheduleUpdate);
+      eventBus.unsubscribe('credits-updated', handleCreditsUpdate);
+      eventBus.unsubscribe('workout-completed', handleScheduleUpdate);
+    };
   }, [userId]);
 
   useEffect(() => {
@@ -590,11 +601,11 @@ const Schedule: React.FC = () => {
 
       // Refetch schedules and AI credit balance
       await fetchSchedules();
-      await fetchAICreditBalance();
+      const updatedBalance = await fetchAICreditBalance();
 
       setToast({
         open: true,
-        message: `Workout plan generated successfully! (${credits?.remainingMessages ?? "?"}/${credits?.dailyLimit ?? "?"} AI credits remaining)`,
+        message: `Workout plan generated successfully! (${updatedBalance?.remainingCredits.toLocaleString() ?? "?"}/${updatedBalance?.monthlyCredits.toLocaleString() ?? "?"} tokens remaining)`,
         severity: "success",
       });
     } catch (err) {
@@ -700,12 +711,12 @@ const Schedule: React.FC = () => {
 
       // Refetch schedules and AI credit balance
       await fetchSchedules();
-      await fetchAICreditBalance();
+      const updatedBalance = await fetchAICreditBalance();
 
       setShowRegenerateModal(false);
       setToast({
         open: true,
-        message: `Schedule regenerated successfully! Your progress has been preserved. (${credits?.remainingMessages ?? "?"}/${credits?.dailyLimit ?? "?"} AI credits remaining)`,
+        message: `Schedule regenerated successfully! Your progress has been preserved. (${updatedBalance?.remainingCredits.toLocaleString() ?? "?"}/${updatedBalance?.monthlyCredits.toLocaleString() ?? "?"} tokens remaining)`,
         severity: "success",
       });
     } catch (error) {
@@ -1659,18 +1670,18 @@ const Schedule: React.FC = () => {
               Schedule
             </div>
             <div className="flex items-center gap-4">
-              {/* AI Usage Badge */}
-              {!isPaidUser && aiUsageLimits && (
+              {/* AI Tokens Badge */}
+              {!isPaidUser && creditBalance && (
                 <div className="flex items-center gap-2 text-sm">
                   <span style={{ color: "#0a6a56", fontWeight: "500" }}>AI:</span>
                   <span
                     className="px-2 py-1 rounded-lg font-semibold"
                     style={{
-                      background: aiUsageLimits.remainingGenerations > 0 ? "#dcfce7" : "#fee2e2",
-                      color: aiUsageLimits.remainingGenerations > 0 ? "#16a34a" : "#dc2626",
+                      background: creditBalance.remainingCredits > 0 ? "#dcfce7" : "#fee2e2",
+                      color: creditBalance.remainingCredits > 0 ? "#16a34a" : "#dc2626",
                     }}
                   >
-                    {aiUsageLimits.remainingGenerations}/{aiUsageLimits.monthlyLimit}
+                    {creditBalance.remainingCredits.toLocaleString()}/{creditBalance.monthlyCredits.toLocaleString()}
                   </span>
                 </div>
               )}
@@ -2056,7 +2067,6 @@ const Schedule: React.FC = () => {
         isGenerating={isGenerating}
         hasSchedules={workoutSchedules.length > 0}
         userId={userId || ""}
-        aiUsageLimits={aiUsageLimits}
         creditBalance={creditBalance}
         selectedWorkout={selectedWorkout}
         selectedWorkoutDate={selectedWorkoutDate}
@@ -2124,7 +2134,7 @@ const Schedule: React.FC = () => {
           }
           totalDays={workoutSchedules[0].durationDays}
           currentDifficulty={workoutSchedules[0].difficultyLevel}
-          aiUsageLimits={aiUsageLimits}
+          creditBalance={creditBalance}
         />
       )}
 
@@ -2143,7 +2153,6 @@ const Schedule: React.FC = () => {
       <UpgradePrompt
         isOpen={showUpgradePrompt}
         onClose={() => setShowUpgradePrompt(false)}
-        aiUsageLimits={aiUsageLimits}
         creditBalance={creditBalance}
       />
 
