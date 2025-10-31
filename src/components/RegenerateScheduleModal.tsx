@@ -228,7 +228,6 @@ const RegenerateScheduleModal: React.FC<RegenerateScheduleModalProps> = ({
                           : willBeRegenerated
                           ? "#fef3c7"
                           : "white",
-                        ringColor: isSelected ? "#0a6a56" : undefined,
                       }}
                     >
                       <div

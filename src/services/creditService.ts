@@ -6,7 +6,7 @@
  * for credit balance and usage tracking.
  */
 
-import { httpRequest } from './api';
+import { httpRequest } from './httpClientRedux';
 
 export interface CreditBalance {
   remainingTokens: number;
