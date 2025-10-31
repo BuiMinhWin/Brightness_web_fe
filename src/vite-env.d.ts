@@ -7,6 +7,7 @@ interface ImportMetaEnv {
   readonly VITE_SESSION_STORAGE_KEY: string;
   readonly VITE_IDLE_WARNING_BEFORE_MS: string;
   readonly VITE_GOOGLE_CLIENT_ID?: string;
+  readonly DEV: boolean;
 }
 
 interface ImportMeta {

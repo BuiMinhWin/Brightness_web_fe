@@ -617,7 +617,7 @@ const AIGenerateTab: React.FC<AIGenerateTabProps> = ({ onSubmit, isGenerating, c
         </div>
 
         <button
-          onClick={handleSubmit}
+          onClick={() => handleSubmit()}
           disabled={isGenerating || formData.availableDays.length === 0 || !canGenerate}
           className="w-full px-4 py-3 rounded-xl font-semibold text-white hover:opacity-90 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
           style={{ background: "linear-gradient(90deg, #0a6a56 0%, #69c68d 100%)" }}
