@@ -8,12 +8,12 @@ const PageSidebar: React.FC = () => {
 
   // Navigation items for sidebar
   const navItems = [
-    {
-      title: "Connect",
-      url: "/connect",
-      icon: People,
-      isActive: location.pathname === "/connect",
-    },
+    // {
+    //   title: "Connect",
+    //   url: "/connect",
+    //   icon: People,
+    //   isActive: location.pathname === "/connect",
+    // },
     {
       title: "Schedule",
       url: "/schedule",
@@ -26,12 +26,12 @@ const PageSidebar: React.FC = () => {
       icon: Person,
       isActive: location.pathname === "/profile",
     },
-    {
-      title: "Goal",
-      url: "/goal",
-      icon: Flag,
-      isActive: location.pathname === "/goal",
-    },
+    // {
+    //   title: "Goal",
+    //   url: "/goal",
+    //   icon: Flag,
+    //   isActive: location.pathname === "/goal",
+    // },
   ];
 
   return (
