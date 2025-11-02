@@ -158,7 +158,7 @@ const FitnessProfile: React.FC = () => {
 
       // Redirect to dashboard or schedule page after 2 seconds
       setTimeout(() => {
-        navigate("/dashboard");
+        navigate("/home");
       }, 2000);
     } catch (error: any) {
       console.error("Profile save error:", error);
