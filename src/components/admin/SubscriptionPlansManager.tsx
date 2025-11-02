@@ -24,7 +24,7 @@ export const SubscriptionPlansManager: React.FC = () => {
     price: 0,
     currency: "VND",
     durationDays: 30,
-    monthlyAICredits: 0,
+    creditTier: "free",
     isActive: true,
   });
   const [filter, setFilter] = useState<SubscriptionPlanFilter>({
@@ -103,7 +103,7 @@ export const SubscriptionPlansManager: React.FC = () => {
       price: 0,
       currency: "VND",
       durationDays: 30,
-      monthlyAICredits: 0,
+      creditTier: "free",
       isActive: true,
     });
     setSelectedPlan(null);
@@ -118,7 +118,7 @@ export const SubscriptionPlansManager: React.FC = () => {
       price: plan.price,
       currency: plan.currency,
       durationDays: plan.durationDays,
-      monthlyAICredits: plan.monthlyAICredits,
+      creditTier: plan.creditTier,
       isActive: plan.isActive,
     });
     setSelectedPlan(plan);
@@ -149,7 +149,7 @@ export const SubscriptionPlansManager: React.FC = () => {
         price: 0,
         currency: "VND",
         durationDays: 30,
-        monthlyAICredits: 0,
+        creditTier: "free",
         isActive: true,
       });
 
@@ -362,7 +362,7 @@ export const SubscriptionPlansManager: React.FC = () => {
                       <th className="py-2 px-4 text-left">Name</th>
                       <th className="py-2 px-4 text-left">Price</th>
                       <th className="py-2 px-4 text-left">Duration</th>
-                      <th className="py-2 px-4 text-left">AI Credits</th>
+                      <th className="py-2 px-4 text-left">Credit Tier</th>
                       <th className="py-2 px-4 text-left">Status</th>
                       <th className="py-2 px-4 text-left">Actions</th>
                     </tr>
@@ -376,9 +376,7 @@ export const SubscriptionPlansManager: React.FC = () => {
                         </td>
                         <td className="py-2 px-4">{plan.durationDays} days</td>
                         <td className="py-2 px-4">
-                          <span className="font-semibold text-purple-600">
-                            {plan.monthlyAICredits} credits/mo
-                          </span>
+                          <span className="font-semibold text-purple-600 capitalize">{plan.creditTier} Tier</span>
                         </td>
                         <td className="py-2 px-4">
                           <span
@@ -488,8 +486,8 @@ export const SubscriptionPlansManager: React.FC = () => {
                   <p>{selectedPlan.durationDays} days</p>
                 </div>
                 <div className="mb-4">
-                  <h3 className="font-semibold">Monthly AI Credits</h3>
-                  <p className="text-purple-600 font-bold">{selectedPlan.monthlyAICredits} credits</p>
+                  <h3 className="font-semibold">Credit Tier</h3>
+                  <p className="font-bold text-purple-600 capitalize">{selectedPlan.creditTier} Tier</p>
                 </div>
                 <div className="mb-4">
                   <h3 className="font-semibold">Status</h3>
@@ -604,20 +602,21 @@ export const SubscriptionPlansManager: React.FC = () => {
 
                 <div className="mb-4">
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Monthly AI Credits
+                    Credit Tier
                   </label>
-                  <input
-                    type="number"
-                    name="monthlyAICredits"
-                    value={formData.monthlyAICredits}
+                  <select
+                    name="creditTier"
+                    value={formData.creditTier}
                     onChange={handleInputChange}
                     className="w-full p-2 border border-gray-300 rounded"
-                    min="0"
-                    step="10"
                     required
-                  />
+                  >
+                    <option value="free">Free Tier</option>
+                    <option value="basic">Basic Tier</option>
+                    <option value="premium">Premium Tier</option>
+                  </select>
                   <p className="text-xs text-gray-500 mt-1">
-                    Number of AI credits allocated per month (0 for free tier, 20+ for paid tiers)
+                    Select which credit tier from appsettings.json to assign to this plan
                   </p>
                 </div>
 
@@ -652,7 +651,7 @@ export const SubscriptionPlansManager: React.FC = () => {
                         price: 0,
                         currency: "VND",
                         durationDays: 30,
-                        monthlyAICredits: 0,
+                        creditTier: "free",
                         isActive: true,
                       });
                     }}

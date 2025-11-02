@@ -84,7 +84,7 @@ export const socialService = {
   async updatePostStatus(postId: string, status: string): Promise<Post> {
     return httpRequest<Post>(`${postsBaseUrl}/${postId}/status`, {
       method: "PATCH",
-      body: JSON.stringify(status),
+      body: JSON.stringify({ status }),
     });
   },
 
@@ -371,13 +371,14 @@ export const socialService = {
   },
 
   /**
-   * Soft delete a post (for admin)
+   * Soft delete a post (for admin) - sets status to "deleted"
    * @param postId - The ID of the post to soft delete
-   * @returns Success message
+   * @returns Updated post
    */
-  async softDeletePost(postId: string): Promise<string> {
-    return httpRequest<string>(`${postsBaseUrl}/${postId}/soft-delete`, {
-      method: "DELETE",
+  async softDeletePost(postId: string): Promise<Post> {
+    return httpRequest<Post>(`${postsBaseUrl}/${postId}/status`, {
+      method: "PATCH",
+      body: JSON.stringify({ status: "deleted" }),
     });
   },
 
