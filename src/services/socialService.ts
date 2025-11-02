@@ -347,12 +347,16 @@ export const socialService = {
    * Report a post
    * @param postId - The ID of the post to report
    * @param reason - Reason for reporting
-   * @returns Success message
+   * Resolves when the report has been submitted
    */
-  async reportPost(postId: string, reason: string): Promise<string> {
-    return httpRequest<string>(`${postsBaseUrl}/${postId}/report`, {
+  async reportPost(postId: string, reason: string): Promise<void> {
+    await httpRequest(`/social/api/reports`, {
       method: "POST",
-      body: JSON.stringify({ reason }),
+      body: JSON.stringify({
+        targetType: "post",
+        targetId: postId,
+        reason,
+      }),
     });
   },
 
