@@ -145,14 +145,14 @@ const ReviewPostPage: React.FC = () => {
       if (confirmationModal.type === "keep") {
         // Update post status to approved to dismiss reports
         await socialService.updatePostStatus(confirmationModal.postId, "approved");
-        // Remove from flagged posts
-        setFlaggedPosts((prev) => prev.filter((p) => p.id !== confirmationModal.postId));
       } else if (confirmationModal.type === "delete") {
-        // Soft delete the post
+        // Soft delete the post (sets status to "deleted")
         await socialService.softDeletePost(confirmationModal.postId);
-        // Remove from flagged posts
-        setFlaggedPosts((prev) => prev.filter((p) => p.id !== confirmationModal.postId));
       }
+      
+      // Reload the flagged posts list to reflect changes
+      // This ensures approved/deleted posts are removed from the list
+      await loadPosts();
     } catch (err) {
       console.error("Failed to perform action:", err);
       setError("Failed to perform action. Please try again.");

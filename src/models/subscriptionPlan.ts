@@ -10,7 +10,7 @@ export interface SubscriptionPlan {
   price: number;
   currency: string;
   durationDays: number;
-  monthlyAICredits: number;
+  creditTier: string; // "free", "basic", or "premium"
   isActive: boolean;
   createdAt?: string;
   updatedAt?: string;
@@ -25,7 +25,7 @@ export interface SubscriptionPlanPayload {
   price: number;
   currency: string;
   durationDays: number;
-  monthlyAICredits: number;
+  creditTier: string; // "free", "basic", or "premium"
   isActive: boolean;
 }
 

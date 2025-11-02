@@ -4,11 +4,13 @@ import "./PricingPage.css";
 import { useNavigate } from "react-router-dom";
 import { billingService } from "@/services/billingService";
 import { subscriptionPlanService } from "@/services";
+import { creditService } from "@/services/creditService";
+import { authService } from "@/services/authService";
 import type { CreateInvoicePayload, InitiatePaymentPayload, PricingPlan } from "@/models/billing";
 import type { SubscriptionPlan } from "@/models/subscriptionPlan";
 import { useAppSelector } from "@/store/hooks";
 import { selectUserId, selectIsAuthenticated } from "@/store/slices/authSlice";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Check, Sparkles, Zap, Crown } from "lucide-react";
 import { useToast } from "@/hooks/useToast";
 
 interface PricingPageProps {
@@ -22,6 +24,8 @@ const PricingPage: React.FC = () => {
   const [pendingPlan, setPendingPlan] = useState<PricingPlan | null>(null);
   const [pricingPlans, setPricingPlans] = useState<PricingPlan[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
+  const [currentPlanId, setCurrentPlanId] = useState<string | null>(null);
+  const [currentCreditTier, setCurrentCreditTier] = useState<string>("free");
   const navigate = useNavigate();
 
   // Get user ID from Redux instead of localStorage
@@ -41,7 +45,7 @@ const PricingPage: React.FC = () => {
       "Chatbox AI (Limited)",
     ],
     buttonText: "Your current plan",
-    isCurrentPlan: true,
+    isCurrentPlan: false, // Will be set dynamically
   };
 
     const handleBack = () => {
@@ -59,6 +63,37 @@ const PricingPage: React.FC = () => {
     }
   }, [isAuthenticated, navigate]);
 
+  // Fetch user's current subscription and credit tier
+  useEffect(() => {
+    const fetchUserSubscription = async () => {
+      if (!userId) return;
+
+      try {
+        // Get user data to find subscriptionPlanId
+        const userData = await authService.getUser(userId);
+        if (userData.subscriptionPlanId) {
+          setCurrentPlanId(userData.subscriptionPlanId);
+        }
+
+        // Get credit balance to determine tier
+        try {
+          const creditBalance = await creditService.getCreditBalance(userId, 'chat');
+          setCurrentCreditTier(creditBalance.subscriptionTier || 'free');
+        } catch (error) {
+          console.error("Failed to fetch credit balance:", error);
+          // Default to free if credit service fails
+          setCurrentCreditTier('free');
+        }
+      } catch (error) {
+        console.error("Failed to fetch user subscription:", error);
+      }
+    };
+
+    if (userId) {
+      fetchUserSubscription();
+    }
+  }, [userId]);
+
   // Fetch subscription plans from API
   useEffect(() => {
     const fetchPlans = async () => {
@@ -75,12 +110,22 @@ const PricingPage: React.FC = () => {
         const planItems = response?.items || [];
 
         if (planItems.length === 0) {
-          setPricingPlans([freePlan]);
+          // Mark free plan as current if no plans found
+          const freePlanWithCurrent = {
+            ...freePlan,
+            isCurrentPlan: !currentPlanId && currentCreditTier === 'free',
+          };
+          setPricingPlans([freePlanWithCurrent]);
           return;
         }
 
         // Map subscription plans to pricing plans format
         const apiPlans: PricingPlan[] = planItems.map((plan) => {
+          // Check if this plan is current by:
+          // 1. Matching subscriptionPlanId, OR
+          // 2. If no subscriptionPlanId, match by creditTier
+          const isCurrent = currentPlanId === plan.id || 
+                           (!currentPlanId && plan.creditTier?.toLowerCase() === currentCreditTier);
           return {
             id: plan.id,
             title: plan.name || (plan.price ? plan.price.toLocaleString() : "Plan"),
@@ -89,19 +134,33 @@ const PricingPage: React.FC = () => {
             features: (plan.description || "")
               .split("\n")
               .filter((line: string) => line.trim() !== ""),
-            buttonText: "Choose plan",
-            isCurrentPlan: false,
+            buttonText: isCurrent ? "Your current plan" : "Choose plan",
+            isCurrentPlan: isCurrent,
             // Mark highest price plan as best value
             isBestValue: plan === planItems[planItems.length - 1],
           };
         });
 
+        // Determine if free plan should be marked as current
+        // Only if user has free tier AND no paid plan is marked as current
+        const hasCurrentPaidPlan = apiPlans.some(p => p.isCurrentPlan);
+        const isFreeCurrent = !hasCurrentPaidPlan && currentCreditTier === 'free';
+        
+        const freePlanWithCurrent = {
+          ...freePlan,
+          isCurrentPlan: isFreeCurrent,
+        };
+
         // Add free plan at the beginning
-        const allPlans = [freePlan, ...apiPlans];
+        const allPlans = [freePlanWithCurrent, ...apiPlans];
         setPricingPlans(allPlans);
       } catch (error) {
         // If API fails, show at least the free plan
-        setPricingPlans([freePlan]);
+        const freePlanWithCurrent = {
+          ...freePlan,
+          isCurrentPlan: !currentPlanId && currentCreditTier === 'free',
+        };
+        setPricingPlans([freePlanWithCurrent]);
 
         // Show error in UI
         showToast({ message: "Failed to load subscription plans. Please try again later.", severity: "error" });
@@ -111,11 +170,17 @@ const PricingPage: React.FC = () => {
     };
 
     fetchPlans();
-  }, []);
+  }, [currentPlanId, currentCreditTier]);
 
   const handlePlanSelection = (planId: string) => {
+    // Don't allow selection of current plan
+    const plan = pricingPlans.find((p) => p.id === planId);
+    if (plan?.isCurrentPlan) {
+      showToast({ message: "This is your current plan", severity: "info" });
+      return;
+    }
+
     if (planId !== "free") {
-      const plan = pricingPlans.find((p) => p.id === planId);
       if (plan) {
         setSelectedPlan(planId);
         setPendingPlan(plan);
@@ -236,99 +301,126 @@ const PricingPage: React.FC = () => {
   }
 
   return (
-    <div className="pricing-page">
-      <div className="pricing-content">
+    <div className="pricing-page-modern">
+      <div className="pricing-container">
         {/* Header */}
-        <button onClick={handleBack} className="back-button">
-               <ArrowLeft size={24} />
-            </button>
-        <div className="pricing-hero">
+        <button onClick={handleBack} className="back-button-modern">
+          <ArrowLeft size={20} />
+          <span>Back</span>
+        </button>
+
+        {/* Hero Section */}
+        <div className="pricing-hero-modern">
+          <div className="hero-badge">
+            <Sparkles size={16} />
+            <span>Flexible Plans for Everyone</span>
+          </div>
+          <h1 className="hero-title">Choose Your Perfect Plan</h1>
+          <p className="hero-subtitle">
+            Unlock premium features and accelerate your fitness journey
+          </p>
           
-
-          <div className="pricing-hero-text">
-            <h1 className="pricing-hero-title">Plans &amp; Pricing</h1>
-            <p className="pricing-hero-subtitle flex justify-center items-center">
-              Whether your time-saving automation needs are large or small, we&apos;re here to help
-              you scale.
-            </p>
-          </div>
-
-          <div className="trial-pill">
-            <button className="trial-pill-button" onClick={handlePremiumTrial}>
-              3-Day Premium Trial
-            </button>
-          </div>
+          {!loading && (
+            <div className="trial-badge-modern" onClick={handlePremiumTrial}>
+              <Zap size={16} />
+              <span>Start 3-Day Premium Trial</span>
+            </div>
+          )}
         </div>
 
         {/* Loading State */}
         {loading && (
-          <div className="flex justify-center items-center p-10">
-            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
-            <p className="ml-4 text-lg">Loading subscription plans...</p>
+          <div className="loading-container-modern">
+            <div className="spinner-modern"></div>
+            <p>Loading subscription plans...</p>
           </div>
         )}
 
         {/* Pricing Cards */}
-        <div className="pricing-cards-shell">
-          <div className="pricing-cards">
-            {pricingPlans.map((plan) => (
-              <div
-                key={plan.id}
-                className={`pricing-card ${plan.id === "free" ? "free-plan" : ""} ${plan.isBestValue ? "best-value" : ""} ${selectedPlan === plan.id ? "selected" : ""}`}
-                data-plan-id={plan.id}
-              >
-                <div className="card-header">
-                  {plan.isBestValue && <span className="best-value-badge">BEST VALUE</span>}
-                  <div className="price-section">
-                    {plan.price ? (
+        {!loading && (
+          <div className="pricing-grid-modern">
+            {pricingPlans.map((plan, index) => {
+              const isPopular = plan.isBestValue;
+              const isFree = plan.id === "free";
+              
+              return (
+                <div
+                  key={plan.id}
+                  className={`pricing-card-modern ${isPopular ? "popular" : ""} ${isFree ? "free-card" : ""}`}
+                >
+                  {isPopular && (
+                    <div className="popular-badge">
+                      <Crown size={14} />
+                      <span>Most Popular</span>
+                    </div>
+                  )}
+                  
+                  <div className="card-header-modern">
+                    <div className="plan-title-section">
+                      <h3 className="plan-name-modern">{plan.title}</h3>
+                      {isFree && (
+                        <span className="plan-badge-free">Current Plan</span>
+                      )}
+                    </div>
+                    
+                    <div className="price-section-modern">
+                      {plan.price ? (
+                        <div className="price-wrapper">
+                          <span className="currency">₫</span>
+                          <span className="price-amount">{plan.price}</span>
+                          <span className="price-period">{plan.subtitle}</span>
+                        </div>
+                      ) : (
+                        <div className="free-price">
+                          <span className="free-price-text">Free</span>
+                          <span className="free-price-subtitle">Forever</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="features-list-modern">
+                    {plan.features.map((feature, idx) => (
+                      <div key={idx} className="feature-row-modern">
+                        <div className="feature-icon-modern">
+                          <Check size={18} />
+                        </div>
+                        <span className="feature-text-modern">{feature}</span>
+                      </div>
+                    ))}
+                  </div>
+
+                  <button
+                    className={`plan-button-modern ${plan.isCurrentPlan ? "current" : isPopular ? "popular-btn" : ""}`}
+                    onClick={() => handlePlanSelection(plan.id)}
+                    disabled={plan.isCurrentPlan}
+                  >
+                    {plan.isCurrentPlan ? (
                       <>
-                        <span className="price">{plan.price}</span>
-                        <span className="price-subtitle">{plan.subtitle}</span>
+                        <Check size={18} />
+                        <span>Current Plan</span>
                       </>
                     ) : (
-                      <span className="free-title">{plan.title}</span>
+                      <>
+                        <span>Choose Plan</span>
+                        <ArrowLeft size={18} style={{ transform: 'rotate(180deg)' }} />
+                      </>
                     )}
-                  </div>
+                  </button>
                 </div>
-
-                <div className="features-section">
-                  {plan.features.map((feature, index) => (
-                    <div key={index} className="feature-item">
-                      <div className="feature-check">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-                          <polyline points="20,6 9,17 4,12" stroke="currentColor" strokeWidth="2" />
-                        </svg>
-                      </div>
-                      <span className="feature-text">{feature}</span>
-                    </div>
-                  ))}
-                </div>
-
-                <button
-                  className={`plan-button ${plan.isCurrentPlan ? "current-plan" : "choose-plan"}`}
-                  onClick={() => handlePlanSelection(plan.id)}
-                  disabled={plan.isCurrentPlan}
-                >
-                  {plan.buttonText}
-                </button>
-              </div>
-            ))}
+              );
+            })}
           </div>
-        </div>
+        )}
 
         {/* Confirmation Modal */}
         {showConfirmModal && pendingPlan && (
           <div className="modal-overlay" onClick={handleCancelPurchase}>
             <div className="confirmation-modal" onClick={(e) => e.stopPropagation()}>
-              <h2 className="modal-title flex justify-center items-center">Confirm Purchase</h2>
+              <h2 className="modal-title">Confirm Purchase</h2>
               <div className="plan-summary">
                 <div className="plan-icon">
-                  <svg width="48" height="48" viewBox="0 0 24 24" fill="none">
-                    <path
-                      d="M12 1L15.09 8.26L22 9L17 14.74L18.18 22L12 18.27L5.82 22L7 14.74L2 9L8.91 8.26L12 1Z"
-                      fill="currentColor"
-                    />
-                  </svg>
+                  <Crown size={32} />
                 </div>
                 <h3 className="plan-name">{pendingPlan.title} Plan</h3>
                 <div className="plan-price">
@@ -339,33 +431,23 @@ const PricingPage: React.FC = () => {
 
               <div className="confirmation-text">
                 <p>Are you sure you want to upgrade to this subscription plan?</p>
-                <div className="plan-features mt-3">
-                  <p className="text-sm font-semibold mb-2">This plan includes:</p>
-                  <ul className="text-sm">
+                <div className="plan-features-modern">
+                  <p className="features-title">This plan includes:</p>
+                  <ul className="features-list-modal">
                     {pendingPlan.features.slice(0, 3).map((feature, index) => (
-                      <li key={index} className="flex items-center mb-1">
-                        <svg
-                          className="w-4 h-4 mr-2 text-green-500"
-                          viewBox="0 0 20 20"
-                          fill="currentColor"
-                        >
-                          <path
-                            fillRule="evenodd"
-                            d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-                            clipRule="evenodd"
-                          />
-                        </svg>
-                        {feature}
+                      <li key={index} className="feature-item-modal">
+                        <Check size={16} className="feature-check-modal" />
+                        <span>{feature}</span>
                       </li>
                     ))}
                     {pendingPlan.features.length > 3 && (
-                      <li className="text-sm text-gray-500 mt-1">
+                      <li className="features-more">
                         ...and {pendingPlan.features.length - 3} more features
                       </li>
                     )}
                   </ul>
                 </div>
-                <p className="billing-note text-sm mt-3">
+                <p className="billing-note">
                   You will be charged {pendingPlan.price}/{pendingPlan.subtitle.replace("/", "")}{" "}
                   for this subscription.
                 </p>
